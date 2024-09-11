@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { ChevronLeft } from 'lucide-react';
 import { useSidebar } from '@/hooks/useSidebar';
 import Link from 'next/link';
+import Image from "next/image";
 
 type SidebarProps = {
   className?: string;
@@ -31,7 +32,7 @@ export default function Sidebar({ className }: SidebarProps) {
           href={'https://github.com/Kiranism/next-shadcn-dashboard-starter'}
           target="_blank"
         >
-          <svg
+          {/* <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="none"
@@ -42,7 +43,8 @@ export default function Sidebar({ className }: SidebarProps) {
             className="mr-2 h-6 w-6"
           >
             <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" />
-          </svg>
+          </svg> */}
+          <Image src="/logoGreen.png" alt="logo" width={25} height={25} />
         </Link>
       </div>
       <ChevronLeft

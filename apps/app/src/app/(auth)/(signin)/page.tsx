@@ -3,6 +3,7 @@ import Link from 'next/link';
 import UserAuthForm from '@/components/forms/user-auth-form';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: 'Authentication',
@@ -24,7 +25,7 @@ export default function AuthenticationPage() {
       <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
         <div className="absolute inset-0 bg-zinc-900" />
         <div className="relative z-20 flex items-center text-lg font-medium">
-          <svg
+          {/* <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="none"
@@ -35,8 +36,8 @@ export default function AuthenticationPage() {
             className="mr-2 h-6 w-6"
           >
             <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" />
-          </svg>
-          Logo
+          </svg> */}
+          <Image src="/logoGreen.png" alt="logo" width={50} height={50} />
         </div>
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">
@@ -55,9 +56,9 @@ export default function AuthenticationPage() {
             <h1 className="text-2xl font-semibold tracking-tight">
               Create an account
             </h1>
-            <p className="text-sm text-muted-foreground">
+            {/* <p className="text-sm text-muted-foreground">
               Enter your email below to create your account
-            </p>
+            </p> */}
           </div>
           <UserAuthForm />
           <p className="px-8 text-center text-sm text-muted-foreground">
