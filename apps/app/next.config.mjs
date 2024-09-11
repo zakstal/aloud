@@ -7,6 +7,9 @@ const nextConfig = {
   experimental: {
     instrumentationHook: process.env.NODE_ENV === "production",
   },
+  images: {
+    domains: ['utfs.io']
+  }
 };
 
 export default withSentryConfig(nextConfig, {
