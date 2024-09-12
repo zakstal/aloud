@@ -1,0 +1,23 @@
+{
+  "name": "script-to-speech",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "audioconcat": "^0.1.4",
+    "dotenv": "^16.4.5",
+    "elevenlabs": "^0.15.0",
+    "fountain-js": "^1.2.4",
+    "pdf-to-text": "^0.0.7",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^8.2.0"
+  }
+}
