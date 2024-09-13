@@ -26,9 +26,11 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import FileUpload from '@/components/file-upload-pdf';
 // import FileUpload from "@/components/FileUpload";
 import { useToast } from '../ui/use-toast';
-import FileUpload from '../file-upload';
+  import { signOut, useSession } from 'next-auth/react';
+// import FileUpload from '../file-upload';
 const ImgSchema = z.object({
   fileName: z.string(),
   name: z.string(),
@@ -66,6 +68,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   initialData,
   categories
 }) => {
+  const { data: session } = useSession();
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -76,6 +79,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const description = initialData ? 'Edit a product.' : 'Add a new product';
   const toastMessage = initialData ? 'Product updated.' : 'Product created.';
   const action = initialData ? 'Save changes' : 'Create';
+
+  console.log('session+++', session)
 
   const defaultValues = initialData
     ? initialData
@@ -172,94 +177,24 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                     onChange={field.onChange}
                     value={field.value}
                     onRemove={field.onChange}
+                    onprocessfile={fileItems => {
+                      // Set currently active file objects to this.state
+                      console.log('file items--------', fileItems)
+                      // router.push(`/screen-play/products`);
+                    }}
+                    onload={(response) => {
+                      router.push(`/dashboard/screen-play/${response.id}`);
+                    }}
+                    onerror={(response) => {
+                      toast('Oops there was an error uploading your pdf.')
+                    }}
+                    userId={session?.data?.user?.id}
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <div className="gap-8 md:grid md:grid-cols-3">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={loading}
-                      placeholder="Product name"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={loading}
-                      placeholder="Product description"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Price</FormLabel>
-                  <FormControl>
-                    <Input type="number" disabled={loading} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select
-                    disabled={loading}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue
-                          defaultValue={field.value}
-                          placeholder="Select a category"
-                        />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {/* @ts-ignore  */}
-                      {categories.map((category) => (
-                        <SelectItem key={category._id} value={category._id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
           <Button disabled={loading} className="ml-auto" type="submit">
             {action}
           </Button>

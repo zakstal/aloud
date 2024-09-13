@@ -28,6 +28,7 @@ import {
   User,
   User2Icon,
   UserX2Icon,
+  ScrollText,
   X
 } from 'lucide-react';
 
@@ -60,6 +61,7 @@ export const Icons = {
   sun: SunMedium,
   moon: Moon,
   laptop: Laptop,
+  screenplay: ScrollText,
   gitHub: ({ ...props }: LucideProps) => (
     <svg
       aria-hidden="true"

@@ -4,6 +4,7 @@ create table public.screenplays (
     title text not null,
     type text check (type in ('movie', 'tv_show')) not null,
     total_lines int not null default 0,
+    screen_play_text text not null,
     completion_status text check (completion_status in ('pending', 'partial', 'completed')) default 'pending',
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
