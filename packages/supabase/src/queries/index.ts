@@ -28,6 +28,20 @@ export async function getPosts() {
   }
 }
 
+export async function getScreenPlays(screenPlayId) {
+  const supabase = createClient();
+
+  try {
+    const result = await supabase
+      .from("screenplays")
+      .select("*")
+
+    return result;
+  } catch (error) {
+    logger.error(error);
+    throw error;
+  }
+}
 export async function getScreenPlay(screenPlayId) {
   const supabase = createClient();
 

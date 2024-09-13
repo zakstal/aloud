@@ -8,6 +8,7 @@
     "migrate:new": "supabase migration new",
     "seed": "supabase db seed generate && supabase db seed run",
     "reset": "supabase db reset",
+    "supabase": "supabase",
     "generate": "supabase gen types --lang=typescript --local --schema public > ../../packages/supabase/src/types/db.ts"
   },
   "dependencies": {

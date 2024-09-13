@@ -20,16 +20,16 @@ export default async function RootLayout({
   children: any;
   // children: React.ReactNode;
 }) {
-  // const session = {
-  //   user: {
-  //     name: 'zak',
-  //     image: '',
-  //     email: 'ssdf@me.com'
-  //   },
-  //   expires: 'never'
-  // };
+  const session = {
+    user: {
+      name: 'zak',
+      image: '',
+      email: 'ssdf@me.com'
+    },
+    expires: 'never'
+  };
   // const session = await auth();
-  const session = await getUser();
+  // const session = await getUser();
   return (
     <html lang="en">
       <body

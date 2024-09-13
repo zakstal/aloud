@@ -31,7 +31,7 @@ export async function createScreenPlay(
   userId: string,
   data: CreateScreenplayInput
 ) {
-  console.log('here 1')
+  console.log('here 1', userId, data)
   const supabase = createClient();
   const { title, type, characters, total_lines, screen_play_text } = data;
 
@@ -45,6 +45,9 @@ export async function createScreenPlay(
   };
 
   try {
+    const result = await supabase.from("users").select("*");
+    console.log('results users', result)
+
     console.log('here 2')
     // Start a transaction
     const { data: screenplay, error: screenplayError } = await supabase
@@ -53,10 +56,12 @@ export async function createScreenPlay(
       .select("id")
       .single(); // Fetch the inserted screenplay's ID
 
-    console.log("here 3", screenplay, screenplayError)
+    console.log("here 33", screenplay, screenplayError)
     if (screenplayError) {
       throw screenplayError;
     }
+
+    return screenplay
 
     // const screenplayId = screenplay.id;
 
@@ -98,6 +103,7 @@ export async function createScreenPlay(
     // return { success: true, screenplayId };
   } catch (error) {
     logger.error(error);
+    console.log('error', error);
     throw error;
   }
 }

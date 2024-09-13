@@ -29,7 +29,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import FileUpload from '@/components/file-upload-pdf';
 // import FileUpload from "@/components/FileUpload";
 import { useToast } from '../ui/use-toast';
-  import { signOut, useSession } from 'next-auth/react';
+  // import { signOut, useSession } from 'next-auth/react';
+import { useSession } from "@v1/supabase/supbaseSessionContext";
 // import FileUpload from '../file-upload';
 const ImgSchema = z.object({
   fileName: z.string(),
@@ -68,7 +69,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   initialData,
   categories
 }) => {
-  const { data: session } = useSession();
+  const { session } = useSession();
+
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -79,8 +81,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const description = initialData ? 'Edit a product.' : 'Add a new product';
   const toastMessage = initialData ? 'Product updated.' : 'Product created.';
   const action = initialData ? 'Save changes' : 'Create';
-
-  console.log('session+++', session)
 
   const defaultValues = initialData
     ? initialData
@@ -188,7 +188,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                     onerror={(response) => {
                       toast('Oops there was an error uploading your pdf.')
                     }}
-                    userId={session?.data?.user?.id}
+                    userId={session?.user?.id}
                   />
                 </FormControl>
                 <FormMessage />

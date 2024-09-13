@@ -18,7 +18,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
   let parsedText = '';
 
   // TODO fix this
-  const userId = req.headers.get("x-customheader");
+  const userId = req.headers.get("x-customheader") as string;
   console.log("userId--------", userId)
   if (uploadedFiles && uploadedFiles.length > 0) {
     const uploadedFile = uploadedFiles[1];
@@ -53,13 +53,11 @@ export async function POST(req: NextRequest, res: NextResponse) {
       const res = await new Promise((resolve, reject) => {
 
         pdfParser.on('pdfParser_dataError', (errData: any) => {
-            console.log(errData.parserError)
             reject(errData.parserError)
         });
         
         pdfParser.on('pdfParser_dataReady', () => {
-          console.log((pdfParser as any).getRawTextContent());
-          parsedText = (pdfParser as any).getRawTextContent();
+          parsedText = (pdfParser as any)?.getRawTextContent()
           resolve(parsedText)
         });
 
@@ -67,18 +65,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
       })
 
       console.log('here-----------')
-      const screenRes = await createScreenPlay(
-        '123',
-         {
-          title: '', 
-          type: 'movie', 
-          characters: [], 
-          total_lines: 0, 
-          screen_play_text: ''
-        }
-      )
 
-      console.log("screenRes-------", screenRes)
 
     } else {
       console.log('Uploaded file is not in the expected format.');
@@ -87,8 +74,21 @@ export async function POST(req: NextRequest, res: NextResponse) {
   //   console.log('No files found.');
   // }
 
+    const screenRes = await createScreenPlay(
+      userId,
+    {
+      title: '', 
+      type: 'movie', 
+      characters: [], 
+      total_lines: 0, 
+      screen_play_text: parsedText
+    }
+  )
+
+  console.log("screenRes-------", screenRes)
+
   console.log("parsedText----------", parsedText)
-  const response = new NextResponse(JSON.stringify({id: 123, parsedText }));
+  const response = new NextResponse(JSON.stringify({id: screenRes?.id, parsedText }));
   response.headers.set('FileName', fileName);
   return response;
 }
