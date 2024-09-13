@@ -1,14 +1,17 @@
 "use server";
 
 import { authActionClient } from "@/actions/safe-action";
-import { getScreenPlays } from "@v1/supabase/queries";
+import { getScreenPlay as getScreenPlayIn } from "@v1/supabase/queries";
+import { screenPlaySchema } from "./schema-screen-play";
 
-export const shareLinkAction = authActionClient
+export const getScreenPlay = authActionClient
+.schema(screenPlaySchema)
   .metadata({
-    name: "get-screenplays",
+    name: "get-screenplay",
   })
-  .action(async ({ parsedInput: input, ctx: { user } }) => {
-    const result = await getScreenPlays(user.id);
+  .action(async ({ parsedInput: { screenPlayId } = {}, ctx: { user } }) => {
+    if (!screenPlayId) return {}
+    const result = await getScreenPlayIn(screenPlayId);
 
     return result;
   });

@@ -131,7 +131,7 @@ export function BoardContainer({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </div>
-      <ScrollBar orientation="horizontal" />
+      <ScrollBar orientation="vertical" />
     </ScrollArea>
   );
 }

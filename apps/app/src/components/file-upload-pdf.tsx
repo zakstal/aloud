@@ -4,7 +4,6 @@ import 'filepond/dist/filepond.min.css';
 import { useState } from 'react';
 
 export default function FileUpload({ onprocessfile, onload, onerror, userId }) {
-  console.log('userId+++++', userId)
   return (
     <FilePond
       onprocessfile={onprocessfile}

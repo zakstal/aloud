@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { setupAnalytics } from "@v1/analytics/server";
-import { ratelimit } from "@v1/kv/ratelimit";
+// import { ratelimit } from "@v1/kv/ratelimit";
 import { logger } from "@v1/logger";
 import { getUser } from "@v1/supabase/queries";
 import { createClient } from "@v1/supabase/server";
@@ -57,18 +57,18 @@ export const authActionClient = actionClientWithMeta
   .use(async ({ next, metadata }) => {
     const ip = headers().get("x-forwarded-for");
 
-    const { success, remaining } = await ratelimit.limit(
-      `${ip}-${metadata.name}`,
-    );
+    // const { success, remaining } = await ratelimit.limit(
+    //   `${ip}-${metadata.name}`,
+    // );
 
-    if (!success) {
-      throw new Error("Too many requests");
-    }
+    // if (!success) {
+    //   throw new Error("Too many requests");
+    // }
 
     return next({
       ctx: {
         ratelimit: {
-          remaining,
+          remaining: 100// remaining,
         },
       },
     });

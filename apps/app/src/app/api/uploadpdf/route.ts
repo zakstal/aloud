@@ -3,6 +3,8 @@ import { promises as fs } from 'fs'; // To save the file temporarily
 import { v4 as uuidv4 } from 'uuid'; // To generate a unique filename
 import PDFParser from 'pdf2json'; // To parse the pdf
 import { createScreenPlay } from "@v1/supabase/mutations";
+import { parse } from "@v1/script-to-audio/parsers";
+import { getTextFromPdf } from "@v1/script-to-audio/pdfToText";
 // import { getServerSession } from "next-auth/next"
 // import { authOptions } from "./auth/[...nextauth]"
 import { consoleIntegration } from '@sentry/nextjs';
@@ -50,19 +52,21 @@ export async function POST(req: NextRequest, res: NextResponse) {
       const pdfParser = new (PDFParser as any)(null, 1);
 
       // See pdf2json docs for more info on how the below works.
-      const res = await new Promise((resolve, reject) => {
+      // const res = await new Promise((resolve, reject) => {
 
-        pdfParser.on('pdfParser_dataError', (errData: any) => {
-            reject(errData.parserError)
-        });
+      //   pdfParser.on('pdfParser_dataError', (errData: any) => {
+      //       reject(errData.parserError)
+      //   });
         
-        pdfParser.on('pdfParser_dataReady', () => {
-          parsedText = (pdfParser as any)?.getRawTextContent()
-          resolve(parsedText)
-        });
+      //   pdfParser.on('pdfParser_dataReady', () => {
+      //     parsedText = (pdfParser as any)?.getRawTextContent()
+      //     resolve(parsedText)
+      //   });
 
-        pdfParser.loadPDF(tempFilePath);
-      })
+      //   pdfParser.loadPDF(tempFilePath);
+      // })
+
+      parsedText = await getTextFromPdf(tempFilePath)
 
       console.log('here-----------')
 
@@ -74,14 +78,21 @@ export async function POST(req: NextRequest, res: NextResponse) {
   //   console.log('No files found.');
   // }
 
+  const parsed = await parse(parsedText)
+
+  console.log('parsed-------', parsed)
+
+
     const screenRes = await createScreenPlay(
       userId,
     {
-      title: '', 
+      // title: parsed?.output && parsed.output.html.script, 
+      title: parsed?.dialog && parsed.dialog[0]?.text.toLowerCase(), 
       type: 'movie', 
-      characters: [], 
+      characters: (parsed?.characterGenders?.length ? parsed?.characterGenders : parsed?.characterGenders) || [], 
       total_lines: 0, 
-      screen_play_text: parsedText
+      screen_play_text:  parsed?.output && parsed.output.html.script
+      // screen_play_text: parsedText
     }
   )
 

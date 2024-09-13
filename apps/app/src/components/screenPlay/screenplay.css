@@ -1,0 +1,33 @@
+.script-text p:first-child { 
+    text-align: center;
+}
+
+.script-text {
+    padding: 45px 131px;
+    margin-top: 50px;
+    flex: 1;
+}
+.script-characters {
+    align-self: flex-start;
+    position: sticky;
+    top: 0;
+    margin-top: 50px;
+}
+
+.script-text p {
+    padding: 15px 0;
+}
+  
+.script-text div {
+    text-align: center;
+    padding: 15px 0;
+}
+
+.script-heading {
+    text-transform: capitalize;
+}
+
+.script-card {
+    padding-bottom: 50px;
+    overflow: scroll
+}

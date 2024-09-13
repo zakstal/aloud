@@ -25,27 +25,41 @@ export const columns: ColumnDef<Employee>[] = [
     enableHiding: false
   },
   {
-    accessorKey: 'first_name',
-    header: 'NAME'
+    accessorKey: 'title',
+    header: 'TITLE'
   },
   {
-    accessorKey: 'country',
-    header: 'COUNTRY'
+    accessorKey: 'created_at',
+    header: 'Created',
+    accessorFn: (row) => {
+      console.log('row----------', row.created_at)
+      // return new Date(row.created_at).toLocaleDateString()
+      return new Intl.DateTimeFormat('en-GB', {
+        dateStyle: 'full', 
+        timeStyle: 'short',
+        hour12: true,
+        // hour: "numeric",
+        // minute: "numeric", 
+      }).format(new Date(row.created_at))
+    }
   },
   {
-    accessorKey: 'email',
-    header: 'EMAIL'
+    accessorKey: 'none',
+    header: ''
   },
   {
-    accessorKey: 'job',
-    header: 'COMPANY'
+    accessorKey: 'none',
+    header: ''
   },
   {
-    accessorKey: 'gender',
-    header: 'GENDER'
+    accessorKey: 'none',
+    header: ''
   },
   {
     id: 'actions',
-    cell: ({ row }) => <CellAction data={row.original} />
+    cell: ({ row }) => <CellAction   onClick={() => {
+      console.log('clicked---222---------')
+    }}
+    data={row.original} />
   }
 ];

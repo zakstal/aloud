@@ -1,4 +1,5 @@
 import { Fountain } from 'fountain-js';
+import { getGenders } from '../genderapi'
 
 
 
@@ -127,6 +128,15 @@ function is(input, text) {
     return input === text
 }
 
+const excludNames = [
+  'WRITTEN',
+  'WRITTEN BY',
+  'INT',
+  'EXT', 
+  'I',
+  '--',
+]
+
 function getDialog (output) {
     let isDialog = false
     const toProcess = []
@@ -147,7 +157,12 @@ function getDialog (output) {
         }
       
         if (isDialog && character && is(tokenType, 'dialogue')) {
-            const characterName = character.split(" ")[0]
+
+          // Identify mistakes in the parser
+          const characterName = character.endsWith(')') ? character.replace(/\(.+\)/g, '').trim() : character
+          if (excludNames.some(name => characterName.startsWith(name))) continue
+          if (characterName.split(' ').length > 3) continue // arbitrary name length
+
             toProcess.push({
                 characterName,
                 // character: characters[characterName],
@@ -167,13 +182,29 @@ function getDialog (output) {
     return toProcess
 }
 
-export function parse(scriptText) {
+
+
+const getCharacters = (dialog) => {
+  const characters = new Set()
+  dialog.map(dialogObj => characters.add(dialogObj?.characterName))
+  return Array.from(characters).filter(name => {
+    if (name.includes('@')) return false
+    if (excludNames.includes(name)) return false
+
+    return true
+  })
+}
+
+export async function parse(scriptText) {
     let fountain = new Fountain();
     let output = fountain.parse(scriptText, true);
     const dialog = getDialog(output)    
-
+    const characters = getCharacters(dialog)
+    const characterGenders = await getGenders(characters)
     return {
         dialog,
         output,
+        characters,
+        characterGenders,
     }
 }

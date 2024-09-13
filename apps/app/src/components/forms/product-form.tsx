@@ -77,9 +77,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [imgLoading, setImgLoading] = useState(false);
-  const title = initialData ? 'Edit product' : 'Create product';
-  const description = initialData ? 'Edit a product.' : 'Add a new product';
-  const toastMessage = initialData ? 'Product updated.' : 'Product created.';
+  const title = initialData ? 'Edit product' : 'Add a screenplay';
+  const description = initialData ? 'Edit a product.' : '';
+  const toastMessage = initialData ? 'Product updated.' : 'Screenplay created.';
   const action = initialData ? 'Save changes' : 'Create';
 
   const defaultValues = initialData
@@ -164,14 +164,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="w-full space-y-8"
+          className="w-8/12 space-y-8 text-center"
         >
           <FormField
             control={form.control}
             name="imgUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Images</FormLabel>
                 <FormControl>
                   <FileUpload
                     onChange={field.onChange}
@@ -179,7 +178,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                     onRemove={field.onChange}
                     onprocessfile={fileItems => {
                       // Set currently active file objects to this.state
-                      console.log('file items--------', fileItems)
                       // router.push(`/screen-play/products`);
                     }}
                     onload={(response) => {
@@ -195,9 +193,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               </FormItem>
             )}
           />
-          <Button disabled={loading} className="ml-auto" type="submit">
-            {action}
-          </Button>
         </form>
       </Form>
     </>

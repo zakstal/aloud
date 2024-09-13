@@ -22,7 +22,7 @@ export async function updateUser(userId: string, data: TablesUpdate<"users">) {
 interface CreateScreenplayInput {
   title: string;
   type: "movie" | "tv_show";
-  characters: { name: string; lines: { text: string; order: number }[] }[];
+  characters: { name: string; likelyGender: string | null }[];
   total_lines: number;
   screen_play_text: string;
 }
@@ -61,25 +61,28 @@ export async function createScreenPlay(
       throw screenplayError;
     }
 
-    return screenplay
 
-    // const screenplayId = screenplay.id;
+    const screenplayId = screenplay.id;
 
     // // Insert characters
-    // const charactersInsert = characters.map((character) => ({
-    //   screenplay_id: screenplayId,
-    //   name: character.name,
-    // }));
+    const charactersInsert = characters.map((obj) => ({
+      screenplay_id: screenplayId,
+      name: obj.name,
+      gender: obj?.likelyGender,
+    }));
 
-    // const { data: insertedCharacters, error: charactersError } = await supabase
-    //   .from("characters")
-    //   .insert(charactersInsert)
-    //   .select("id, name"); // Fetch the inserted character IDs
+    
 
-    // if (charactersError) {
-    //   throw charactersError;
-    // }
+    const { data: insertedCharacters, error: charactersError } = await supabase
+      .from("characters")
+      .insert(charactersInsert)
+      .select("id, name"); // Fetch the inserted character IDs
 
+    if (charactersError) {
+      throw charactersError;
+    }
+
+    return screenplay
     // // Insert lines for each character
     // const linesInsert = [];
     // insertedCharacters.forEach((character, index) => {

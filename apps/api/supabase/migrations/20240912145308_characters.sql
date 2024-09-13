@@ -2,6 +2,7 @@ create table public.characters (
     id uuid primary key default gen_random_uuid(),
     screenplay_id uuid not null,
     name text not null,
+    gender text not null,
     created_at timestamptz not null default now(),
     constraint fk_character_screenplay foreign key (screenplay_id) references public.screenplays(id) on delete cascade
 );

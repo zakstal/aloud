@@ -15,8 +15,6 @@ export const createClient = () =>
 
 const supabase = createClient()
 
-console.log('supabase00000', supabase)
-
 const SessionContext = createContext<{
   session: Session | null;
 }>({

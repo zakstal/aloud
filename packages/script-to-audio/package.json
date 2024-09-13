@@ -1,11 +1,12 @@
 {
-  "name": "script-to-speech",
+  "name": "@v1/script-to-audio",
   "version": "1.0.0",
-  "description": "",
-  "type": "module",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "clean": "rm -rf .turbo node_modules",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit"
   },
   "author": "",
   "license": "ISC",
@@ -19,5 +20,10 @@
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.0"
+  },
+  "exports": {
+    "./parsers": "./src/scriptParsers/fountainParser.js",
+    "./pdfToText": "./src/pdfToText.js"
+
   }
 }

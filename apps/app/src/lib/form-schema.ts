@@ -11,7 +11,7 @@ export const profileSchema = z.object({
     .string()
     .email({ message: 'Product Name must be at least 3 characters' }),
   contactno: z.coerce.number(),
-  country: z.string().min(1, { message: 'Please select a category' }),
+  // country: z.string().min(1, { message: 'Please select a category' }),
   city: z.string().min(1, { message: 'Please select a category' }),
   // jobs array is for the dynamic fields
   jobs: z.array(

@@ -34,7 +34,7 @@ export async function getScreenPlays(screenPlayId) {
   try {
     const result = await supabase
       .from("screenplays")
-      .select("*")
+      .select("title, created_at, id")
 
     return result;
   } catch (error) {
@@ -48,8 +48,20 @@ export async function getScreenPlay(screenPlayId) {
   try {
     const result = await supabase
       .from("screenplays")
-      .select("*")
-      .eq('screenplay_id', screenPlayId);
+      .select(`
+        id,
+        title,
+        type,
+        created_at,
+        screen_play_text,
+        characters (
+          id,
+          name,
+          gender,
+          created_at
+        )
+      `)
+      .eq('id', screenPlayId);
 
     return result;
   } catch (error) {
