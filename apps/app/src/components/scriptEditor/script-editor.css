@@ -1,0 +1,20 @@
+.script-editor .dialogue { 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column
+}
+
+.script-editor p {
+    padding: 0;
+}
+
+.script-editor h3 {
+    padding: 15px 0;
+}
+
+.script-editor .dialogue p {
+    text-align: left;
+    padding: 15px 0;
+    max-width: 385px;
+}

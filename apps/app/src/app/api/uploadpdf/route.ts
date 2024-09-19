@@ -81,7 +81,8 @@ export async function POST(req: NextRequest, res: NextResponse) {
       type: 'movie', 
       characters: (parsed?.characterGenders?.length ? parsed?.characterGenders : parsed?.characterGenders) || [], 
       total_lines: 0, 
-      screen_play_text:  parsed?.output && parsed.output.html.script
+      screen_play_text:  parsed?.output && parsed.output.html.script,
+      screen_play_fountain:  parsed?.output && parsed.output.tokens
       // screen_play_text: parsedText
     }
   )

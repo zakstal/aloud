@@ -12,6 +12,7 @@ import AudioPlayer from '@/components/ui/AudioPlayer'
 import { Button } from '@/components/ui/button';
 import { ScrollText } from 'lucide-react';
 import { Progress } from '@/components/ui/progress'
+import { ScriptEditor } from '@/components/scriptEditor/script-editor'
 
 export default function ScreenPlayConatiner({
   screenPlayText,
@@ -22,6 +23,7 @@ export default function ScreenPlayConatiner({
   audioVersionNumber,
   processAudio,
   audioVersions,
+  scriptTokens,
 }) {
   const [voiceSelectionOpen, setVoiceSelectionOpen] = useState(false)
   const [selectedCharacter, setSelectedCharacter] = useState(null)
@@ -83,7 +85,11 @@ export default function ScreenPlayConatiner({
                 }
             </div>
         </aside>
-        <div className="script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-5xl font-courier" contentEditable={true} dangerouslySetInnerHTML={{ __html: screenPlayText?.replace(/&nbsp;/g, '') }}></div>
+        {/* <div className="script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-5xl font-courier" contentEditable={true} dangerouslySetInnerHTML={{ __html: screenPlayText?.replace(/&nbsp;/g, '') }}></div> */}
+        < ScriptEditor
+            className="script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-5xl font-courier"
+            scriptTokens={scriptTokens}
+        />
     </div>
   );
 }

@@ -74,7 +74,6 @@ export default function Page() {
 
   const data = screenPlay?.data?.data && screenPlay?.data?.data
 
-  console.log('screenplay', data)
   const audioScreenPlayVersion = data?.audio_screenplay_versions && data?.audio_screenplay_versions[0]
   const audioVersionNumber = audioScreenPlayVersion?.version_number
 
@@ -92,6 +91,7 @@ export default function Page() {
           voices={voices}
           audioVersionNumber={audioVersionNumber}
           audioVersions={audioVersions}
+          scriptTokens={data?.screen_play_fountain}
           processAudio={async () => {
             processAudio({ screenPlayVersionId: audioScreenPlayVersion.id })
           }}
