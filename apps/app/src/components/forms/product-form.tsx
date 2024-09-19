@@ -164,7 +164,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="w-8/12 space-y-8 text-center"
+          className="w-8/12 space-y-8 text-center max-w-3xl"
         >
           <FormField
             control={form.control}

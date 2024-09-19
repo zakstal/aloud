@@ -7,7 +7,25 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 // import { auth } from '@/auth';
 import { getUser } from "@v1/supabase/queries";
+import localFont from '@next/font/local'
 const inter = Inter({ subsets: ['latin'] });
+
+const courierPrime = localFont({
+  src: [
+    {
+      path: '../../public/fonts/Courier_Prime/CourierPrime-Regular.ttf',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../../public/fonts/Courier_Prime/CourierPrime-Bold.ttf',
+      weight: '700',
+      style: 'normal',
+    },
+
+  ],
+  variable: '--font-type-courier-regular'
+})
 
 export const metadata: Metadata = {
   title: 'Next Shadcn',
@@ -31,7 +49,7 @@ export default async function RootLayout({
   // const session = await auth();
   // const session = await getUser();
   return (
-    <html lang="en">
+    <html lang="en" className={`${courierPrime.variable} font-courierprime`}>
       <body
         className={`${inter.className} overflow-hidden `}
         suppressHydrationWarning={true}

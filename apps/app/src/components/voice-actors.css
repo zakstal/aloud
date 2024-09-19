@@ -1,0 +1,56 @@
+@keyframes chevonIn {
+    0% {
+        opacity: 0;
+        transform: translateX(20px)
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0)
+    }
+}
+
+@keyframes receed {
+    0% {
+        opacity: 1;
+        transform: scale(1)
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.5)
+    }
+}
+
+.chevron {
+    opacity: 0;
+    transform: translateX(10px);
+}
+
+.chevron-in {
+    opacity: 0;
+    transform: translateX(10px);
+    animation: 300ms ease-in chevonIn forwards;
+}
+
+.receed {
+    animation: 300ms ease-in chevonIn receed;
+}
+
+@keyframes appear {
+    0% {
+        opacity: 0;
+        transform: translateY(15px)
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0)
+    }
+}
+
+.appear {
+    opacity: 0;
+    transform: translateY(15px);
+}
+.appear-in {
+    animation: 300ms ease-out appear forwards;
+}
+

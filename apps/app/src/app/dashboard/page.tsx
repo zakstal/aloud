@@ -1,9 +1,11 @@
+"use client";
+
 import { AreaGraph } from '@/components/charts/area-graph';
 import { BarGraph } from '@/components/charts/bar-graph';
 import { PieGraph } from '@/components/charts/pie-graph';
 import { CalendarDateRangePicker } from '@/components/date-range-picker';
 import PageContainer from '@/components/layout/page-container';
-import { RecentSales } from '@/components/recent-sales';
+import { Characters } from '@/components/characters';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -150,7 +152,7 @@ export default function page() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <RecentSales />
+                  <Characters />
                 </CardContent>
               </Card>
               <div className="col-span-4">

@@ -2,18 +2,22 @@
   "name": "@v1/script-to-audio",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "getVoiceAvatars": "tsc ./src/voices.ts & node ./src/getVoiceAvatars.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@next/font": "^14.2.12",
     "audioconcat": "^0.1.4",
     "dotenv": "^16.4.5",
     "elevenlabs": "^0.15.0",
+    "ffprobe-client": "^1.1.6",
     "fountain-js": "^1.2.4",
     "pdf-to-text": "^0.0.7",
     "uuid": "^10.0.0"
@@ -23,7 +27,9 @@
   },
   "exports": {
     "./parsers": "./src/scriptParsers/fountainParser.js",
-    "./pdfToText": "./src/pdfToText.js"
-
+    "./pdfToText": "./src/pdfToText.js",
+    "./voices": "./src/voices.ts",
+    "./voiceApis": "./src/voiceApis",
+    "./audioUtils": "./src/audioUtils.js"
   }
 }

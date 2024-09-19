@@ -1,0 +1,46 @@
+@keyframes headerIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-15px)
+    }
+    80% {
+        opacity: 0.2;
+
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0)
+    }
+}
+
+@keyframes appear {
+    0% {
+        opacity: 0;
+        transform: translateY(15px)
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0)
+    }
+}
+
+
+
+.header {
+    opacity: 0;
+    transform: translateY(-10px);
+}
+
+.header-in {
+    opacity: 0;
+    transform: translateY(-21px);
+    animation: 400ms ease-in headerIn forwards;
+}
+
+.appear {
+    opacity: 0;
+    transform: translateY(15px);
+}
+.appear-in {
+    animation: 300ms ease-out appear forwards;
+}

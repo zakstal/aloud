@@ -61,3 +61,5 @@ tailwind.css
 .trigger
 
 packages/scriptToAudio/readings
+
+*.mp3

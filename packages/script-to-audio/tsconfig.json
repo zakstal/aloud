@@ -1,5 +1,13 @@
 {
   "extends": "@v1/typescript/base.json",
   "include": ["src", "."],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+
+  "compilerOptions": {
+    "moduleResolution": "NodeNext",
+    "target": "ES6",
+    "module": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    }
 }

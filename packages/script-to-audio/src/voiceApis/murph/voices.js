@@ -1,4 +1,4 @@
-[
+export const voices = [
     {
         "voiceId": "en-UK-hazel",
         "displayName": "Hazel (F)",

@@ -1,4 +1,5 @@
 import * as dotenv from "dotenv";
+import { download } from '@v1/script-to-audio/audioUtils';
 
 dotenv.config();
 
@@ -144,15 +145,27 @@ example response:
 
 export async function textToSpeech(text, config = {}) {
     // TODO limit what can be sent in the config
-    const body = Object.assign({}, {
-        voiceId: "en-UK-hazel",
-        // format: "WAV",
-        format: "MP3",
-        channelType: "MONO",
-        sampleRate: 24000,
-        modelVersion: "GEN2",
-        text
-    }, config)
+
+    let body = null
+    const fileName = config.fileName
+    delete config.fileName
+    try {
+        body = Object.assign({}, {
+            voiceId: "en-UK-hazel",
+            // format: "WAV",
+            format: "MP3",
+            channelType: "MONO",
+            sampleRate: 24000,
+            modelVersion: "GEN2",
+            text,
+        }, config)
+    } catch(e) {
+        throw e
+    }
+
+    if (!fileName) {
+        throw 'fileName is required in options'
+    }
 
     const bodyText = JSON.stringify(body)
 
@@ -166,7 +179,11 @@ export async function textToSpeech(text, config = {}) {
         const json = await res.json()
 
         if (res.ok) {
-            return await json
+            await download(json.audioFile, fileName)
+            return await {
+                audioLengthInSeconds: json.audioLengthInSeconds,
+                original: json,
+            }
         } else {
             throw json
         }

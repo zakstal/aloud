@@ -54,9 +54,6 @@ async function run() {
         // console.log("Getting audio for", processUnit.characterName)
         // console.log("Getting audio text", processUnit.text)
         const voiceId = characterMap[processUnit.characterName]
-        console.log('processUnit', processUnit)
-        console.log('voiceId-----', voiceId)
-        console.log('count-----', count)
         const style = characterMapSTYLE[processUnit.characterName]
 
         if (!voiceId) continue

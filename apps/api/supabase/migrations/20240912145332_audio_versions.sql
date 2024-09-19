@@ -1,10 +1,13 @@
 create table public.audio_version (
     id uuid primary key default gen_random_uuid(),
     line_id uuid not null,
+    screenplay_id uuid not null,
     version_number int not null,
-    audio_file_url text not null,
+    duration_in_seconds float,
+    audio_file_url text,
     created_at timestamptz not null default now(),
-    constraint fk_audio_version_line foreign key (line_id) references public.lines(id) on delete cascade
+    constraint fk_audio_version_line foreign key (line_id) references public.lines(id) on delete cascade,
+    constraint fk_audio_version_screenplay foreign key (screenplay_id) references public.screenplays(id) on delete cascade
 );
 
 create index idx_audio_version_line_id on public.audio_version(line_id);

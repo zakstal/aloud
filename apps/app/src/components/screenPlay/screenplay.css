@@ -3,15 +3,14 @@
 }
 
 .script-text {
-    padding: 45px 131px;
-    margin-top: 50px;
+    padding: 45px 147px;
     flex: 1;
 }
 .script-characters {
     align-self: flex-start;
     position: sticky;
     top: 0;
-    margin-top: 50px;
+    margin-top: 30px;
 }
 
 .script-text p {
@@ -28,6 +27,10 @@
 }
 
 .script-card {
-    padding-bottom: 50px;
+    /* padding-bottom: 50px; */
     overflow: scroll
+}
+
+.script-parent {
+    height: 100vh;
 }

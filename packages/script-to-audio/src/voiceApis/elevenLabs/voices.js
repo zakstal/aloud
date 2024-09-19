@@ -1,4 +1,4 @@
-{
+export const voices = {
     "voices": [
         {
             "voice_id": "EXAVITQu4vr4xnSDxMaL",

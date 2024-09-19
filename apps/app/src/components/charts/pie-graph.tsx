@@ -3,7 +3,9 @@
 import * as React from 'react';
 import { TrendingUp } from 'lucide-react';
 import { Label, Pie, PieChart } from 'recharts';
-
+import { Button } from '@/components/ui/button';
+import { ScrollText } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -53,6 +55,7 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function PieGraph() {
+  const router = useRouter();
   const totalVisitors = React.useMemo(() => {
     return chartData.reduce((acc, curr) => acc + curr.visitors, 0);
   }, []);
@@ -60,15 +63,14 @@ export function PieGraph() {
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Pie Chart - Donut with Text</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+        <CardTitle>No scripts yet!</CardTitle>
+        <CardDescription>Upload one now! Just clikc the upload button.</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square max-h-[360px]"
+         <div
+          className="mx-auto p-8 max-h-[160px] flex items-center justify-center"
         >
-          <PieChart>
+        {/*  <PieChart>
             <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent hideLabel />}
@@ -110,16 +112,25 @@ export function PieGraph() {
                 }}
               />
             </Pie>
-          </PieChart>
-        </ChartContainer>
+          </PieChart>*/}
+           <Button
+            type="button"
+            onClick={() => router.push(`/dashboard/screen-play/new`)}
+            variant="destructive"
+            size="lg"
+          >
+           <span className="pr-2"> Add a script now! </span>
+            <ScrollText className="h-4 w-4" />
+          </Button>
+        </div> 
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex items-center gap-2 font-medium leading-none">
+        {/* <div className="flex items-center gap-2 font-medium leading-none">
           Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
         </div>
         <div className="leading-none text-muted-foreground">
           Showing total visitors for the last 6 months
-        </div>
+        </div> */}
       </CardFooter>
     </Card>
   );

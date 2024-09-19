@@ -1,10 +1,12 @@
-'use client';
+"use client";
+
 import { Checkbox } from '@/components/ui/checkbox';
 import { Employee } from '@/constants/data';
 import { ColumnDef } from '@tanstack/react-table';
 import { CellAction } from './cell-action';
 
-export const columns: ColumnDef<Employee>[] = [
+// export const columns: ColumnDef<Employee>[] = [
+export const columns = (): ColumnDef<Employee>[] => ([
   {
     id: 'select',
     header: ({ table }) => (
@@ -32,7 +34,6 @@ export const columns: ColumnDef<Employee>[] = [
     accessorKey: 'created_at',
     header: 'Created',
     accessorFn: (row) => {
-      console.log('row----------', row.created_at)
       // return new Date(row.created_at).toLocaleDateString()
       return new Intl.DateTimeFormat('en-GB', {
         dateStyle: 'full', 
@@ -43,23 +44,22 @@ export const columns: ColumnDef<Employee>[] = [
       }).format(new Date(row.created_at))
     }
   },
-  {
-    accessorKey: 'none',
-    header: ''
-  },
-  {
-    accessorKey: 'none',
-    header: ''
-  },
-  {
-    accessorKey: 'none',
-    header: ''
-  },
+  // {
+  //   accessorKey: 'none',
+  //   header: ''
+  // },
+  // {
+  //   accessorKey: 'none',
+  //   header: ''
+  // },
+  // {
+  //   accessorKey: 'none',
+  //   header: ''
+  // },
   {
     id: 'actions',
-    cell: ({ row }) => <CellAction   onClick={() => {
-      console.log('clicked---222---------')
-    }}
+    cell: ({ row }) => <CellAction 
     data={row.original} />
   }
-];
+]
+);

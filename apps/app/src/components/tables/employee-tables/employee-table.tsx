@@ -1,4 +1,5 @@
-'use client';
+"use client";
+
 import {
   ColumnDef,
   PaginationState,
@@ -49,7 +50,7 @@ interface DataTableProps<TData, TValue> {
 }
 
 export function EmployeeTable<TData, TValue>({
-  columns,
+  columnsFunc,
   data,
   pageNo,
   searchKey,
@@ -58,6 +59,7 @@ export function EmployeeTable<TData, TValue>({
   pageSizeOptions = [10, 20, 30, 40, 50],
   onRowClick,
 }: DataTableProps<TData, TValue>) {
+  const columns = columnsFunc()
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -128,7 +130,7 @@ export function EmployeeTable<TData, TValue>({
     manualFiltering: true,
   });
 
-  const searchValue = table.getColumn(searchKey)?.getFilterValue() as string;
+  const searchValue = table.getColumn('')?.getFilterValue() as string;
 
   // React.useEffect(() => {
   //   if (debounceValue.length > 0) {
@@ -233,7 +235,6 @@ export function EmployeeTable<TData, TValue>({
                       onClick={() => {
                         if (cell.id.includes('actions')) return
                         if (cell.id.includes('select')) return
-                        console.log('clicked------------',row.original, cell.id) 
                         router.push(`/dashboard/screen-play/${row.original.id}`)
                       }}
                     >
@@ -260,7 +261,7 @@ export function EmployeeTable<TData, TValue>({
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
 
-      <div className="flex flex-col items-center justify-end gap-2 space-x-2 py-4 sm:flex-row">
+      {/* <div className="flex flex-col items-center justify-end gap-2 space-x-2 py-4 sm:flex-row">
         <div className="flex w-full items-center justify-between">
           <div className="flex-1 text-sm text-muted-foreground">
             {table.getFilteredSelectedRowModel().rows.length} of{' '}
@@ -337,7 +338,7 @@ export function EmployeeTable<TData, TValue>({
             </Button>
           </div>
         </div>
-      </div>
+      </div> */}
     </>
   );
 }

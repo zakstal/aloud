@@ -1,6 +1,7 @@
 'use client';
 import { AlertModal } from '@/components/modal/alert-modal';
 import { Button } from '@/components/ui/button';
+import { deleteScreenPlayPermanatlyAction } from '@/actions/screenPlays/delete-screen-pay-permanat'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +23,11 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
-  const onConfirm = async () => {};
+  const onConfirm = async () => {
+    deleteScreenPlayPermanatlyAction({ screenPlayId: data.id })
+    setOpen(false)
+    router.refresh()
+  };
 
   return (
     <>

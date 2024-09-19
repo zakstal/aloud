@@ -10,10 +10,8 @@ import { getTextFromPdf } from "@v1/script-to-audio/pdfToText";
 import { consoleIntegration } from '@sentry/nextjs';
 
   
-
+//TODO make sure route is behind auth
 export async function POST(req: NextRequest, res: NextResponse) {
-  // const session = await getServerSession(req, res)
-  // console.log('session-------', session)
   const formData: FormData = await req.formData();
   const uploadedFiles = formData.getAll('filepond');
   let fileName = '';
@@ -21,15 +19,12 @@ export async function POST(req: NextRequest, res: NextResponse) {
 
   // TODO fix this
   const userId = req.headers.get("x-customheader") as string;
-  console.log("userId--------", userId)
   if (uploadedFiles && uploadedFiles.length > 0) {
     const uploadedFile = uploadedFiles[1];
     console.log('Uploaded file:', uploadedFile);
 
     // Check if uploadedFile is of type File
-    console.log("here 1")
     // if (uploadedFile instanceof 'File') {
-      console.log("here 2")
       // Generate a unique filename
       fileName = uuidv4();
 
@@ -68,26 +63,21 @@ export async function POST(req: NextRequest, res: NextResponse) {
 
       parsedText = await getTextFromPdf(tempFilePath)
 
-      console.log('here-----------')
-
-
     } else {
       console.log('Uploaded file is not in the expected format.');
     }
-  // } else {
-  //   console.log('No files found.');
-  // }
-
-  const parsed = await parse(parsedText)
-
-  console.log('parsed-------', parsed)
-
-
+    // } else {
+      //   console.log('No files found.');
+      // }
+      
+    const parsed = await parse(parsedText)
+      
     const screenRes = await createScreenPlay(
       userId,
     {
       // title: parsed?.output && parsed.output.html.script, 
       title: parsed?.dialog && parsed.dialog[0]?.text.toLowerCase(), 
+      dialog: parsed?.dialog,
       type: 'movie', 
       characters: (parsed?.characterGenders?.length ? parsed?.characterGenders : parsed?.characterGenders) || [], 
       total_lines: 0, 
@@ -95,10 +85,6 @@ export async function POST(req: NextRequest, res: NextResponse) {
       // screen_play_text: parsedText
     }
   )
-
-  console.log("screenRes-------", screenRes)
-
-  console.log("parsedText----------", parsedText)
   const response = new NextResponse(JSON.stringify({id: screenRes?.id, parsedText }));
   response.headers.set('FileName', fileName);
   return response;

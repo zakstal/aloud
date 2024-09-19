@@ -1,4 +1,5 @@
-import { Fountain } from 'fountain-js';
+// import { Fountain } from 'fountain-js';
+import fountain from './fountainParser2'
 import { getGenders } from '../genderapi'
 
 
@@ -196,8 +197,9 @@ const getCharacters = (dialog) => {
 }
 
 export async function parse(scriptText) {
-    let fountain = new Fountain();
+    // let fountain = new Fountain();
     let output = fountain.parse(scriptText, true);
+    console.log("scriptText", output.tokens)
     const dialog = getDialog(output)    
     const characters = getCharacters(dialog)
     const characterGenders = await getGenders(characters)

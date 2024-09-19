@@ -1,0 +1,81 @@
+"use client"
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AudioPlayerButton } from '@/components/ui/audioButtonOnly'
+
+type characterInput = {
+  name: string;
+  gender: string;
+  stryle: string;
+  assigned: string;
+  preview: string;
+  avatar: string;
+  className: string | null;
+  onClick: () => {} | null;
+}
+
+export type CharacterType = {
+  name: string,
+  gender: string,
+}
+
+
+export function Character ({
+  name = '',
+  gender = '',
+  onClick,
+  className = '',
+  preview,
+  avatar,
+  style,
+  assigned }: characterInput) {
+  const abbreveation = name?.split(' ')?.map((word: string) => word && word[0]?.toUpperCase())?.join('')
+  return (
+    <div
+      
+      style={style}
+      className={"flex items-center cursor-pointer hover:bg-zinc-100 pb-2 rounded-lg items-start" + className}
+    >
+      <div className="flex items-center w-40" style={{ flex: '2'}} onClick={onClick}>
+        <Avatar className="h-9 w-9">
+          <AvatarImage src={avatar} alt="Avatar" />
+          <AvatarFallback>{abbreveation}</AvatarFallback>
+        </Avatar>
+        <div className="ml-4 space-y-1">
+          <p className="text-sm font-medium leading-none">{name}</p>
+          <p className="text-xs text-muted-foreground italic">
+            {gender}
+          </p>
+        </div>
+        {/* <div className="ml-auto font-medium">+$1,999.00</div> */}
+      </div>
+      <div className="max-w-40" onClick={onClick} >
+        {
+          assigned ? (
+            !assigned?.voice_id
+              ? <p className="text-sm font-medium leading-none">{''}</p>
+              :  <div className="ml-4 space-y-1" >
+              <p className="text-sm font-medium leading-none">{assigned.voice_name}</p>
+              <p className="text-xs text-muted-foreground italic self-stretch pr-4">
+                {`${assigned.voice_data.gender}  ${assigned.voice_data.age}  ${assigned.voice_data.accent}`}
+              </p>
+            </div>
+          )
+          : null
+        }
+      </div>
+      
+        {
+
+        preview 
+        ?
+        <div className="pl-16" style={{ flex: '1'}}> 
+          <AudioPlayerButton
+              url={preview}
+            />
+        </div>
+        : null
+        }
+    </div>
+  )
+}

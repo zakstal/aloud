@@ -135,3 +135,13 @@ Vercel deployment will guide you through creating a Supabase account and project
     src="https://hackernews-badge.vercel.app/api?id=41408929"
   />
 </a>
+
+
+## Services we are using/paying for
+- supabase, not paying for yet
+- namesor.app, free tire - get name genders
+
+
+## Issues
+- get real images for the in the public space for voice actors
+- character column on the scren play detail page goes to low on the page

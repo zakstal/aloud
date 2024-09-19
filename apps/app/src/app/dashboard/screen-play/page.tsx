@@ -1,6 +1,8 @@
-"use clinet"
+"use clinet";
+
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import PageContainer from '@/components/layout/page-container';
+import { deleteScreenPlayPermanatlyAction } from '@/actions/screenPlays/delete-screen-pay-permanat'
 import { columns } from '@/components/tables/employee-tables/columns';
 import { EmployeeTable } from '@/components/tables/employee-tables/employee-table';
 import { buttonVariants } from '@/components/ui/button';
@@ -11,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { getScreenPlays } from '@/actions/screenPlays/get-screen-plays'
+import { PieGraph } from '@/components/charts/pie-graph';
 
 
 const breadcrumbItems = [
@@ -31,7 +34,8 @@ export default async function page({ searchParams }: paramsProps) {
   const offset = (page - 1) * pageLimit;
   const resplay = await getScreenPlays()
 
-  // console.log('resplay', resplay?.data?.data)
+  console.log('resplay', resplay?.data?.data)
+
   // const res = await fetch(
   //   `https://api.slingacademy.com/v1/sample-data/users?offset=${offset}&limit=${pageLimit}` +
   //     (country ? `&search=${country}` : '')
@@ -42,12 +46,12 @@ export default async function page({ searchParams }: paramsProps) {
   // const employee: Employee[] = employeeRes.users;
   return (
     <PageContainer>
-      <div className="space-y-4">
+      <div className="space-y-4 max-w-6xl">
         <Breadcrumbs items={breadcrumbItems} />
 
         <div className="flex items-start justify-between">
           <Heading
-            title={`Screenplays`}
+            title={`Screen plays`}
             description=""
           />
 
@@ -60,14 +64,23 @@ export default async function page({ searchParams }: paramsProps) {
         </div>
         <Separator />
 
-        <EmployeeTable
-          searchKey="country"
-          pageNo={page}
-          columns={columns}
-          totalUsers={totalUsers}
-          data={resplay?.data?.data}
-          pageCount={pageCount}
-        />
+        {
+          resplay?.data?.data.length 
+          ? <EmployeeTable
+            searchKey="country"
+            pageNo={page}
+            columnsFunc={columns}
+            totalUsers={totalUsers}
+            data={resplay?.data?.data}
+            pageCount={pageCount}
+            // onDelete={(id: string) => {
+            //   deleteScreenPlayPermanatlyAction({ screenPlayId: id })
+            // }}
+          />
+        : <div>
+          <PieGraph />
+        </div>
+        }
       </div>
     </PageContainer>
   );
