@@ -134,6 +134,9 @@ const excludNames = [
   'WRITTEN BY',
   'INT',
   'EXT', 
+  'THE END', 
+  'THE', 
+  'END', 
   'I',
   '--',
 ]

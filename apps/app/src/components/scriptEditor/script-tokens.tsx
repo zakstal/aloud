@@ -5,7 +5,29 @@
 
 'use strict';
 
-import { Children } from "react";
+const Heading = ({ id, variant = 'h1', text = '', sceneNumber, order }: { variant: string, text?: string, sceneNumber?: number | null, order: number | null }) => {
+    if (variant === 'h1') return <h1 key={id} data-order={order} >{text}</h1>
+    if (variant === 'h2') return <h2 key={id} data-order={order} >{text}</h2>
+    if (variant === 'h3') return <h3 key={id} data-order={order} id={sceneNumber?.toString()} className="font-courier font-bold">{text}</h3>
+    if (variant === 'h4') return <h4 key={id} data-order={order} >{text}</h4>
+
+    // TODO i know
+    if (variant === 'hr') return <hr key={id} data-order={order}/>
+    if (variant === 'br') return null
+}
+
+export const Paragraph = ({ id, text = '', type = '', order, dataDepth }: { text: string, type?: string, order: number, dataDepth?: number | null }) => {
+    return (
+        <p key={id} data-order={order} data-depth={dataDepth} className={type}>{text}</p>
+    )
+}
+
+
+const Div = ({ id, className = '', order, children }: { className?: string, order: number, children: any }) => {
+    return (
+        <div key={id} data-order={order}className={className}>{children}</div>
+    )
+}
 
 var regex = {
     title_page: /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/gim,
@@ -171,16 +193,7 @@ export const tokenize = function (script) {
     return tokens;
 };
 
-const Heading = ({ variant = 'h1', text = '', sceneNumber, order }: { variant: string, text?: string, sceneNumber?: number | null, order: number | null }) => {
-    if (variant === 'h1') return <h1 key={order} >{text}</h1>
-    if (variant === 'h2') return <h2 key={order} >{text}</h2>
-    if (variant === 'h3') return <h3 key={order} id={sceneNumber?.toString()} className="font-courier font-bold">{text}</h3>
-    if (variant === 'h4') return <h4 key={order} >{text}</h4>
 
-    // TODO i know
-    if (variant === 'hr') return <hr key={order}/>
-    if (variant === 'br') return null
-}
 
 
 var inline = {
@@ -221,20 +234,9 @@ inline.lexer = function (s) {
     return s.replace(/\[star\]/g, '*').replace(/\[underline\]/g, '_').replace(/<br\/>/g, '').trim();
 };
 
-const Paragraph = ({ text = '', type = '', order, dataDepth }: { text: string, type?: string, order: number, dataDepth?: number | null }) => {
-    return (
-        <p key={order} data-depth={dataDepth} className={type} dangerouslySetInnerHTML={{ __html: text?.replace(/&nbsp;/g, '') }}></p>
-    )
-}
-
-
-const Div = ({ className = '', order, children }: { className?: string, order: number, children: any }) => {
-    return (
-        <div key={order} className={className}>{children}</div>
-    )
-}
 
 export type Tokens = {
+    id?: stirng | null;
     text: string;
     type: 'action' | 'scene_heading' | 'dialogue_begin' | 'dialogue_end' | 'dialogue' | 'character' | 'transition';
     scene_number: number;
@@ -248,7 +250,7 @@ interface TokenContentInput {
 
 export const TokenContent = function ({ tokens }: TokenContentInput) {
     if (!tokens) return []
-    console.log("tokens", tokens)
+
     const title_page = []
     const htmlContent = []
     let tempHtml = []
@@ -261,63 +263,63 @@ export const TokenContent = function ({ tokens }: TokenContentInput) {
         token.text = inline.lexer(token.text);
 
         switch (token.type) {
-            case 'title': title_page.push(<Heading variant="h1" text={token.text} order={i}/>); title = token.text.replace('<br />', ' ').replace(/<(?:.|\n)*?>/g, ''); break;
-            case 'credit': title_page.push(<Paragraph order={i} type="credit" text={token.text}/>); break;
-            case 'author': title_page.push(<Paragraph order={i} type="authors" text={token.text}/>); break;
-            case 'authors': title_page.push(<Paragraph order={i} type="authors" text={token.text}/>); break;
-            case 'source': title_page.push(<Paragraph order={i} type="source" text={token.text}/>); break;
-            case 'notes': title_page.push(<Paragraph order={i} type="notes" text={token.text}/>); break;
-            case 'draft_date': title_page.push(<Paragraph order={i} type="draft-date" text={token.text} />); break;
-            case 'date': title_page.push(<Paragraph order={i} type="date" text={token.text}/>); break;
-            case 'contact': title_page.push(<Paragraph order={i} type="contact" text={token.text}/>); break;
-            case 'copyright': title_page.push(<Paragraph order={i} type="copyright" text={token.text}/>); break;
+            // edit node is not from foutain
+            case 'editNode': html.push(<Paragraph id={token.id} order={i} text={token.text} />); break;
+            case 'title': title_page.push(<Heading id={token.id} variant="h1" text={token.text} order={i}/>); title = token.text.replace('<br />', ' ').replace(/<(?:.|\n)*?>/g, ''); break;
+            case 'credit': title_page.push(<Paragraph id={token.id} order={i} type="credit" text={token.text}/>); break;
+            case 'author': title_page.push(<Paragraph id={token.id} order={i} type="authors" text={token.text}/>); break;
+            case 'authors': title_page.push(<Paragraph id={token.id} order={i} type="authors" text={token.text}/>); break;
+            case 'source': title_page.push(<Paragraph id={token.id} order={i} type="source" text={token.text}/>); break;
+            case 'notes': title_page.push(<Paragraph id={token.id} order={i} type="notes" text={token.text}/>); break;
+            case 'draft_date': title_page.push(<Paragraph id={token.id} order={i} type="draft-date" text={token.text} />); break;
+            case 'date': title_page.push(<Paragraph id={token.id} order={i} type="date" text={token.text}/>); break;
+            case 'contact': title_page.push(<Paragraph id={token.id} order={i} type="contact" text={token.text}/>); break;
+            case 'copyright': title_page.push(<Paragraph id={token.id} order={i} type="copyright" text={token.text}/>); break;
 
-            case 'scene_heading': html.push(<Heading variant="h3"  sceneNumber={token.scene_number} text={token.text} order={i} />); break;
-            case 'transition': html.push(<Heading variant="h2" text={token.text} order={i}/>); break;
+            case 'scene_heading': html.push(<Heading id={token.id} variant="h3"  sceneNumber={token.scene_number} text={token.text} order={i} />); break;
+            case 'transition': html.push(<Heading id={token.id} variant="h2" text={token.text} order={i}/>); break;
 
             case 'dual_dialogue_begin': 
-                // html.push(<Div className="dual-dialogue" order={i} />); 
+                // html.push(<Div id={token.id} className="dual-dialogue" order={i} />); 
                 html = htmlContent
-                html.push(<Div className="dual-dialogue" order={i} >{tempHtml.reverse()}</Div>); 
+                html.push(<Div id={token.id} className="dual-dialogue" order={i} >{tempHtml.reverse()}</Div>); 
                 tempHtml = []
                
                 break;
             case 'dialogue_begin':
                 
                 html = htmlContent
-                html.push(<Div className={"dialogue" + (token.dual ? ' ' + token.dual : '') } order={i} >{tempHtml.reverse()}</Div>); 
+                html.push(<Div id={token.id} className={"dialogue" + (token.dual ? ' ' + token.dual : '') } order={i} >{tempHtml.reverse()}</Div>); 
                 tempHtml = []
-                //  html.push(<Div className={"dialogue" + (token.dual ? ' ' + token.dual : '') } order={i} />); 
+                //  html.push(<Div id={token.id} className={"dialogue" + (token.dual ? ' ' + token.dual : '') } order={i} />); 
                 break;
-            case 'character': html.push(<Heading variant="h4" text={token.text} order={i}/>); break;
-            case 'parenthetical': html.push(<Paragraph order={i} type="parenthetical" text={token.text}/>); break;
-            case 'dialogue': html.push(<Paragraph order={i} text={token.text} />); break;
+            case 'character': html.push(<Heading id={token.id} variant="h4" text={token.text} order={i}/>); break;
+            case 'parenthetical': html.push(<Paragraph id={token.id} order={i} type="parenthetical" text={token.text}/>); break;
+            case 'dialogue': html.push(<Paragraph id={token.id} order={i} text={token.text} />); break;
             case 'dialogue_end': 
-                // html.push(<Div order={i}/>); 
+                // html.push(<Div id={token.id} order={i}/>); 
                 html = tempHtml
                 break;
             case 'dual_dialogue_end':
-                // html.push(<Div order={i}/>); 
+                // html.push(<Div id={token.id} order={i}/>); 
                 html = tempHtml
                 break;
 
-            case 'section': html.push(<Paragraph order={i} type="section" dataDepth={token.depth} text={token.text}/>); break;
-            case 'synopsis': html.push(<Paragraph order={i} type="synopsis" text={token.text}/>); break;
+            case 'section': html.push(<Paragraph id={token.id} order={i} type="section" dataDepth={token.depth} text={token.text}/>); break;
+            case 'synopsis': html.push(<Paragraph id={token.id} order={i} type="synopsis" text={token.text}/>); break;
 
             case 'note': html.push('<!-- ' + token.text + '-->'); break;
             case 'boneyard_begin': html.push('<!-- '); break;
             case 'boneyard_end': html.push(' -->'); break;
 
-            case 'action': html.push(<Paragraph order={i} text={token.text} />); break;
-            case 'centered': html.push(<Paragraph order={i} type="centered" text={token.text}/>); break;
+            case 'action': html.push(<Paragraph id={token.id} order={i} text={token.text} />); break;
+            case 'centered': html.push(<Paragraph id={token.id} order={i} type="centered" text={token.text}/>); break;
             
-            case 'page_break': html.push(<Heading variant="hr" order={i} />); break;
-            case 'line_break': html.push(<Heading variant="br" order={i} />); break;
+            case 'page_break': html.push(<Heading id={token.id} variant="hr" order={i} />); break;
+            case 'line_break': html.push(<Heading id={token.id} variant="br" order={i} />); break;
         }
     }
 
-    // return title_page;
-    console.log('html-------------', htmlContent)
     return (
         <>
             {title_page.reverse()}

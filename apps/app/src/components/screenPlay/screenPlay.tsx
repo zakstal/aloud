@@ -29,6 +29,7 @@ export default function ScreenPlayConatiner({
   const [selectedCharacter, setSelectedCharacter] = useState(null)
 
   if (!screenPlayText) return <div className="flex justify-center h-screen items-center"><Progress /></div>
+
   return (
     <div className="flex flex-row gap-4 text-lg script-parent items-streatch pl-4">
         <aside className="script-characters flex-1 pb-8 pt-16 max-w-72">
