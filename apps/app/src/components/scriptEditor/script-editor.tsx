@@ -17,7 +17,18 @@ export const ScriptEditor =({
     className,
 }: ScriptEditorInput) => {
     const myRef = useRef(null);
-    const [tokens, handleKeyDown, handleKeyUp, handleEnter, handleOnBackSpace, clearCurrrentNode, setCurrentNode] = useFountainNodes(scriptTokens)
+    const [
+        tokens, 
+        handleKeyDown, 
+        handleKeyUp, 
+        handleEnter, 
+        handleOnBackSpace,
+         clearCurrrentNode, 
+        setCurrentNode, 
+        handleOnSelect,
+        currentOrderId,
+        secondaryOrderId,
+    ] = useFountainNodes(scriptTokens, myRef)
 
     // This listens for changes on target nodes to update the type of element for formatting
     useEffect(() => {
@@ -57,14 +68,28 @@ export const ScriptEditor =({
         <div
             ref={myRef}
             contentEditable={true}
+            suppressContentEditableWarning={true} 
             className={className + ' script-editor'}
             onBlur={clearCurrrentNode}
             onMouseDown={setCurrentNode}
             onKeyUp={handleKeyUp}
-            onSelect={function(event) {
-                console.log('Selection started');
-                console.log('Element:', event.target);
+            onPaste={function(e) {
+                // console.log('Text', e.clipboardData.getData('Text'));
+                // console.log('text/plain', e.clipboardData.getData('text/plain'));
+                // console.log('text/html', e.clipboardData.getData('text/html'));
+                // console.log('text/rtf', e.clipboardData.getData('text/rtf'));
+            
+                // console.log('Url', e.clipboardData.getData('Url'));
+                // console.log('text/uri-list', e.clipboardData.getData('text/uri-list'));
+                // console.log('text/x-moz-url', e.clipboardData.getData('text/x-moz-url'));
             }}
+            onSelect={function(event) {
+                handleOnSelect(event)
+            }}
+            // onSelectChange={function(event) {
+            //     console.log('Selection change');
+            //     console.log('Element:', event.target);
+            // }}
             onKeyDown={(e) => {
                 if (e.key === 'Backspace') {
                    return  handleOnBackSpace(e)
@@ -78,6 +103,8 @@ export const ScriptEditor =({
 
                 
             >
+                <div>currentOrderId: {currentOrderId}</div>
+                <div>secondaryOrderId: {secondaryOrderId}</div>
             <TokenContent tokens={tokens} />
         </div>
     )
