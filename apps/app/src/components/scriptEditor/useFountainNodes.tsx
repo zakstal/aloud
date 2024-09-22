@@ -1,5 +1,5 @@
 import { TokenContent, Tokens, tokenize } from './script-tokens'
-import { useEffect, useState, useReducer } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 const types = {
     create: 'CREATE',
@@ -89,6 +89,8 @@ function combineRange(tokens, currentOrderIdIn, nextIdIn, currentOffsetIn, nextO
     console.log('combineRange:------------')
     console.log('currentOrderId', currentOrderId)
     console.log('nextId', nextId)
+    console.log('currentOffset', currentOffset)
+    console.log('nextOffset', nextOffset)
     // console.log('secondaryOrderId', secondaryOrderId)
     console.log('tokens[currentOrderId]', tokens[currentOrderId])
     console.log('tokens[nextId]', tokens[nextId])
@@ -100,6 +102,7 @@ function combineRange(tokens, currentOrderIdIn, nextIdIn, currentOffsetIn, nextO
     // tokens[currentOrderId].text = (tokens[currentOrderId].text || '') + nextText
     tokens[currentOrderId].text = combineText(currentText, nextText, currentOffset, nextOffset)
 
+    console.log("carotPostiion", carotPostiion)
     console.log('tokens--', tokens.slice(0, 10))
     const startRemoveIndex = currentOrderId + 1 // after the current to the and including next
     const forHowManyItems = nextId - currentOrderId
@@ -108,7 +111,37 @@ function combineRange(tokens, currentOrderIdIn, nextIdIn, currentOffsetIn, nextO
     console.log('newTokens--', newTokens.slice(0, 10))
 
     
-    return [newTokens, carotPostiion]
+    return [newTokens, currentOffset || carotPostiion, currentOrderId]
+}
+
+function splitRange(tokens, currentOrderId, anchorOffset) {
+
+    const currentToken = tokens[Number(currentOrderId)]
+    let text = ''
+    const currentText = currentToken?.text || ''
+    const textLength = currentText?.length || 0
+    
+    if (textLength > anchorOffset && anchorOffset !== 0) {
+        text = currentText.slice(anchorOffset , textLength)
+        currentToken.text = currentText.slice(0, anchorOffset)
+    }
+    
+    // Set new element above (0), or below (1) current element
+    const cursorIsAtEndOfText = textLength && anchorOffset === 0
+    const noText = !textLength && anchorOffset === 0
+    // const offset = cursorIsAtEndOfText || noText ? 0 : 1
+    const offset = anchorOffset === 0 ? 0 : 1
+    // const offset = cursorIsAtEndOfText ? 0 : 1
+    console.log('curr')
+    const newTokens = tokens.toSpliced(Number(currentOrderId) + offset, 0, {
+        text,
+        type: 'editNode',
+        id: getId()
+    })
+
+    console.log("newTokens", newTokens.slice(0, 10))
+
+    return newTokens
 }
 
 
@@ -116,6 +149,7 @@ export function useFountainNodes(tokensIn = [], ref) {
 
     // const [state, dispatch] = useReducer(reducer, tokens);
     const [tokens, setTokens] = useState(tokensIn)
+    const tokensChanged = useMemo(() => tokens, [tokens])
     const [nextCaretPosition, setNextCaretPosition] = useState([])
     const [currentOrderId, setCurrentOrderId] = useState(null)
     const [secondaryOrderId, setSecondaryOrderId] = useState(null) // for ranges
@@ -160,109 +194,99 @@ export function useFountainNodes(tokensIn = [], ref) {
         // this should handle tags that are empty but we still want the cursor
         const el = element?.childNodes[0] ? element?.childNodes[0] : element
         range.collapse(true);
-        range.setStart(el, nextCaretPosition);
+        if (el) {
+            range.setStart(el, nextCaretPosition);
+        }
         
         sel.removeAllRanges();
         sel.addRange(range);
 
         setNextCaretPosition(null)
 
-    }, [tokens.length])
+    }, [tokensChanged])
 
+    console.log("rangeOffsets", rangeOffsets)
     return [
         tokens,
         function handleKeyDown(e) {
-            // const currentElement = getElementAtCaret()
-            // const orderId = currentElement?.dataset?.order
-            // console.log('handleKeyDown orderId',orderId,  getElementAtCaret())
-            // if (orderId) {
-            //     // setCurrentOrderId(orderId)
-            // }
 
-            // // console.log(' e.target.innerText',  currentElement.innerText)
 
-            // // tokens[orderId || currentOrderId].text = currentElement.innerText
+            if (!rangeOffsets) return
+            if (e.shiftKey) return
 
+            const [currentOffset, secondOffset] = rangeOffsets || []
+            const [newTokens, carotPostiion, focusId] = combineRange(tokens, Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+
+            console.log("carotPostiion handleKeyDown", carotPostiion)
+            setCurrentOrderId(focusId)
+            setNextCaretPosition(carotPostiion)
+            setSecondaryOrderId(null)
+            setRangeOffsets(null)
+            setTokens(newTokens)
         },
         function handleKeyUp(e) {
             const currentElement = getElementAtCaret()
             const orderId = currentElement?.dataset?.order
 
-            console.log('handleKeyUp', orderId,  orderId)
+            // console.log('handleKeyUp', orderId,  orderId)
             if (orderId) {
                 setCurrentOrderId(orderId)
+                setSecondaryOrderId(null)
             }
-   
-            tokens[orderId || currentOrderId].text = currentElement.innerText
+
+            
+            if (!e.shiftKey && orderId) {
+                // console.log('currentElement.innerText', currentElement.innerText)
+                tokens[orderId].text = currentElement.innerText
+            }
         },
         function handleOnEnter(e) {
             console.log('handle enter--------------')
             e.preventDefault()
             try {
-                const currentElement = getElementAtCaret()
-                const orderId = currentElement?.dataset?.order
-                console.log('e.target',orderId,  getElementAtCaret())
-               
                 const selection = window.getSelection();
-                const currentToken = tokens[Number(orderId)]
-                let text = ''
-                const currentText = currentToken?.text || ''
-                const textLength = currentText?.length || 0
-                const anchorOffset = selection.anchorOffset
-                console.log('selection--------', selection)
-                console.log('currentText--------', currentText)
-                console.log('textLength--------', textLength)
-                console.log('selection.anchorOffset', selection.anchorOffset)
 
-                if (textLength > anchorOffset && anchorOffset !== 0) {
-                    text = currentText.slice(anchorOffset , textLength)
-                    currentToken.text = currentText.slice(0, anchorOffset)
+                let newTokens = tokens
+                let carotPostiion = 0
+                let focusId = currentOrderId
+
+                if (rangeOffsets) {
+                    const [currentOffset, secondOffset] = rangeOffsets || []
+                    const res = combineRange(tokens, Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+
+                    newTokens = res[0]
+                    carotPostiion = res[1]
+                    focusId = res[2]
                 }
-                
-                // Set new element above (0), or below (1) current element
-                const cursorIsAtEndOfText = textLength && selection.anchorOffset === 0
-                const noText = !textLength && selection.anchorOffset === 0
-                // const offset = cursorIsAtEndOfText || noText ? 0 : 1
-                const offset = selection.anchorOffset === 0 ? 0 : 1
-                // const offset = cursorIsAtEndOfText ? 0 : 1
-                const newTokens = tokens.toSpliced(Number(orderId) + offset, 0, {
-                    text,
-                    type: 'editNode',
-                    id: getId()
-                })
 
-                console.log('offset', offset)
+                newTokens = splitRange(newTokens, focusId, carotPostiion || selection?.anchorOffset)
 
                 setCurrentOrderId(Number(currentOrderId) + 1)
                 setNextCaretPosition(0)
+                setSecondaryOrderId(null)
+                setRangeOffsets(null)
                 setTokens(newTokens)
+
             } catch (e) {
                 console.log('error', e)
             }
         },
         function handleOnBackSpace(e) {
             const selection = window.getSelection();
-            console.log('selection', selection)
-            console.log('currentOrderId, secondaryOrderId', currentOrderId, secondaryOrderId)
-            // console.log('rangeOffsets', rangeOffsets)
             
-            const isSameRange = currentOrderId === secondaryOrderId && secondaryOrderId != null
-            if (selection.anchorOffset !== 0 || rangeOffsets) return
+            if (selection.anchorOffset !== 0 && !rangeOffsets) return
             e.preventDefault()
 
             console.log('handle backspace:--------------------')
 
-            // const [newTokens, carotPostiion] = combineRange(currentId, 1)
-            // const [newTokens, carotPostiion] = combineRange(Number(currentOrderId), Number(secondaryOrderId))
             const [currentOffset, secondOffset] = rangeOffsets || []
-            const [newTokens, carotPostiion] = combineRange(tokens, Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            const [newTokens, carotPostiion, focusId] = combineRange(tokens, Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
 
-            // console.log('newTokens', newTokens)
-            console.log('carotPostiion', carotPostiion, Number(currentOrderId) - 1)
-            setCurrentOrderId(Number(currentOrderId) - 1)
+            setCurrentOrderId(focusId)
             setNextCaretPosition(carotPostiion)
-            setTokens(newTokens)
+            setSecondaryOrderId(null)
             setRangeOffsets(null)
+            setTokens(newTokens)
         },
         function clearCurrrentNode() {
             setCurrentOrderId(null)
@@ -292,7 +316,7 @@ export function useFountainNodes(tokensIn = [], ref) {
                 setCurrentOrderId(acnchorNodeOrder)
                 setSecondaryOrderId(extentNodeOrder)
 
-                setRangeOffsets(selection.anchorOffset)
+                setRangeOffsets([selection.anchorOffset, selection.extentOffset])
             }
         },
         currentOrderId,
