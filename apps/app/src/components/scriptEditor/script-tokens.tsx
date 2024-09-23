@@ -5,20 +5,20 @@
 
 'use strict';
 
-const Heading = ({ id, variant = 'h1', text = '', sceneNumber, order }: { variant: string, text?: string, sceneNumber?: number | null, order: number | null }) => {
-    if (variant === 'h1') return <h1 key={id} data-order={order} >{text}</h1>
-    if (variant === 'h2') return <h2 key={id} data-order={order} >{text}</h2>
-    if (variant === 'h3') return <h3 key={id} data-order={order} id={sceneNumber?.toString()} className="font-courier font-bold">{text}</h3>
-    if (variant === 'h4') return <h4 key={id} data-order={order} >{text}</h4>
+const Heading = ({ id, variant = 'h1', text = '', sceneNumber, order, className = '' }: { variant: string, text?: string, sceneNumber?: number | null, order: number | null, className: string, id: string }) => {
+    if (variant === 'h1') return <h1 key={id} data-order={order} className={className} >{text}</h1>
+    if (variant === 'h2') return <h2 key={id} data-order={order} className={className} >{text}</h2>
+    if (variant === 'h3') return <h3 key={id} data-order={order} className={className + " font-courier font-bold"} id={sceneNumber?.toString()} >{text}</h3>
+    if (variant === 'h4') return <h4 key={id} data-order={order} className={className} >{text}</h4>
 
     // TODO i know
-    if (variant === 'hr') return <hr key={id} data-order={order}/>
+    if (variant === 'hr') return <hr key={id} data-order={order} className={className}/>
     if (variant === 'br') return null
 }
 
-export const Paragraph = ({ id, text = '', type = '', order, dataDepth }: { text: string, type?: string, order: number, dataDepth?: number | null }) => {
+export const Paragraph = ({ id, text = '', type = '', order, dataDepth, className }: { text: string, type?: string, order: number, dataDepth?: number | null, className: string }) => {
     return (
-        <p key={id} data-order={order} data-depth={dataDepth} className={type}>{text}</p>
+        <p key={id} data-order={order} data-depth={dataDepth} className={type + ' ' + className}>{text}</p>
     )
 }
 
@@ -32,13 +32,14 @@ const Div = ({ id, className = '', order, children }: { className?: string, orde
 var regex = {
     title_page: /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/gim,
 
-    scene_heading: /^((?:\*{0,3}_?)?(?:(?:int|ext|est|i\/e)[. ]).+)|^(?:\.(?!\.+))(.+)/i,
+    scene_heading: /^((?:\*{0,3}_?)?(?:(?:int|ext|est|i\/e)[. ]).*)|^(?:\.(?!\.+))(.+)/i,
     scene_number: /( *#(.+)# *)/,
 
-    transition: /^((?:FADE (?:TO BLACK|OUT)|CUT TO BLACK)\.|.+ TO\:)|^(?:> *)(.+)/,
+    transition: /^((?:FADE (?:TO BLACK|OUT)|CUT TO BLACK)\.|.+ TO|.+ IN\:)|^(?:> *)(.+)/,
     
     dialogue: /^([A-Z*_]+[0-9A-Z (._\-')]*)(\^?)?(?:\n(?!\n+))([\s\S]+)/,
     parenthetical: /^(\(.+\))$/,
+    character: /^([A-Z*_{2}]+(?:\s*\([^()]*\)?)?)$/,
 
     action: /^(.+)/g,
     centered: /^(?:> *)(.+)(?: *<)(\n.+)*/g,
@@ -75,14 +76,21 @@ var lexer = function (script) {
                 .replace(regex.whitespacer, '');
 };
     
-export const tokenize = function (script) {
+export const tokenize = function (script, optionsIn = {}) {
+    const options = Object.assign({}, {
+        isLastCharacter: false,
+    }, optionsIn)
+
+    console.log('options', options)
     var src    = lexer(script).split(regex.splitter)
     , i      = src.length, line, match, parts, text, meta, x, xlen, dual
     , tokens = [];
 
     while (i--) {
     line = src[i];
-    
+
+ 
+
     // title page
     if (regex.title_page.test(line)) {
         match = line.replace(regex.title_page, '\n$1').split(regex.splitter).reverse();
@@ -92,7 +100,7 @@ export const tokenize = function (script) {
         }
         continue;
     }
-
+ 
     // scene headings
     if (match = line.match(regex.scene_heading)) {
         text = match[1] || match[2];
@@ -106,7 +114,7 @@ export const tokenize = function (script) {
         }
         continue;
     }
-
+ 
     // centered
     if (match = line.match(regex.centered)) {
         tokens.push({ type: 'centered', text: match[0].replace(/>|</g, '') });
@@ -118,9 +126,22 @@ export const tokenize = function (script) {
         tokens.push({ type: 'transition', text: match[1] || match[2] });
         continue;
     }
+  
+    // character
+    if (match = line.match(regex.character)) {
+        tokens.push({ type: 'character', text: match[1] || match[2] });
+        continue;
+    }
     
+    // dialog. 
+    // TODO this does not handle dual dialog and parenthenticals. Its temporary
+    if (options.isLastCharacter) {
+        tokens.push({ type: 'dialogue', text: line });
+        return tokens
+    }
     // dialogue blocks - characters, parentheticals and dialogue
     if (match = line.match(regex.dialogue)) {
+    // if (match = line.match(regex.dialogue)) {
         if (match[1].indexOf('  ') !== match[1].length - 2) {
         // we're iterating from the bottom up, so we need to push these backwards
         if (match[2]) {
@@ -289,13 +310,13 @@ export const TokenContent = function ({ tokens }: TokenContentInput) {
             case 'dialogue_begin':
                 
                 html = htmlContent
-                html.push(<Div id={token.id} className={"dialogue" + (token.dual ? ' ' + token.dual : '') } order={i} >{tempHtml.reverse()}</Div>); 
+                html.push(<Div id={token.id} className={"dialogue-container" + (token.dual ? ' ' + token.dual : '') } order={i} >{tempHtml.reverse()}</Div>); 
                 tempHtml = []
                 //  html.push(<Div id={token.id} className={"dialogue" + (token.dual ? ' ' + token.dual : '') } order={i} />); 
                 break;
-            case 'character': html.push(<Heading id={token.id} variant="h4" text={token.text} order={i}/>); break;
+            case 'character': html.push(<Heading id={token.id} variant="h4" text={token.text} order={i} className="character"/>); break;
             case 'parenthetical': html.push(<Paragraph id={token.id} order={i} type="parenthetical" text={token.text}/>); break;
-            case 'dialogue': html.push(<Paragraph id={token.id} order={i} text={token.text} />); break;
+            case 'dialogue': html.push(<Paragraph id={token.id} order={i} text={token.text} className="dialogue"/>); break;
             case 'dialogue_end': 
                 // html.push(<Div id={token.id} order={i}/>); 
                 html = tempHtml
