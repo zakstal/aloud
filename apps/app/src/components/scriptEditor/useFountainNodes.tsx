@@ -19,6 +19,7 @@ import * as db from './storage'
  * 
  * UPDATES
  * - saveing state in the browser. Indexd db?
+ * - add caret position and order id to the script hitory db object so that on undo we can represent exaclty where the user was
  * 
  * Possible performance updates
  * - preact signals?
@@ -100,8 +101,9 @@ export function useFountainNodes(tokensIn = [], ref) {
         window.scriptStorage.setCallbackValues(
             '1', // script version
             db,
-            (tokens: Tokens[]) => {
+            (tokens: Tokens[], caretPosition: number | null) => { // call back that runs on "commit"
                 setTokens(tokens)
+                caretPosition && setNextCaretPosition(caretPosition)
             },
             tokens,
         )

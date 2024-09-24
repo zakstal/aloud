@@ -3,6 +3,7 @@ import Dexie, { type EntityTable } from 'dexie';
 
 export type Diff = {
   id: number;
+  caretPosition: number;
   idx: number;
   idxRange?: number; // if there is a range for delets
   group: string; // if several diffs are made at once and we want to apply together
@@ -21,7 +22,7 @@ const db = new Dexie('FriendsDatabase') as Dexie & {
 
 // Schema declaration:
 db.version(1).stores({
-  diff: '++id, idx, idxRange, group, type, oldValue, newValue, remoteDBVersion' // primary key "id" (for the runtime!)
+  diff: '++id, caretPosition, idx, idxRange, group, type, oldValue, newValue, remoteDBVersion' // primary key "id" (for the runtime!)
 });
 
 
@@ -50,7 +51,7 @@ export async function getByIdGroup(id: number) {
     console.log("id", id)
     const last = await db.diff.get(id)
     if (!last) return []
-    
+
     return db.diff.where('group').equals(last.group).toArray();
 }
 

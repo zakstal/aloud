@@ -12,8 +12,44 @@ function combineText(text1 = '', text2 = '', offset1: number, offset2: number) {
     return text1.slice(0, offset1 || text1.length) + text2.slice(offset2 || 0, text2.length)
 }
 
-type commitCallbackType = ((tokens: Tokens[]) => void) | null
+function last(arr: any) {
+    return arr[arr.length - 1]
+}
 
+type commitCallbackType = ((tokens: Tokens[], caretPosition: number | null) => void) | null
+
+/**
+ * Script history handles changes to the document data.
+ * Updates are saved as a Diff and stored in a db.
+ * 
+ * This enables undo and redo functionality.
+ * 
+ * The updates are tied to a db script version. 
+ * This is so that all diffs are applied to the same version.
+ * 
+ * NOTES ON FUNCTIONALITY:
+ * 
+ * When an update to the doc is made, the Diff goes into the pendingUpdates queue.
+ * on calling "commit" the diffs are saved to the db. "commit" in this case is how the ScriptHistory
+ * interacts with React state, or an external representation of the tokens.
+ * 
+ * The Diffs have a group id, as there may be serveral individual updates during a document change 
+ * (deleting a row and adding text) before a commit that represent a single update from the users perspective.
+ * 
+ * -- ON UNDO
+ * On ctrl+z or Meta+z (undo) we get the last group of changes and apply them. Once applied, this 
+ * group (the array of Diffs represting a chagnge) is pushed to the pendingRedos queue (which is an array of arrays). 
+ * 
+ * -- ON REDO
+ * If the user "redoes" (shift+ctrl+z or shift+Meta+z) we pull from the pendingRedos queue and apply the redos.
+ * 
+ * -- ON NEW CHANGES
+ * If the user makes new changes while there are pendingRedos, the pending redos are transformed into new
+ * Diffs and added to the db. This way the "undos" become apart of the history. 
+ * 
+ * 
+ * 
+ */
 export class ScriptHistory {
     commitCallback: commitCallbackType = null
     tokens: Tokens[] = []
@@ -30,7 +66,13 @@ export class ScriptHistory {
 
     async applyChanges() {
         const diffs = await this.diffs();
-        this.applyForward(diffs)
+        const diffsToApply = !this.lastInsertedId ? diffs : diffs.filter((update: Diff) => update.id > this.lastInsertedId)
+        if (!diffs || !diffs.length) return
+
+        const last = diffs[diffs.length - 1]
+        this.lastInsertedId = last.id
+
+        this.applyForward(diffsToApply)
         this.commitCallback(this.tokens)
     }
 
@@ -126,14 +168,15 @@ export class ScriptHistory {
         return this.splitRange(foucsId, caret)
     }
 
-    deleteRange(startIdx: number, endIdx: number) {
+    deleteRange(startIdx: number, endIdx: number, caretPosition: number) {
         if (startIdx > endIdx) {
             throw 'Start index cannot be grater than end index';
         }
 
         this.pendingUpdates.push({
-            type: DELETE,
+            caretPosition,
             idx: startIdx,
+            type: DELETE,
             idxRange: endIdx,
             oldValue: this.tokens.slice(startIdx, endIdx).map(obj => ({ ...obj })),
             remoteDBVersion: this.dbTokenVersion,
@@ -141,8 +184,9 @@ export class ScriptHistory {
     }
 
 
-    add(token: Tokens, idx: number) {
+    add(token: Tokens, idx: number, caretPosition: number) {
         this.pendingUpdates.push({
+            caretPosition,
             idx: idx,
             type: ADD,
             newValue: token,
@@ -150,8 +194,9 @@ export class ScriptHistory {
         })
     }
     
-    modify(tokenPartialMaybe, idx: number) {
+    modify(tokenPartialMaybe, idx: number, caretPosition: number) {
         this.pendingUpdates.push({
+            caretPosition,
             idx: idx,
             type: MODIFY,
             oldValue: {...this.tokens[idx]},
@@ -187,7 +232,6 @@ export class ScriptHistory {
 
 
     addInternalForward(update: Diff) {
-        console.log('add inter foward update', update)
         try {
 
             this.tokens = this.tokens.toSpliced(update.idx, 0, update.newValue)
@@ -296,7 +340,6 @@ export class ScriptHistory {
     }
 
     async undo() {
-        console.log("UNDO-----------------")
         if (this.pendingUpdates) {
             await this.commit()
         }
@@ -325,22 +368,20 @@ export class ScriptHistory {
     }
 
     redo() {
-        console.log("REDO-----------------")
         const nextUndoGroup = this.pendingRedos.pop()
-        console.log("nextUndoGroup", nextUndoGroup)
         if (!nextUndoGroup) return;
 
         this.applyForward(nextUndoGroup)
         const stagedUndoGroup = this.pendingRedos ? this.pendingRedos[this.pendingRedos.length - 1] : null
 
-        const last = stagedUndoGroup ? stagedUndoGroup[stagedUndoGroup.length - 1] : null
-        this.lastInsertedId = last?.id || null
-        this.commit({ applyUndo: false })
+        const lastStaged = stagedUndoGroup ? stagedUndoGroup[stagedUndoGroup.length - 1] : null
+        this.lastInsertedId = lastStaged?.id || null
+        const lastApplied = last(nextUndoGroup)
+        this.commitCallback && this.commitCallback(this.tokens, lastApplied?.caretPosition)
     }
 
     async diffs() {
         const res = await this.db.diffs(this.dbTokenVersion)
-        console.log('res', res)
         return res
     }
 
@@ -354,7 +395,6 @@ export class ScriptHistory {
      * 
      */
     async commit({ noUpdate = false, applyPending = true, applyUndo = true } = {}) {
-        console.log('this.lastInsertedId-------------', this.lastInsertedId)
 
         if (this.pendingUpdates.length && applyPending) {
             const groupId = getId()
@@ -382,20 +422,32 @@ export class ScriptHistory {
 
             this.lastInsertedId = lastId
 
+            const caretPosition = last(toUpdate)?.caretPosition
+            console.log('commit 1dddd')
             this.applyForward(toUpdate)
             this.flushUpdates()
+
+            console.log('commit 1')
+            if (!noUpdate) {
+                console.log('commit')
+                this.commitCallback && this.commitCallback(this.tokens, caretPosition)
+            }
+    
         }
 
         console.log("this.pendingUndos.length", this.pendingUndos.length)
         
         if (this.pendingUndos.length && applyUndo) {
+            const caretPosition = last(this.pendingUndos)?.caretPosition
             this.applyUndo(this.pendingUndos)
             this.flushUndos()
+
+            if (!noUpdate) {
+                this.commitCallback && this.commitCallback(this.tokens, caretPosition)
+            }
         }
 
-        if (!noUpdate) {
-            this.commitCallback && this.commitCallback(this.tokens)
-        }
+        
     }
 
     flushUpdates() {
