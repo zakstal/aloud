@@ -16,7 +16,7 @@ function last(arr: any) {
     return arr[arr.length - 1]
 }
 
-type commitCallbackType = ((tokens: Tokens[], caretPosition: number | null) => void) | null
+type commitCallbackType = ((tokens: Tokens[], caretPosition: number | null, currentId: number | null) => void) | null
 
 /**
  * Script history handles changes to the document data.
@@ -122,11 +122,11 @@ export class ScriptHistory {
         let nextIdNext = currentOrderIdNext >= nextId ? currentOrderIdNext + 1 : nextId
 
 
-        this.deleteRange(currentOrderId + 1, nextIdNext)
+        this.deleteRange(currentOrderId + 1, nextIdNext, currentOffset || carotPostiion)
 
         this.modify({
-            text: combineText(currentText, nextText, currentOffset, nextOffset)
-        }, currentOrderId)
+            text: combineText(currentText, nextText, currentOffset, nextOffset),
+        }, currentOrderId, currentOffset || carotPostiion)
     
         return [currentOffset || carotPostiion, currentOrderId]
     }
@@ -142,14 +142,15 @@ export class ScriptHistory {
             text = currentText.slice(anchorOffset , textLength)
 
             this.modify({
-                text: currentText.slice(0, anchorOffset)
-            }, Number(currentOrderId))
+                text: currentText.slice(0, anchorOffset),
+            }, Number(currentOrderId), anchorOffset)
         }
         
         const offset = anchorOffset === 0 ? 0 : 1
     
         this.add({
             text,
+            caretPosition: anchorOffset,
             type: 'editNode',
             id: getId()
         }, Number(currentOrderId) + offset)
@@ -287,6 +288,8 @@ export class ScriptHistory {
     applyUndo(update: Diff[] | Diff) {
         let updates: Diff[] = !Array.isArray(update) ? [update] : update
 
+        // for (let i = updates.length - 1; i < 0; i--) {
+            // const update = updates[i]
         for (const update of updates) {
             switch(update.type) {
                 case DELETE:
@@ -377,7 +380,7 @@ export class ScriptHistory {
         const lastStaged = stagedUndoGroup ? stagedUndoGroup[stagedUndoGroup.length - 1] : null
         this.lastInsertedId = lastStaged?.id || null
         const lastApplied = last(nextUndoGroup)
-        this.commitCallback && this.commitCallback(this.tokens, lastApplied?.caretPosition)
+        this.commitCallback && this.commitCallback(this.tokens, lastApplied?.caretPosition, lastApplied.idx)
     }
 
     async diffs() {
@@ -422,28 +425,25 @@ export class ScriptHistory {
 
             this.lastInsertedId = lastId
 
-            const caretPosition = last(toUpdate)?.caretPosition
-            console.log('commit 1dddd')
+            const lastToUpdate = last(toUpdate)
+
             this.applyForward(toUpdate)
             this.flushUpdates()
 
-            console.log('commit 1')
             if (!noUpdate) {
-                console.log('commit')
-                this.commitCallback && this.commitCallback(this.tokens, caretPosition)
+                this.commitCallback && this.commitCallback(this.tokens, lastToUpdate.caretPosition)
+                // this.commitCallback && this.commitCallback(this.tokens, lastToUpdate.caretPosition, lastToUpdate.idx)
             }
     
         }
-
-        console.log("this.pendingUndos.length", this.pendingUndos.length)
         
         if (this.pendingUndos.length && applyUndo) {
-            const caretPosition = last(this.pendingUndos)?.caretPosition
+            const lastPending = this.pendingUndos[0]
             this.applyUndo(this.pendingUndos)
             this.flushUndos()
 
             if (!noUpdate) {
-                this.commitCallback && this.commitCallback(this.tokens, caretPosition)
+                this.commitCallback && this.commitCallback(this.tokens, lastPending.caretPosition, lastPending.idxRange || lastPending.idx)
             }
         }
 
@@ -451,13 +451,11 @@ export class ScriptHistory {
     }
 
     flushUpdates() {
-        console.log('flush updates')
         this.pendingUpdates = []
         this.pendingRedos = []
     }
 
     flushUndos() {
-        console.log('flush undo')
         this.pendingRedos.push(this.pendingUndos) // array of arrays of updates
         this.pendingUndos = []
     }

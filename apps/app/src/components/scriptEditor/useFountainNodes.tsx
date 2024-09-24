@@ -1,4 +1,4 @@
-import { TokenContent, Tokens, tokenize } from './script-tokens'
+import { Tokens, tokenize } from './script-tokens'
 import { useEffect, useState, useMemo } from 'react';
 import { ScriptHistory } from './script-history'
 import * as db from './storage'
@@ -16,6 +16,7 @@ import * as db from './storage'
  * - handle enter and backspace causes a lot of updates from setting state. Merge for singluar updates.
  * - can this handle lots of data
  * - on removal of "character" type, update following "dialog" type to be just an action
+ * - choose a name, focusId, orderId etc
  * 
  * UPDATES
  * - saveing state in the browser. Indexd db?
@@ -101,9 +102,10 @@ export function useFountainNodes(tokensIn = [], ref) {
         window.scriptStorage.setCallbackValues(
             '1', // script version
             db,
-            (tokens: Tokens[], caretPosition: number | null) => { // call back that runs on "commit"
+            (tokens: Tokens[], caretPosition: number | null, currentOrderId: number | null) => { // call back that runs on "commit"
                 setTokens(tokens)
                 caretPosition && setNextCaretPosition(caretPosition)
+                currentOrderId && setCurrentOrderId(currentOrderId)
             },
             tokens,
         )
@@ -121,9 +123,13 @@ export function useFountainNodes(tokensIn = [], ref) {
         // this should handle tags that are empty but we still want the cursor
         const el = element?.childNodes[0] ? element?.childNodes[0] : element
         range.collapse(true);
+        const textLength = element?.childNodes[0] ? element?.childNodes[0].length : element?.innerText?.length
+
+        const caret = textLength < nextCaretPosition ? textLength : nextCaretPosition
+        console.log('el', textLength, caret, nextCaretPosition)
         try {
             if (el) {
-                range.setStart(el, nextCaretPosition);
+                range.setStart(el, caret);
             }
         } catch(e) {
             console.error(e)
@@ -147,27 +153,25 @@ export function useFountainNodes(tokensIn = [], ref) {
                 e.preventDefault()
 
                 window.scriptStorage.modify({
-                    type: 'character'
-                }, orderId)
+                    type: 'character',
+                }, orderId, selection?.anchorOffset)
+
                 console.log("HANDLE KEY DOWN 1")
                 window.scriptStorage.commit()
-                setCurrentOrderId(focusId)
+                setCurrentOrderId(orderId)
                 setNextCaretPosition(selection?.anchorOffset)
                 return
             }
 
-            console.log(e)
             const isCtrlUndo = e.ctrlKey && e.key === 'z' 
             const isMetalUndo = e.metaKey && e.key === 'z' 
             const isShift = e.shiftKey
 
             if (isCtrlUndo || isMetalUndo ) {
                 if (isShift) {
-                    console.log("HANDLE KEY DOWN REDO")
                     await window.scriptStorage.redo()
                     return
                 }
-                console.log("HANDLE KEY DOWN UNDO")
                 await window.scriptStorage.undo()
                 return
             }
@@ -175,17 +179,15 @@ export function useFountainNodes(tokensIn = [], ref) {
             if (!rangeOffsets) return
             if (e.shiftKey) return
             if (noUpdateKeySet.has(e.key)) return
+            e.preventDefault()
 
             // hande range and key press
             const [currentOffset, secondOffset] = rangeOffsets || []
-            const [carotPostiion, focusId] = window.scriptStorage.combineRange(tokens, Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
-            console.log("HANDLE KEY DOWN 2")
+            const [carotPostiion, focusId] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+
             setNextCaretPosition(selection?.anchorOffset)
             window.scriptStorage.commit()
-            // const [newTokens, carotPostiion, focusId] = combineRange(tokens, Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
-
-            // TODO each of these causes an update. maybe merge into one update via redux?
-            // setTokens(newTokens)
+  
             setCurrentOrderId(focusId)
             setNextCaretPosition(carotPostiion)
             setSecondaryOrderId(null)
@@ -221,7 +223,7 @@ export function useFountainNodes(tokensIn = [], ref) {
                     didUpdate = true
                     window.scriptStorage.modify({
                         type: foundTokens[0].type
-                    }, orderId)
+                    }, orderId, selection?.anchorOffset)
                 }
 
                 // TODO this shoudl 
@@ -229,7 +231,7 @@ export function useFountainNodes(tokensIn = [], ref) {
 
                 window.scriptStorage.modify({
                     text: newText
-                }, orderId)
+                }, orderId, selection?.anchorOffset)
                 
                 console.log("HANDLE KEY UP")
                 if (didUpdate) {
@@ -243,21 +245,18 @@ export function useFountainNodes(tokensIn = [], ref) {
             try {
                 const selection = window.getSelection();
 
-                let newTokens = tokens
                 let carotPostiion = 0
                 let focusId = currentOrderId
 
                 window.scriptStorage.combineSplitRange(focusId, carotPostiion || selection?.anchorOffset)
                 console.log("HANDLE ENTER combineSplitRange")
                 window.scriptStorage.commit()
-                // scriptStorage.diffs()
-                // newTokens = splitRange(newTokens, focusId, carotPostiion || selection?.anchorOffset)
 
                 setCurrentOrderId(Number(currentOrderId) + 1)
                 setNextCaretPosition(0)
                 setSecondaryOrderId(null)
                 setRangeOffsets(null)
-                // setTokens(newTokens)
+
 
             } catch (e) {
                 console.log('error', e)
