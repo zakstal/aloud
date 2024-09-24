@@ -23,47 +23,13 @@ export const ScriptEditor =({
         handleKeyUp, 
         handleEnter, 
         handleOnBackSpace,
-         clearCurrrentNode, 
+        clearCurrrentNode, 
         setCurrentNode, 
         handleOnSelect,
         currentOrderId,
         secondaryOrderId,
     ] = useFountainNodes(scriptTokens, myRef)
 
-    // This listens for changes on target nodes to update the type of element for formatting
-    useEffect(() => {
-        if (!myRef.current) return
-        const observer = new MutationObserver((mutationRecords) => {
-            // console.log('all', mutationRecords)
-            // const removedNodes = mutationRecords[0]?.removedNodes
-            // const selection = window.getSelection()
-            // console.log("removedNodes", selection)
-            // const target = mutationRecords[0].target
-            // const data = target.data
-
-            // if (data) {
-
-            //     console.log('target node', target)
-            //     console.log('parentNode node', target.parentNode)
-            //     let orderId = target.tagName ? target?.getAttribute('data-order') : target?.parentNode?.getAttribute('data-order')
-                
-            //     if (currentOrderId !== orderId) {
-            //         setCurrentOrderId(orderId)
-            //     }
-                
-                
-            //     console.log('data', data)
-                
-            //     console.log('tokenized', tokenize(data)[0])
-            // }
-
-        })
-        observer.observe(myRef.current, {
-            characterData: true,
-            subtree: true,
-            // childList: true,
-        })
-    }, [myRef])
     return (
         <div
             ref={myRef}

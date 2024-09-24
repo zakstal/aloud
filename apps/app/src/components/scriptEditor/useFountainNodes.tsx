@@ -1,5 +1,7 @@
 import { TokenContent, Tokens, tokenize } from './script-tokens'
 import { useEffect, useState, useMemo } from 'react';
+import { ScriptHistory } from './script-history'
+import * as db from './storage'
 
 
 /**
@@ -13,6 +15,7 @@ import { useEffect, useState, useMemo } from 'react';
  * - handle cut, copy, paste over range
  * - handle enter and backspace causes a lot of updates from setting state. Merge for singluar updates.
  * - can this handle lots of data
+ * - on removal of "character" type, update following "dialog" type to be just an action
  * 
  * UPDATES
  * - saveing state in the browser. Indexd db?
@@ -48,7 +51,6 @@ const removeTokens = ['dialogue_end', 'dialogue_begin']
 const capitalizeTypes = ['character', 'scene_heading', 'transition']
 
 const transformText = (text: string, type: string) => {
-    console.log("capitalizeTypes.includes(type)", capitalizeTypes.includes(type))
     if (capitalizeTypes.includes(type)) return text.toUpperCase()
     return text
 }
@@ -64,8 +66,6 @@ const prepareTokensSave = (tokens: Tokens[]) => {
 
 const noUpdateKeySet = new Set(noUpdateKyes)
 
-const getId = () => (Math.random() + 1).toString(36).substring(7);
-
 function getElementAtCaret() {
     const selection = window.getSelection();
     
@@ -78,67 +78,13 @@ function getElementAtCaret() {
     }
     
     return null;
-  }
-
-function combineText(text1 = '', text2 = '', offset1, offset2) {
-    return text1.slice(0, offset1 || text1.length) + text2.slice(offset2 || 0, text2.length)
 }
 
-function combineRange(tokens, currentOrderIdIn, nextIdIn, currentOffsetIn, nextOffsetIn) {
-    let currentOrderId = currentOrderIdIn
-    let nextId = nextIdIn || currentOrderIdIn - 1
-    let currentOffset = currentOffsetIn
-    let nextOffset = nextOffsetIn
 
-    // make sure currentOrderId is less than nextOrderId 
-    if (currentOrderId > nextId) {
-        const currentTemp = currentOrderId
-        currentOrderId = nextId
-        nextId = currentTemp
-
-        const currentOffsetTemp = currentOffset
-        currentOffset = nextOffset
-        nextOffset = currentOffsetTemp
-    }
-
-    const nextText = tokens[nextId].text || ''
-    const carotPostiion = tokens[currentOrderId].text?.length || 0 
-    const currentText = tokens[currentOrderId].text
-
-    tokens[currentOrderId].text = combineText(currentText, nextText, currentOffset, nextOffset)
-
-    const startRemoveIndex = currentOrderId + 1 // after the current to the and including next
-    const forHowManyItems = nextId - currentOrderId
-    const newTokens = tokens.toSpliced(startRemoveIndex, forHowManyItems)
-    
-    return [newTokens, currentOffset || carotPostiion, currentOrderId]
-}
-
-function splitRange(tokens, currentOrderId, anchorOffset) {
-
-    const currentToken = tokens[Number(currentOrderId)]
-    let text = ''
-    const currentText = currentToken?.text || ''
-    const textLength = currentText?.length || 0
-    
-    if (textLength > anchorOffset && anchorOffset !== 0) {
-        text = currentText.slice(anchorOffset , textLength)
-        currentToken.text = currentText.slice(0, anchorOffset)
-    }
-    
-    const offset = anchorOffset === 0 ? 0 : 1
-
-    const newTokens = tokens.toSpliced(Number(currentOrderId) + offset, 0, {
-        text,
-        type: 'editNode',
-        id: getId()
-    })
-
-    return newTokens
-}
-
+window.scriptStorage = window.scriptStorage || new ScriptHistory()
 
 export function useFountainNodes(tokensIn = [], ref) {
+
     const [tokens, setTokens] = useState(prepareTokensRender(tokensIn))
     const tokensChanged = useMemo(() => tokens, [tokens])
     const [nextCaretPosition, setNextCaretPosition] = useState([])
@@ -147,6 +93,20 @@ export function useFountainNodes(tokensIn = [], ref) {
     const [rangeOffsets, setRangeOffsets] = useState(null) // for ranges
     const [slections, setSelections] = useState(null)
 
+    useEffect(() => {
+
+        // NB ScriptHistory has an internal representation of tokens. not sure if we should keep 
+        // to sets, hoever we can change the internal as we like and only update it later if needed
+        window.scriptStorage.setCallbackValues(
+            '1', // script version
+            db,
+            (tokens: Tokens[]) => {
+                setTokens(tokens)
+            },
+            tokens,
+        )
+
+    }, [])
     useEffect(() => {
         if (!currentOrderId) return
 
@@ -176,21 +136,54 @@ export function useFountainNodes(tokensIn = [], ref) {
 
     return [
         tokens,
-        function handleKeyDown(e) {
+        async function handleKeyDown(e) {
             const selection = window.getSelection();
             const currentElement = getElementAtCaret()
             const orderId = currentElement?.dataset?.order
 
+            if (e.key === 'Tab' && orderId) {
+                e.preventDefault()
+
+                window.scriptStorage.modify({
+                    type: 'character'
+                }, orderId)
+                console.log("HANDLE KEY DOWN 1")
+                window.scriptStorage.commit()
+                setCurrentOrderId(focusId)
+                setNextCaretPosition(selection?.anchorOffset)
+                return
+            }
+
+            console.log(e)
+            const isCtrlUndo = e.ctrlKey && e.key === 'z' 
+            const isMetalUndo = e.metaKey && e.key === 'z' 
+            const isShift = e.shiftKey
+
+            if (isCtrlUndo || isMetalUndo ) {
+                if (isShift) {
+                    console.log("HANDLE KEY DOWN REDO")
+                    await window.scriptStorage.redo()
+                    return
+                }
+                console.log("HANDLE KEY DOWN UNDO")
+                await window.scriptStorage.undo()
+                return
+            }
    
             if (!rangeOffsets) return
             if (e.shiftKey) return
             if (noUpdateKeySet.has(e.key)) return
 
+            // hande range and key press
             const [currentOffset, secondOffset] = rangeOffsets || []
-            const [newTokens, carotPostiion, focusId] = combineRange(tokens, Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            const [carotPostiion, focusId] = window.scriptStorage.combineRange(tokens, Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            console.log("HANDLE KEY DOWN 2")
+            setNextCaretPosition(selection?.anchorOffset)
+            window.scriptStorage.commit()
+            // const [newTokens, carotPostiion, focusId] = combineRange(tokens, Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
 
             // TODO each of these causes an update. maybe merge into one update via redux?
-            setTokens(newTokens)
+            // setTokens(newTokens)
             setCurrentOrderId(focusId)
             setNextCaretPosition(carotPostiion)
             setSecondaryOrderId(null)
@@ -209,6 +202,8 @@ export function useFountainNodes(tokensIn = [], ref) {
 
             
             let didUpdate = false
+         
+
             if (noUpdateKeySet.has(e.key)) return
             if (e.keyCode === 32) return // space bar. having a space sometimes doesn't register in the inner text and setting the caret can fail
             if (orderId) {
@@ -222,15 +217,22 @@ export function useFountainNodes(tokensIn = [], ref) {
                 // TODO update to handle multiple tokens
                 if (foundTokens.length === 1 && token.type !== foundTokens[0].type) {
                     didUpdate = true
-                    tokens[orderId].type = foundTokens[0].type
+                    window.scriptStorage.modify({
+                        type: foundTokens[0].type
+                    }, orderId)
                 }
 
                 // TODO this shoudl 
-                tokens[orderId].text = transformText(currentElement.innerText, tokens[orderId].type)
+                const newText = transformText(currentElement.innerText, tokens[orderId].type)
 
+                window.scriptStorage.modify({
+                    text: newText
+                }, orderId)
+                
+                console.log("HANDLE KEY UP")
                 if (didUpdate) {
+                    window.scriptStorage.commit()
                     setNextCaretPosition(selection?.anchorOffset)
-                    setTokens([...tokens])
                 }
             }
         },
@@ -243,23 +245,17 @@ export function useFountainNodes(tokensIn = [], ref) {
                 let carotPostiion = 0
                 let focusId = currentOrderId
 
-                // if a range has been selected handle removing it.
-                if (rangeOffsets) {
-                    const [currentOffset, secondOffset] = rangeOffsets || []
-                    const res = combineRange(tokens, Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
-
-                    newTokens = res[0]
-                    carotPostiion = res[1]
-                    focusId = res[2]
-                }
-
-                newTokens = splitRange(newTokens, focusId, carotPostiion || selection?.anchorOffset)
+                window.scriptStorage.combineSplitRange(focusId, carotPostiion || selection?.anchorOffset)
+                console.log("HANDLE ENTER combineSplitRange")
+                window.scriptStorage.commit()
+                // scriptStorage.diffs()
+                // newTokens = splitRange(newTokens, focusId, carotPostiion || selection?.anchorOffset)
 
                 setCurrentOrderId(Number(currentOrderId) + 1)
                 setNextCaretPosition(0)
                 setSecondaryOrderId(null)
                 setRangeOffsets(null)
-                setTokens(newTokens)
+                // setTokens(newTokens)
 
             } catch (e) {
                 console.log('error', e)
@@ -272,13 +268,15 @@ export function useFountainNodes(tokensIn = [], ref) {
             e.preventDefault()
 
             const [currentOffset, secondOffset] = rangeOffsets || []
-            const [newTokens, carotPostiion, focusId] = combineRange(tokens, Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            const [carotPostiion, focusId] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            console.log("HANDLE BACKSPACE")
+            window.scriptStorage.commit()
 
             setCurrentOrderId(focusId)
             setNextCaretPosition(carotPostiion)
             setSecondaryOrderId(null)
             setRangeOffsets(null)
-            setTokens(newTokens)
+            // setTokens(newTokens)
         },
         function clearCurrrentNode() {
             setCurrentOrderId(null)

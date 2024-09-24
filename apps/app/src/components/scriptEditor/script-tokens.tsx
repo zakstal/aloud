@@ -16,9 +16,9 @@ const Heading = ({ id, variant = 'h1', text = '', sceneNumber, order, className 
     if (variant === 'br') return null
 }
 
-export const Paragraph = ({ id, text = '', type = '', order, dataDepth, className }: { text: string, type?: string, order: number, dataDepth?: number | null, className: string }) => {
+export const Paragraph = ({ id, text = '', type = '', order, dataDepth, className = '' }: { text: string, type?: string, order: number, dataDepth?: number | null, className: string }) => {
     return (
-        <p key={id} data-order={order} data-depth={dataDepth} className={type + ' ' + className}>{text}</p>
+        <p key={id} data-order={order} data-depth={dataDepth} className={[type, className].filter(Boolean).join(' ')}>{text}</p>
     )
 }
 
@@ -81,7 +81,6 @@ export const tokenize = function (script, optionsIn = {}) {
         isLastCharacter: false,
     }, optionsIn)
 
-    console.log('options', options)
     var src    = lexer(script).split(regex.splitter)
     , i      = src.length, line, match, parts, text, meta, x, xlen, dual
     , tokens = [];
