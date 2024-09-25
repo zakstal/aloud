@@ -192,14 +192,19 @@ export class ScriptHistory {
         const isLastCharacter = this.tokens[currentOrderId - 1]?.type === 'character'
         const foundTokens = tokenize(textCombined, { isLastCharacter })
 
-        foundTokens.forEach((token, foundIdx) => {
-            this.add({
-                ...token,
-                id: getId()
-            }, currentOrderId + foundIdx, currentOffset || carotPostiion)
-        })
+            foundTokens.forEach((token, foundIdx) => {
+                const toAdd = {
+                    ...token,
+                    id: getId()
+                }
 
-        const foundText = foundTokens.map(token => token.text).join('\n')
+                // the line has been removed
+                if (currentOffset === 0) {
+                    toAdd.text = ''
+                }
+
+                this.add(toAdd, currentOrderId + foundIdx, currentOffset || carotPostiion)
+            })
     
         return [currentOffset || carotPostiion, currentOrderId]
     }
@@ -544,7 +549,7 @@ export class ScriptHistory {
         this.flushUpdates()
 
         if (!noUpdate) {
-            this.commitCallback && this.commitCallback(this.tokens, lastToUpdate.caretPosition)
+            this.commitCallback && this.commitCallback(this.tokens, lastToUpdate?.caretPosition)
         }
     }
 

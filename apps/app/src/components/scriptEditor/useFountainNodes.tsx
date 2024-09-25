@@ -52,8 +52,8 @@ const noUpdateKyes = [
     'F8',
 ]
 
+//TODO use these form script history
 const removeTokens = ['dialogue_end', 'dialogue_begin']
-const capitalizeTypes = ['character', 'scene_heading', 'transition']
 
 const prepareTokensRender = (tokens: Tokens[]) => {
     return tokens.filter((token: Tokens) => !removeTokens.includes(token.type))
@@ -328,7 +328,7 @@ export function useFountainNodes(tokensIn = [], ref) {
         function handleCut(e) {
             const selection = window.getSelection();
             
-            if (selection.anchorOffset !== 0 && !rangeOffsets) return
+            if (!rangeOffsets) return
             e.preventDefault()
 
             const [currentOffset, secondOffset] = rangeOffsets || []
