@@ -48,7 +48,6 @@ export function getByGroupId(id: number) {
 }
 
 export async function getByIdGroup(id: number) {
-    console.log("id", id)
     const last = await db.diff.get(id)
     if (!last) return []
 

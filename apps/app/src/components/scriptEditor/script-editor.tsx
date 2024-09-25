@@ -27,6 +27,7 @@ export const ScriptEditor =({
         setCurrentNode, 
         handleOnSelect,
         handlePaste,
+        handleCut,
         currentOrderId,
         secondaryOrderId,
     ] = useFountainNodes(scriptTokens, myRef)
@@ -41,6 +42,7 @@ export const ScriptEditor =({
             onMouseDown={setCurrentNode}
             onKeyUp={handleKeyUp}
             onPaste={handlePaste}
+            onCut={handleCut}
             onSelect={function(event) {
                 handleOnSelect(event)
             }}

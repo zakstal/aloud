@@ -17,6 +17,9 @@ import * as db from './storage'
  * - can this handle lots of data
  * - on removal of "character" type, update following "dialog" type to be just an action
  * - choose a name, focusId, orderId etc
+ * - merge enter, backspace and  keypress into one update function
+ * - remappable hotkeys for cut, copy and paste
+ * - handle mouse paste and cut
  * 
  * UPDATES
  * - saveing state in the browser. Indexd db?
@@ -51,11 +54,6 @@ const noUpdateKyes = [
 
 const removeTokens = ['dialogue_end', 'dialogue_begin']
 const capitalizeTypes = ['character', 'scene_heading', 'transition']
-
-const transformText = (text: string, type: string) => {
-    if (capitalizeTypes.includes(type)) return text.toUpperCase()
-    return text
-}
 
 const prepareTokensRender = (tokens: Tokens[]) => {
     return tokens.filter((token: Tokens) => !removeTokens.includes(token.type))
@@ -158,25 +156,34 @@ export function useFountainNodes(tokensIn = [], ref) {
                     type: 'character',
                 }, orderId, selection?.anchorOffset)
 
-                console.log("HANDLE KEY DOWN 1")
                 window.scriptStorage.commit()
                 setCurrentOrderId(orderId)
                 setNextCaretPosition(selection?.anchorOffset)
                 return
             }
             const isMetaCopy = e.metaKey && e.key === 'c' 
-            if (isMetaCopy) return
+            if (isMetaCopy) {
+                // e.preventDefault()
+                return 
+            }
 
             const isCtrlUndo = e.ctrlKey && e.key === 'z' 
             const isMetalUndo = e.metaKey && e.key === 'z' 
             const isShift = e.shiftKey
 
             if (isCtrlUndo || isMetalUndo ) {
+                e.preventDefault()
                 if (isShift) {
                     await window.scriptStorage.redo()
                     return
                 }
                 await window.scriptStorage.undo()
+                return
+            }
+
+            const isCtrlCut = e.ctrlKey && e.key === 'x' 
+            const isMetalCut = e.metaKey && e.key === 'x' 
+            if (isCtrlCut || isMetalCut) {
                 return
             }
    
@@ -187,10 +194,12 @@ export function useFountainNodes(tokensIn = [], ref) {
 
             // hande range and key press
             const [currentOffset, secondOffset] = rangeOffsets || []
-            const [carotPostiion, focusId] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            const [carotPostiion, focusId, foundText] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
 
             setNextCaretPosition(selection?.anchorOffset)
             window.scriptStorage.commit()
+
+           
   
             setCurrentOrderId(focusId)
             setNextCaretPosition(carotPostiion)
@@ -198,9 +207,6 @@ export function useFountainNodes(tokensIn = [], ref) {
             setRangeOffsets(null)
         },
         function handleKeyUp(e) {
-
-            console.log('e.clipboardData text', e.clipboardData);
-            console.log('handleKeyUp text', e.clipboardData?.getData('Text'));
             const isCtrlPaste = e.ctrlKey && e.key === 'v' 
             const isMetalPaste = e.metaKey && e.key === 'v' 
             if (isCtrlPaste || isMetalPaste) return
@@ -241,7 +247,6 @@ export function useFountainNodes(tokensIn = [], ref) {
                 let focusId = currentOrderId
 
                 window.scriptStorage.combineSplitRange(focusId, carotPostiion || selection?.anchorOffset)
-                console.log("HANDLE ENTER combineSplitRange")
                 window.scriptStorage.commit()
 
                 setCurrentOrderId(Number(currentOrderId) + 1)
@@ -262,7 +267,6 @@ export function useFountainNodes(tokensIn = [], ref) {
 
             const [currentOffset, secondOffset] = rangeOffsets || []
             const [carotPostiion, focusId] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
-            console.log("HANDLE BACKSPACE")
             window.scriptStorage.commit()
 
             setCurrentOrderId(focusId)
@@ -308,17 +312,7 @@ export function useFountainNodes(tokensIn = [], ref) {
             const currentElement = getElementAtCaret()
             const orderId = currentElement?.dataset?.order
 
-            console.log('Text--------', e.clipboardData.getData('Text'));
-            // console.log('text/plain', e.clipboardData.getData('text/plain'));
-            // console.log('text/html', e.clipboardData.getData('text/html'));
-            // console.log('text/rtf', e.clipboardData.getData('text/rtf'));
-        
-            // console.log('Url', e.clipboardData.getData('Url'));
-            // console.log('text/uri-list', e.clipboardData.getData('text/uri-list'));
-            // console.log('text/x-moz-url', e.clipboardData.getData('text/x-moz-url'));
-
-
-            const didUpdate = window.scriptStorage.updateText({
+            const [didUpdate, focusId, nextCaretPostion] = window.scriptStorage.updateText({
                 text: e.clipboardData.getData('text/plain')
             }, orderId, selection?.anchorOffset)
 
@@ -326,9 +320,26 @@ export function useFountainNodes(tokensIn = [], ref) {
             // we can just register the changeand if we rerender later, all the text will be updated.
             if (didUpdate) {
                 window.scriptStorage.commit()
-                setNextCaretPosition(selection?.anchorOffset)
+                setCurrentOrderId(focusId)
+                setNextCaretPosition(nextCaretPostion)
             }
 
+        },
+        function handleCut(e) {
+            const selection = window.getSelection();
+            
+            if (selection.anchorOffset !== 0 && !rangeOffsets) return
+            e.preventDefault()
+
+            const [currentOffset, secondOffset] = rangeOffsets || []
+            const [carotPostiion, focusId] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            window.scriptStorage.commit()
+
+            setCurrentOrderId(focusId)
+            setNextCaretPosition(carotPostiion)
+            setSecondaryOrderId(null)
+            setRangeOffsets(null)
+            // setTokens(newTokens)
         },
         currentOrderId,
         secondaryOrderId

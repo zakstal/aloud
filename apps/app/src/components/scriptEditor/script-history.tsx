@@ -1,5 +1,5 @@
 import next from 'next'
-import { Tokens, tokenize } from './script-tokens'
+import { Tokens, tokenize as tokenizeIn } from './script-tokens'
 import { Diff } from './storage'
 import { consoleIntegration } from '@sentry/nextjs'
 
@@ -8,6 +8,17 @@ const MODIFY = 'modify'
 const ADD = 'add'
 
 const capitalizeTypes = ['character', 'scene_heading', 'transition']
+const removeTokens = ['dialogue_end', 'dialogue_begin']
+
+const prepareTokensRender = (tokens: Tokens[]) => {
+    return tokens.filter((token: Tokens) => !removeTokens.includes(token.type))
+}
+
+const tokenize = (text: string, options: any) => {
+    const newTokens: Tokens[] | [] = tokenizeIn(text, options)
+
+    return prepareTokensRender(newTokens)
+}
 
 const getId = () => (Math.random() + 1).toString(36).substring(7);
 
@@ -72,6 +83,39 @@ type commitCallbackType = ((tokens: Tokens[], caretPosition: number | null, curr
  * - Highlight sevearl lines
  * - delete lines
  * - undo 
+ * 
+ * 2)
+ * - highlight lines, ctrl+c
+ * - ctrl+v
+ * 
+ * should copy lines and paste them
+ * caret should be at end of line
+ * 
+ * 3)
+ * - highlight lines, ctrl+c
+ * - mouse paste
+ * 
+ * 4)
+ * - highlight lines, ctrl+c
+ * - find a location in the doc
+ * - write some text
+ * - paste
+ * - undo
+ * 
+ * should undo in the correct order
+ * 
+ * 5)
+ * - got to middle of line
+ * - press enter
+ * 
+ * line should be slplit
+ * 
+ * - undo
+ * 
+ * should undo correct
+ * 
+ * - write new text
+ * 
  * 
  */
 export class ScriptHistory {
@@ -141,16 +185,12 @@ export class ScriptHistory {
         const carotPostiion = this.tokens[currentOrderId].text?.length || 0 
         const currentText = this.tokens[currentOrderId].text
 
-
-        let nextIdNext = nextId
-        // let nextIdNext = currentOrderIdNext >= nextId ? currentOrderIdNext + 1 : nextId
-
-
-        console.log('nextIdNext', nextIdNext)
         this.deleteRange(currentOrderId, nextId, currentOffset || carotPostiion)
 
+        const textCombined = combineText(currentText, nextText, currentOffset, nextOffset)
+
         const isLastCharacter = this.tokens[currentOrderId - 1]?.type === 'character'
-        const foundTokens = tokenize(combineText(currentText, nextText, currentOffset, nextOffset), { isLastCharacter })
+        const foundTokens = tokenize(textCombined, { isLastCharacter })
 
         foundTokens.forEach((token, foundIdx) => {
             this.add({
@@ -158,8 +198,8 @@ export class ScriptHistory {
                 id: getId()
             }, currentOrderId + foundIdx, currentOffset || carotPostiion)
         })
-            
-        console.log('this.pendingUpdates', this.pendingUpdates)
+
+        const foundText = foundTokens.map(token => token.text).join('\n')
     
         return [currentOffset || carotPostiion, currentOrderId]
     }
@@ -207,14 +247,26 @@ export class ScriptHistory {
 
         const lastToken = this.tokens[idx - 1]
         const token = this.tokens[idx]
+        if (!token) return
 
         const isLastCharacter = lastToken?.type === 'character'
 
-        const foundTokens = tokenize(tokenPartialMaybe.text, { isLastCharacter })
+        let nextText = null
+        // combine text if text was pasted into the middle of text
+        if (!token.text) {
+            nextText = tokenPartialMaybe.text
+        } else {
+            nextText = token.text.substring(0, caretPosition || 0) + tokenPartialMaybe.text + token.text.substring(caretPosition || 0, token?.text.length || 0)
+        }
+
+        const foundTokens = tokenize(nextText, { isLastCharacter })
         const [newText, didUpdate] = transformText(tokenPartialMaybe.text, token.type)
 
         let textTransformed = false
         let tokensUpdated = didUpdate
+
+        let focusId = idx
+        let nextCaretPostion = caretPosition
 
         if (foundTokens.length === 1) {
             // Modify if needed
@@ -231,11 +283,15 @@ export class ScriptHistory {
             textTransformed = true
             this.deleteRange(idx, idx, caretPosition)
             foundTokens.reverse().forEach((foundToken, foundIdx) => {
-                this.add(foundToken, Number(idx) + Number(foundIdx), caretPosition)
+                // not effeicient to reassing on each, but easy .
+                focusId = Number(idx) + Number(foundIdx)
+                nextCaretPostion = foundToken?.text?.length
+                this.add(foundToken, focusId, caretPosition)
             })
+
         }
 
-        return tokensUpdated || textTransformed
+        return [tokensUpdated || textTransformed, focusId, nextCaretPostion]
     }
 
     /**
@@ -343,7 +399,6 @@ export class ScriptHistory {
 
     deleteRangeUndo(updates: Diff) {
         try {
-            console.log('deleteRangeUndo updates', updates)
             this.tokens = this.tokens.toSpliced(updates.idx, 0, ...(Array.isArray(updates.oldValue) ? updates.oldValue : [updates.oldValue]))
         } catch (e) {
             console.error('Error adding', e)
@@ -352,7 +407,6 @@ export class ScriptHistory {
 
     applyForward(updates: Diff[]) {
         for (const update of updates) {
-            console.log('apply forward', update)
             switch(update.type) {
                 case DELETE:
                     this.deleteInternalForward(update)
@@ -366,14 +420,10 @@ export class ScriptHistory {
 
             }
         }
-
-        console.log('this.tokens applyForwards', this.tokens)
     }
     
     applyUndo(update: Diff[] | Diff) {
         let updates: Diff[] = !Array.isArray(update) ? [update] : update
-
-        console.log("apply undo", updates)
         // its important that these run in reverse order becuase, as we delcare deletions, additions and modifications
         // in the code, we want those to be applied in the order we delcare them.
         for (let i = updates.length - 1; i >= 0; i--) {
@@ -430,8 +480,11 @@ export class ScriptHistory {
     }
 
     async undo() {
+        console.log('UNDO')
+        console.log('this.pendingUpdates', this.pendingUpdates)
+        console.log('this.lastInsertedId', this.lastInsertedId)
         if (this.pendingUpdates) {
-            await this.commit()
+            await this.commitUpdates()
         }
         if (!this.lastInsertedId && this.lastInsertedId !== 0) {
             const res = await this.diffs()
@@ -444,6 +497,7 @@ export class ScriptHistory {
         if (!this.lastInsertedId) return
 
         const lastInstertedGroup = await this.db.getByIdGroup(this.lastInsertedId)
+        console.log('lastInstertedGroup', lastInstertedGroup)
         if (!lastInstertedGroup || !lastInstertedGroup.length) return
 
         this.pendingUndos = this.pendingUndos.concat(lastInstertedGroup)
@@ -453,17 +507,15 @@ export class ScriptHistory {
         const last = lastInstertedGroup.sort((a: Diff, b: Diff) => Number(a.id) - Number(b.id))[0]
         this.lastInsertedId = Number(last.id) - 1
 
-        this.commit({ applyPending: false })
+        this.commitUndos()
 
     }
 
     redo() {
-        console.log("REDO--------")
-        console.log("his.pendingRedos before", this.pendingRedos)
+        console.log('REDO')
         const nextUndoGroup = this.pendingRedos.pop()
         if (!nextUndoGroup) return;
 
-        console.log('this.pendingRedos after', this.pendingRedos)
         this.applyForward(nextUndoGroup)
         const stagedUndoGroup = this.pendingRedos ? this.pendingRedos[this.pendingRedos.length - 1] : null
 
@@ -478,6 +530,54 @@ export class ScriptHistory {
         return res
     }
 
+    async commitUpdates({ noUpdate = false} = {}) {
+        if (!this.pendingUpdates.length) return
+        const groupId = getId()
+        this.pendingUpdates.forEach(obj => obj.group = groupId)
+
+        console.log('COMMIT UPDATES')
+        this.lastInsertedId = await this.db.bulkAdd(this.pendingUpdates)
+
+        const lastToUpdate = last(this.pendingUpdates)
+
+        this.applyForward(this.pendingUpdates)
+        this.flushUpdates()
+
+        if (!noUpdate) {
+            this.commitCallback && this.commitCallback(this.tokens, lastToUpdate.caretPosition)
+        }
+    }
+
+    async commitRedos() {
+        if (!this.pendingRedos.length) return
+        console.log('COMMIT PENDING REDOS')
+        // if there are pending redos when we start making new changes
+        // apply them to history 
+        const prepPending = this.pendingRedos
+            .flat()
+            .sort((a, b) => a.id - b.id)
+            .reverse()
+            .map(this.transformDiffToUpdate)
+
+        // a simple way to update the group id
+        prepPending.forEach(obj => obj.group = obj.group + 1)
+
+        await this.db.bulkAdd(prepPending)
+    }
+
+    async commitUndos({ noUpdate = false } = {}) {
+        if (!this.pendingUndos.length) return
+        console.log('COMMIT UNDOS')
+            const lastPending = this.pendingUndos[0]
+            
+            this.applyUndo(this.pendingUndos)
+            this.flushUndos()
+
+            if (!noUpdate) {
+                this.commitCallback && this.commitCallback(this.tokens, lastPending.caretPosition, lastPending.idxRange || lastPending.idx)
+            }
+    }
+
     /**
      * 
      * @param param0 
@@ -487,52 +587,20 @@ export class ScriptHistory {
      * On applying undos, pendingUdos are cleared and added to pendingRedos.
      * 
      */
-    async commit({ noUpdate = false, applyPending = true, applyUndo = true } = {}) {
+    async commit({ noUpdate = false, applyPending = true, applyUndo = true, applyRedos = true } = {}) {
 
-        if (this.pendingUpdates.length && applyPending) {
-            const groupId = getId()
-            this.pendingUpdates.forEach(obj => obj.group = groupId)
+        if (applyRedos) {
+           this.commitRedos()
+        } 
 
-            if (this.pendingRedos.length) {
-                // if there are pending redos when we start making new changes
-                // apply them to history 
-                const prepPending = this.pendingRedos
-                    .flat()
-                    .sort((a, b) => a.id - b.id)
-                    .reverse()
-                    .map(this.transformDiffToUpdate)
-
-                // a simple way to update the group id
-                prepPending.forEach(obj => obj.group = obj.group + 1)
-
-                await this.db.bulkAdd(prepPending)
-            } 
-
-            this.lastInsertedId = await this.db.bulkAdd(this.pendingUpdates)
-
-            const lastToUpdate = last(this.pendingUpdates)
-
-            this.applyForward(this.pendingUpdates)
-            this.flushUpdates()
-
-            if (!noUpdate) {
-                this.commitCallback && this.commitCallback(this.tokens, lastToUpdate.caretPosition)
-            }
-    
+        if (applyPending) {
+            this.commitUpdates({ noUpdate })
         }
         
-        if (this.pendingUndos.length && applyUndo) {
-            const lastPending = this.pendingUndos[0]
-            
-            this.applyUndo(this.pendingUndos)
-            this.flushUndos()
-
-            if (!noUpdate) {
-                this.commitCallback && this.commitCallback(this.tokens, lastPending.caretPosition, lastPending.idxRange || lastPending.idx)
-            }
+        if (applyUndo) {
+          this.commitUndos({ noUpdate })
         }
 
-        
     }
 
     flushUpdates() {
