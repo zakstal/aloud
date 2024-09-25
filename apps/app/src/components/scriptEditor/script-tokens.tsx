@@ -63,7 +63,7 @@ var regex = {
     italic: /(\*{1}(?=.+\*{1}))(.+?)(\*{1})/g,
     underline: /(_{1}(?=.+_{1}))(.+?)(_{1})/g,
 
-    splitter: /\n{2,}/g,
+    splitter: /\n{1,}/g,
     cleaner: /^\n+|\n+$/,
     standardizer: /\r\n|\r/g,
     whitespacer: /^\t+|^ {3,}/gm
@@ -84,6 +84,9 @@ export const tokenize = function (script, optionsIn = {}) {
     var src    = lexer(script).split(regex.splitter)
     , i      = src.length, line, match, parts, text, meta, x, xlen, dual
     , tokens = [];
+
+    console.log('src', src)
+    console.log('script', script)
 
     while (i--) {
     line = src[i];

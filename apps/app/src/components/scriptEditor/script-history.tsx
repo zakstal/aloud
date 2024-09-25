@@ -1,16 +1,25 @@
 import next from 'next'
-import { Tokens } from './script-tokens'
+import { Tokens, tokenize } from './script-tokens'
 import { Diff } from './storage'
+import { consoleIntegration } from '@sentry/nextjs'
 
 const DELETE = 'delete'
 const MODIFY = 'modify'
 const ADD = 'add'
+
+const capitalizeTypes = ['character', 'scene_heading', 'transition']
 
 const getId = () => (Math.random() + 1).toString(36).substring(7);
 
 function combineText(text1 = '', text2 = '', offset1: number, offset2: number) {
     return text1.slice(0, offset1 || text1.length) + text2.slice(offset2 || 0, text2.length)
 }
+
+const transformText = (text: string, type: string) => {
+    if (capitalizeTypes.includes(type)) return [text.toUpperCase(), true]
+    return [text, false]
+}
+
 
 function last(arr: any) {
     return arr[arr.length - 1]
@@ -19,6 +28,15 @@ function last(arr: any) {
 type commitCallbackType = ((tokens: Tokens[], caretPosition: number | null, currentId: number | null) => void) | null
 
 /**
+ * NB:
+ * you can reset the db with 
+ * window.resetDb()
+ * 
+ * you can see the diffs in the db with 
+ * window.diffs().then(diffs => console.log(diffs))
+ * 
+ * DOCS:
+ * 
  * Script history handles changes to the document data.
  * Updates are saved as a Diff and stored in a db.
  * 
@@ -48,6 +66,12 @@ type commitCallbackType = ((tokens: Tokens[], caretPosition: number | null, curr
  * Diffs and added to the db. This way the "undos" become apart of the history. 
  * 
  * 
+ * TESTS
+ * 
+ * 1) 
+ * - Highlight sevearl lines
+ * - delete lines
+ * - undo 
  * 
  */
 export class ScriptHistory {
@@ -116,17 +140,26 @@ export class ScriptHistory {
         const nextText = this.tokens[nextId].text || ''
         const carotPostiion = this.tokens[currentOrderId].text?.length || 0 
         const currentText = this.tokens[currentOrderId].text
-    
-        let currentOrderIdNext = currentOrderId + 1
-
-        let nextIdNext = currentOrderIdNext >= nextId ? currentOrderIdNext + 1 : nextId
 
 
-        this.deleteRange(currentOrderId + 1, nextIdNext, currentOffset || carotPostiion)
+        let nextIdNext = nextId
+        // let nextIdNext = currentOrderIdNext >= nextId ? currentOrderIdNext + 1 : nextId
 
-        this.modify({
-            text: combineText(currentText, nextText, currentOffset, nextOffset),
-        }, currentOrderId, currentOffset || carotPostiion)
+
+        console.log('nextIdNext', nextIdNext)
+        this.deleteRange(currentOrderId, nextId, currentOffset || carotPostiion)
+
+        const isLastCharacter = this.tokens[currentOrderId - 1]?.type === 'character'
+        const foundTokens = tokenize(combineText(currentText, nextText, currentOffset, nextOffset), { isLastCharacter })
+
+        foundTokens.forEach((token, foundIdx) => {
+            this.add({
+                ...token,
+                id: getId()
+            }, currentOrderId + foundIdx, currentOffset || carotPostiion)
+        })
+            
+        console.log('this.pendingUpdates', this.pendingUpdates)
     
         return [currentOffset || carotPostiion, currentOrderId]
     }
@@ -169,17 +202,62 @@ export class ScriptHistory {
         return this.splitRange(foucsId, caret)
     }
 
+    updateText(tokenPartialMaybe, idxIn: number, caretPosition: number) {
+        const idx = Number(idxIn)
+
+        const lastToken = this.tokens[idx - 1]
+        const token = this.tokens[idx]
+
+        const isLastCharacter = lastToken?.type === 'character'
+
+        const foundTokens = tokenize(tokenPartialMaybe.text, { isLastCharacter })
+        const [newText, didUpdate] = transformText(tokenPartialMaybe.text, token.type)
+
+        let textTransformed = false
+        let tokensUpdated = didUpdate
+
+        if (foundTokens.length === 1) {
+            // Modify if needed
+            const foundType = foundTokens[0]?.type
+            if (foundType !== token.type) {
+                textTransformed = true
+            }
+            this.modify({
+                type: foundTokens[0]?.type,
+                text: newText
+            }, idx, caretPosition)
+        } else {
+            // Remove current and add new items 
+            textTransformed = true
+            this.deleteRange(idx, idx, caretPosition)
+            foundTokens.reverse().forEach((foundToken, foundIdx) => {
+                this.add(foundToken, Number(idx) + Number(foundIdx), caretPosition)
+            })
+        }
+
+        return tokensUpdated || textTransformed
+    }
+
+    /**
+     * 
+     * @param startIdx 
+     * @param endIdx 
+     * @param caretPosition 
+     * 
+     * startIdx and endIdx are inclusive. delete startIdx up to and including endIdx
+     */
     deleteRange(startIdx: number, endIdx: number, caretPosition: number) {
         if (startIdx > endIdx) {
             throw 'Start index cannot be grater than end index';
         }
 
         this.pendingUpdates.push({
+            type: DELETE,
             caretPosition,
             idx: startIdx,
-            type: DELETE,
             idxRange: endIdx,
-            oldValue: this.tokens.slice(startIdx, endIdx).map(obj => ({ ...obj })),
+            // endIdx + 1 becuase we want to include that index
+            oldValue: this.tokens.slice(startIdx, endIdx + 1).map(obj => ({ ...obj })),
             remoteDBVersion: this.dbTokenVersion,
         })
     }
@@ -208,7 +286,11 @@ export class ScriptHistory {
 
     deleteInternal({ idx, idxRange }: Diff) {
         try {
-            this.tokens = this.tokens.toSpliced(idx, idxRange ? (idxRange - idx) : 1 )
+            // deleteInternal is used for deleting and addUndo.  (idxRange - idx) + 1) is for the initial delete,
+            // but for addUndo we only need to delete one item and it and an ADD update does not have an idxRange
+            // TODO add testing for this
+            const forHowMany = idxRange ? ((idxRange - idx) + 1) : 1 
+            this.tokens = this.tokens.toSpliced(idx, forHowMany)
         } catch (e) {
             console.error('Error deleting', e)
         }
@@ -234,7 +316,6 @@ export class ScriptHistory {
 
     addInternalForward(update: Diff) {
         try {
-
             this.tokens = this.tokens.toSpliced(update.idx, 0, update.newValue)
         } catch (e) {
             console.error('Error adding', e)
@@ -262,7 +343,8 @@ export class ScriptHistory {
 
     deleteRangeUndo(updates: Diff) {
         try {
-            this.tokens = this.tokens.toSpliced(updates.idx, 0, ...updates.oldValue)
+            console.log('deleteRangeUndo updates', updates)
+            this.tokens = this.tokens.toSpliced(updates.idx, 0, ...(Array.isArray(updates.oldValue) ? updates.oldValue : [updates.oldValue]))
         } catch (e) {
             console.error('Error adding', e)
         }
@@ -270,6 +352,7 @@ export class ScriptHistory {
 
     applyForward(updates: Diff[]) {
         for (const update of updates) {
+            console.log('apply forward', update)
             switch(update.type) {
                 case DELETE:
                     this.deleteInternalForward(update)
@@ -283,14 +366,18 @@ export class ScriptHistory {
 
             }
         }
+
+        console.log('this.tokens applyForwards', this.tokens)
     }
     
     applyUndo(update: Diff[] | Diff) {
         let updates: Diff[] = !Array.isArray(update) ? [update] : update
 
-        // for (let i = updates.length - 1; i < 0; i--) {
-            // const update = updates[i]
-        for (const update of updates) {
+        console.log("apply undo", updates)
+        // its important that these run in reverse order becuase, as we delcare deletions, additions and modifications
+        // in the code, we want those to be applied in the order we delcare them.
+        for (let i = updates.length - 1; i >= 0; i--) {
+            const update = updates[i]
             switch(update.type) {
                 case DELETE:
                     this.deleteRangeUndo(update)
@@ -371,9 +458,12 @@ export class ScriptHistory {
     }
 
     redo() {
+        console.log("REDO--------")
+        console.log("his.pendingRedos before", this.pendingRedos)
         const nextUndoGroup = this.pendingRedos.pop()
         if (!nextUndoGroup) return;
 
+        console.log('this.pendingRedos after', this.pendingRedos)
         this.applyForward(nextUndoGroup)
         const stagedUndoGroup = this.pendingRedos ? this.pendingRedos[this.pendingRedos.length - 1] : null
 
@@ -402,43 +492,38 @@ export class ScriptHistory {
         if (this.pendingUpdates.length && applyPending) {
             const groupId = getId()
             this.pendingUpdates.forEach(obj => obj.group = groupId)
-            let lastId = null
-            let toUpdate: Diff[] | null = null
 
             if (this.pendingRedos.length) {
-                // Reassign the groupId as these are added to the stack as updates
-                toUpdate = this.pendingRedos
-                .flat()
-                .map(this.transformDiffToUpdate)
-                .map(redoUpdate => {
-                    const groupId = getId()
-                    redoUpdate.group = groupId
-                    return redoUpdate
-                })
-                .concat(this.pendingUpdates)
+                // if there are pending redos when we start making new changes
+                // apply them to history 
+                const prepPending = this.pendingRedos
+                    .flat()
+                    .sort((a, b) => a.id - b.id)
+                    .reverse()
+                    .map(this.transformDiffToUpdate)
 
-                lastId = await this.db.bulkAdd(toUpdate)
-            } else {
-                toUpdate = this.pendingUpdates
-                lastId = await this.db.bulkAdd(this.pendingUpdates)
-            }
+                // a simple way to update the group id
+                prepPending.forEach(obj => obj.group = obj.group + 1)
 
-            this.lastInsertedId = lastId
+                await this.db.bulkAdd(prepPending)
+            } 
 
-            const lastToUpdate = last(toUpdate)
+            this.lastInsertedId = await this.db.bulkAdd(this.pendingUpdates)
 
-            this.applyForward(toUpdate)
+            const lastToUpdate = last(this.pendingUpdates)
+
+            this.applyForward(this.pendingUpdates)
             this.flushUpdates()
 
             if (!noUpdate) {
                 this.commitCallback && this.commitCallback(this.tokens, lastToUpdate.caretPosition)
-                // this.commitCallback && this.commitCallback(this.tokens, lastToUpdate.caretPosition, lastToUpdate.idx)
             }
     
         }
         
         if (this.pendingUndos.length && applyUndo) {
             const lastPending = this.pendingUndos[0]
+            
             this.applyUndo(this.pendingUndos)
             this.flushUndos()
 

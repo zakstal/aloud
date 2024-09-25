@@ -26,6 +26,7 @@ export const ScriptEditor =({
         clearCurrrentNode, 
         setCurrentNode, 
         handleOnSelect,
+        handlePaste,
         currentOrderId,
         secondaryOrderId,
     ] = useFountainNodes(scriptTokens, myRef)
@@ -39,16 +40,7 @@ export const ScriptEditor =({
             onBlur={clearCurrrentNode}
             onMouseDown={setCurrentNode}
             onKeyUp={handleKeyUp}
-            onPaste={function(e) {
-                // console.log('Text', e.clipboardData.getData('Text'));
-                // console.log('text/plain', e.clipboardData.getData('text/plain'));
-                // console.log('text/html', e.clipboardData.getData('text/html'));
-                // console.log('text/rtf', e.clipboardData.getData('text/rtf'));
-            
-                // console.log('Url', e.clipboardData.getData('Url'));
-                // console.log('text/uri-list', e.clipboardData.getData('text/uri-list'));
-                // console.log('text/x-moz-url', e.clipboardData.getData('text/x-moz-url'));
-            }}
+            onPaste={handlePaste}
             onSelect={function(event) {
                 handleOnSelect(event)
             }}
@@ -69,7 +61,7 @@ export const ScriptEditor =({
 
                 
             >
-                <div>currentOrderId: {currentOrderId}</div>
+                <div style={{ position: 'sticky', top: 0 }}>currentOrderId: {currentOrderId}</div>
                 <div>secondaryOrderId: {secondaryOrderId}</div>
             <TokenContent tokens={tokens} />
         </div>

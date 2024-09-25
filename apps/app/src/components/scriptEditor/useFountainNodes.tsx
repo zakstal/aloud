@@ -125,8 +125,10 @@ export function useFountainNodes(tokensIn = [], ref) {
         range.collapse(true);
         const textLength = element?.childNodes[0] ? element?.childNodes[0].length : element?.innerText?.length
 
+        // caret can fail if there is a space character in the text. 
+        // This is to handle situations where the nextCaretPosition is off for some reason.
         const caret = textLength < nextCaretPosition ? textLength : nextCaretPosition
-        console.log('el', textLength, caret, nextCaretPosition)
+
         try {
             if (el) {
                 range.setStart(el, caret);
@@ -162,6 +164,8 @@ export function useFountainNodes(tokensIn = [], ref) {
                 setNextCaretPosition(selection?.anchorOffset)
                 return
             }
+            const isMetaCopy = e.metaKey && e.key === 'c' 
+            if (isMetaCopy) return
 
             const isCtrlUndo = e.ctrlKey && e.key === 'z' 
             const isMetalUndo = e.metaKey && e.key === 'z' 
@@ -194,6 +198,13 @@ export function useFountainNodes(tokensIn = [], ref) {
             setRangeOffsets(null)
         },
         function handleKeyUp(e) {
+
+            console.log('e.clipboardData text', e.clipboardData);
+            console.log('handleKeyUp text', e.clipboardData?.getData('Text'));
+            const isCtrlPaste = e.ctrlKey && e.key === 'v' 
+            const isMetalPaste = e.metaKey && e.key === 'v' 
+            if (isCtrlPaste || isMetalPaste) return
+
             const selection = window.getSelection();
             const currentElement = getElementAtCaret()
             const orderId = currentElement?.dataset?.order
@@ -204,36 +215,17 @@ export function useFountainNodes(tokensIn = [], ref) {
                 setSecondaryOrderId(null)
             }
 
-            
-            let didUpdate = false
-         
-
             if (noUpdateKeySet.has(e.key)) return
             if (e.keyCode === 32) return // space bar. having a space sometimes doesn't register in the inner text and setting the caret can fail
             if (orderId) {
-                const lastToken = tokens[orderId - 1]
-                const token = tokens[orderId]
 
-                const isLastCharacter = lastToken?.type === 'character'
-
-                const foundTokens = tokenize(currentElement.innerText, { isLastCharacter })
-
-                // TODO update to handle multiple tokens
-                if (foundTokens.length === 1 && token.type !== foundTokens[0].type) {
-                    didUpdate = true
-                    window.scriptStorage.modify({
-                        type: foundTokens[0].type
-                    }, orderId, selection?.anchorOffset)
-                }
-
-                // TODO this shoudl 
-                const newText = transformText(currentElement.innerText, tokens[orderId].type)
-
-                window.scriptStorage.modify({
-                    text: newText
+                console.log('handleKeyUp currentElement.innerText', currentElement.innerText)
+                const didUpdate = window.scriptStorage.updateText({
+                    text: currentElement.innerText
                 }, orderId, selection?.anchorOffset)
-                
-                console.log("HANDLE KEY UP")
+
+                // This is to save updating. if we are not changing the type or the tranformation of the text,
+                // we can just register the changeand if we rerender later, all the text will be updated.
                 if (didUpdate) {
                     window.scriptStorage.commit()
                     setNextCaretPosition(selection?.anchorOffset)
@@ -309,6 +301,34 @@ export function useFountainNodes(tokensIn = [], ref) {
 
                 setRangeOffsets([selection.anchorOffset, selection.extentOffset])
             }
+        },
+        function handlePaste(e) {
+            e.preventDefault()
+            const selection = window.getSelection();
+            const currentElement = getElementAtCaret()
+            const orderId = currentElement?.dataset?.order
+
+            console.log('Text--------', e.clipboardData.getData('Text'));
+            // console.log('text/plain', e.clipboardData.getData('text/plain'));
+            // console.log('text/html', e.clipboardData.getData('text/html'));
+            // console.log('text/rtf', e.clipboardData.getData('text/rtf'));
+        
+            // console.log('Url', e.clipboardData.getData('Url'));
+            // console.log('text/uri-list', e.clipboardData.getData('text/uri-list'));
+            // console.log('text/x-moz-url', e.clipboardData.getData('text/x-moz-url'));
+
+
+            const didUpdate = window.scriptStorage.updateText({
+                text: e.clipboardData.getData('text/plain')
+            }, orderId, selection?.anchorOffset)
+
+            // This is to save updating. if we are not changing the type or the tranformation of the text,
+            // we can just register the changeand if we rerender later, all the text will be updated.
+            if (didUpdate) {
+                window.scriptStorage.commit()
+                setNextCaretPosition(selection?.anchorOffset)
+            }
+
         },
         currentOrderId,
         secondaryOrderId
