@@ -37,6 +37,9 @@ export default function ThemeToggle({}: CompProps) {
         <DropdownMenuItem onClick={() => setTheme('writer-dark-friendly')}>
           Writer dark friendly
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('beat')}>
+          Beat
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

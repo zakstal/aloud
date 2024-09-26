@@ -52,7 +52,10 @@ export default class History {
 
     // could be run on setData
     async applyChanges() {
-        const diffs = await this.diffs();
+        if (!this.dbTokenVersion) return
+        console.log("apply forwards")
+        const diffs = await this.diffs(this.dbTokenVersion);
+        console.log("apply forwards diffs", diffs)
         const diffsToApply = !this.lastInsertedId ? diffs : diffs.filter((update: Diff) => update.id > this.lastInsertedId)
         if (!diffs || !diffs.length) return
 
@@ -164,13 +167,11 @@ export default class History {
     }
 
     async undo() {
-        console.log('UNDO')
-
         if (this.pendingUpdates) {
             await this.commitUpdates()
         }
         if (!this.lastInsertedId && this.lastInsertedId !== 0) {
-            const res = await this.diffs()
+            const res = await this.diffs(this.dbTokenVersion)
             if (!res || !res.length) return
 
             const last = res[res.length - 1]
@@ -179,8 +180,8 @@ export default class History {
 
         if (!this.lastInsertedId) return
 
-        const lastInstertedGroup = await this.db.getByIdGroup(this.lastInsertedId)
-        console.log('lastInstertedGroup', lastInstertedGroup)
+        const lastInstertedGroup = await this.db.getByIdGroup(this.lastInsertedId, this.dbTokenVersion)
+
         if (!lastInstertedGroup || !lastInstertedGroup.length) return
 
         this.pendingUndos = this.pendingUndos.concat(lastInstertedGroup)
@@ -250,7 +251,6 @@ export default class History {
 
     async commitUndos(noUpdate: boolean = false) {
         if (!this.pendingUndos.length) return
-        console.log('COMMIT UNDOS')
             const lastPending = this.pendingUndos[0]
             
             this.applyUndo(this.pendingUndos)

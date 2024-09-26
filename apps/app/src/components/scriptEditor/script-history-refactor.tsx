@@ -140,6 +140,7 @@ export class ScriptHistory extends History {
         this.tokens = tokens
 
         if (commitCallback && tokens) {
+            console.log("commits and tokens")
             this.applyChanges()
             this.commitCallback(this.tokens)
         }
@@ -301,7 +302,7 @@ export class ScriptHistory extends History {
         if (startIdx > endIdx) {
             throw 'Start index cannot be grater than end index';
         }
-        
+
         this.change({
             type: DELETE,
             caretPosition,

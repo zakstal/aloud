@@ -8,6 +8,7 @@ import { useFountainNodes } from './useFountainNodes'
 interface ScriptEditorInput {
     scriptTokens: Tokens[];
     className: string;
+    audioVersionNumber: string;
 }
 
 // const getId = () => (Math.random() + 1).toString(36).substring(7);
@@ -15,7 +16,9 @@ interface ScriptEditorInput {
 export const ScriptEditor =({
     scriptTokens,
     className,
+    audioVersionNumber,
 }: ScriptEditorInput) => {
+
     const myRef = useRef(null);
     const [
         tokens, 
@@ -30,7 +33,7 @@ export const ScriptEditor =({
         handleCut,
         currentOrderId,
         secondaryOrderId,
-    ] = useFountainNodes(scriptTokens, myRef)
+    ] = useFountainNodes(scriptTokens, audioVersionNumber)
 
     useEffect(() => {
         myRef.current && myRef.current.focus()

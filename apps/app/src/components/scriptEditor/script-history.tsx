@@ -486,9 +486,6 @@ export class ScriptHistory {
     }
 
     async undo() {
-        console.log('UNDO')
-        console.log('this.pendingUpdates', this.pendingUpdates)
-        console.log('this.lastInsertedId', this.lastInsertedId)
         if (this.pendingUpdates) {
             await this.commitUpdates()
         }
@@ -503,7 +500,7 @@ export class ScriptHistory {
         if (!this.lastInsertedId) return
 
         const lastInstertedGroup = await this.db.getByIdGroup(this.lastInsertedId)
-        console.log('lastInstertedGroup', lastInstertedGroup)
+
         if (!lastInstertedGroup || !lastInstertedGroup.length) return
 
         this.pendingUndos = this.pendingUndos.concat(lastInstertedGroup)
@@ -573,7 +570,6 @@ export class ScriptHistory {
 
     async commitUndos({ noUpdate = false } = {}) {
         if (!this.pendingUndos.length) return
-        console.log('COMMIT UNDOS')
             const lastPending = this.pendingUndos[0]
             
             this.applyUndo(this.pendingUndos)

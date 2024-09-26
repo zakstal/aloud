@@ -104,7 +104,7 @@ export default function Page() {
           }}
           characters={characters}
           voices={voices}
-          audioVersionNumber={audioVersionNumber}
+          audioVersionNumber={audioScreenPlayVersion?.id}
           audioVersions={audioVersions}
           scriptTokens={data?.screen_play_fountain}
           processAudio={async () => {

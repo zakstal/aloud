@@ -84,7 +84,7 @@ function getElementAtCaret() {
 
 window.scriptStorage = window.scriptStorage || new ScriptHistory()
 
-export function useFountainNodes(tokensIn = [], ref) {
+export function useFountainNodes(tokensIn = [], versionNumber: string) {
 
     const [tokens, setTokens] = useState(prepareTokensRender(tokensIn))
     const tokensChanged = useMemo(() => tokens, [tokens])
@@ -96,12 +96,14 @@ export function useFountainNodes(tokensIn = [], ref) {
 
     useEffect(() => {
 
+        window.scriptStorage = window.scriptStorage || new ScriptHistory()
         // NB ScriptHistory has an internal representation of tokens. not sure if we should keep 
         // to sets, hoever we can change the internal as we like and only update it later if needed
         window.scriptStorage.setCallbackValues(
-            '1', // script version
+            versionNumber || '1',
             db,
             (tokens: Tokens[], caretPosition: number | null, currentOrderId: number | null) => { // call back that runs on "commit"
+                console.log("set forward", tokens)
                 setTokens(tokens)
                 caretPosition && setNextCaretPosition(caretPosition)
                 currentOrderId && setCurrentOrderId(currentOrderId)
@@ -109,7 +111,7 @@ export function useFountainNodes(tokensIn = [], ref) {
             tokens,
         )
 
-    }, [])
+    }, [versionNumber])
     useEffect(() => {
         if (!currentOrderId) return
 
@@ -128,6 +130,7 @@ export function useFountainNodes(tokensIn = [], ref) {
         // This is to handle situations where the nextCaretPosition is off for some reason.
         const caret = textLength < nextCaretPosition ? textLength : nextCaretPosition
 
+        console.log('set range')
         try {
             if (el) {
                 range.setStart(el, caret);
@@ -227,9 +230,11 @@ export function useFountainNodes(tokensIn = [], ref) {
             if (orderId) {
 
                 console.log('handleKeyUp currentElement.innerText', currentElement.innerText)
-                const didUpdate = window.scriptStorage.updateText({
+                const [ didUpdate ] = window.scriptStorage.updateText({
                     text: currentElement.innerText
                 }, orderId, selection?.anchorOffset)
+
+                console.log('didUpdate', didUpdate)
 
                 // This is to save updating. if we are not changing the type or the tranformation of the text,
                 // we can just register the changeand if we rerender later, all the text will be updated.
@@ -267,7 +272,7 @@ export function useFountainNodes(tokensIn = [], ref) {
             e.preventDefault()
 
             const [currentOffset, secondOffset] = rangeOffsets || []
-            const [carotPostiion, focusId] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            const [carotPostiion, focusId] = window.scriptStorage?.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
             window.scriptStorage.commit()
 
             setCurrentOrderId(focusId)

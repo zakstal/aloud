@@ -187,7 +187,7 @@ export async function createScreenPlay(
 
   const screenplayInsert = {
     user_id: userId,
-    title: title,
+    title: title || 'New script',
     type: type,
     total_lines,
     screen_play_text,
