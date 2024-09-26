@@ -1,6 +1,7 @@
 import { Tokens, tokenize } from './script-tokens'
 import { useEffect, useState, useMemo } from 'react';
-import { ScriptHistory } from './script-history'
+import { ScriptHistory } from './script-history-refactor'
+// import { ScriptHistory } from './script-history'
 import * as db from './storage'
 
 
