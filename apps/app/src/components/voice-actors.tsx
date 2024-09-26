@@ -22,7 +22,7 @@ type VoiceActorsInput = {
 
 function SmallHeading ({ text }: { text: string}) {
   return (
-    <div className="sticky pt-2 pb-2 z-50 top-0 pl-2" style={{ background: 'rgb(254, 252, 251)' }}>
+    <div className="sticky pt-2 pb-2 z-50 top-0 pl-2 bg-[hsl(var(--background))]">
       <p className="text-xs font-small leading-none text-muted-foreground">{text}</p>
     </div>
   )
@@ -35,12 +35,12 @@ export function VoiceActors({
 }: VoiceActorsInput) {
   return (
     <div className="">
-      <div className="z-40 sticky top-0" style={{ background: 'rgb(254, 252, 251)'}}>
+      <div className="z-40 sticky top-0" >
        <ChevronLeft
         className="cursor-pointer mb-4 z-50 chevron chevron-in"
         onClick={onClose}
         />
-        <div className="sticky top-0 z-50 header header-in" style={{ background: 'rgb(254, 252, 251)' }}>
+        <div className="sticky top-0 z-50 header header-in">
           <CardHeader className="p-2 pt-0">
             <div className="flex flex-row gap-4" >
                 <CardTitle>Fined a voice for</CardTitle>
@@ -61,7 +61,7 @@ export function VoiceActors({
               </div> */}
           </CardHeader>
         </div>
-        <Character key={character?.name} name={character?.name} gender={character?.gender} className="mb-2" style={{ background: 'rgb(254, 252, 251)'}} />
+        <Character key={character?.name} name={character?.name} gender={character?.gender} className="mb-2" />
         <Separator className=""/>
         {/* <div>
           <div className="flex gap-2">

@@ -10,6 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 import ScreenPlayConatiner from '@/components/screenPlay/screenPlay'
 import voices, { Voice } from '@v1/script-to-audio/voices'
 import { processAudio } from '@/actions/screenPlays/process-audio'
+import { startScreenPlay } from '@/actions/screenPlays/create-screenplay'
 
 
 const breadcrumbItems = [
@@ -46,22 +47,29 @@ function updateAudioVersions (audioVersions, setAudioVersions) {
 
 export default function Page() {
   const params = useParams();
+  const router = useRouter();
 
+  const [isLoading, setIsLoading ] = useState(true)
   const [screenPlay, setScreenPlay ] = useState({})
   const [characters, setCharacters ] = useState([])
   const [audioVersions, setAudioVersions ] = useState([])
 
   useEffect(() => {
     if (params?.screenplayid) {
-      getScreenPlay({ screenPlayId: params.screenplayid }).then((screenPlay) => {
-        const data = screenPlay?.data?.data && screenPlay?.data?.data
-        const audio_screenplay_version = data?.audio_screenplay_versions && data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1]
-        const audio_version = audio_screenplay_version?.audio_version
+      getScreenPlay({ screenPlayId: params.screenplayid })
+        .then((screenPlay) => {
+          const data = screenPlay?.data?.data && screenPlay?.data?.data
+          console.log("data-------------------------", data)
+          const audio_screenplay_version = data?.audio_screenplay_versions && data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1]
+          const audio_version = audio_screenplay_version?.audio_version
 
-        updateAudioVersions(audio_version, setAudioVersions)
-        setScreenPlay(screenPlay)
-        setCharacters(data?.characters)
-    })
+          updateAudioVersions(audio_version, setAudioVersions)
+          setScreenPlay(screenPlay)
+          setCharacters(data?.characters)
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
     }
 
   }, [params])
@@ -81,12 +89,19 @@ export default function Page() {
   // TODO add type for audio character version
   return (
     <>  
-      {
-        params.screenplayid !== 'new' || screenPlay?.data?.data 
-        ? 
         <ScreenPlayConatiner
           title={data?.title}
+          isLoading={isLoading}
           screenPlayText={data?.screen_play_text}
+          startScreenPlay={async () => {
+            const res = await startScreenPlay()
+
+            const id = res?.data?.id
+
+            if (id) {
+              router.push(`/dashboard/screen-play/${id}`);
+            }
+          }}
           characters={characters}
           voices={voices}
           audioVersionNumber={audioVersionNumber}
@@ -121,18 +136,7 @@ export default function Page() {
             }
           }}
         />
-        :
-          <div className="flex-1 space-y-4 p-8">
-          <ProductForm
-          categories={[
-            { _id: 'shirts', name: 'shirts' },
-            { _id: 'pants', name: 'pants' }
-          ]}
-          initialData={null}
-          key={null}
-          />
-        </div>
-      }
+
     </>
   );
 }

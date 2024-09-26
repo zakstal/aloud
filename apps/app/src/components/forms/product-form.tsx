@@ -147,24 +147,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         onConfirm={onDelete}
         loading={loading}
       /> */}
-      <div className="flex items-center justify-between">
-        <Heading title={title} description={description} />
-        {initialData && (
-          <Button
-            disabled={loading}
-            variant="destructive"
-            size="sm"
-            onClick={() => setOpen(true)}
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-      <Separator />
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="w-8/12 space-y-8 text-center max-w-3xl"
+          className=" space-y-8 text-center"
         >
           <FormField
             control={form.control}

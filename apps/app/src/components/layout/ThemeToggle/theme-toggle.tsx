@@ -28,8 +28,14 @@ export default function ThemeToggle({}: CompProps) {
         <DropdownMenuItem onClick={() => setTheme('dark')}>
           Dark
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>
-          System
+        <DropdownMenuItem onClick={() => setTheme('writer-dark')}>
+          Writer dark
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('writer-light')}>
+          Writer light
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('writer-dark-friendly')}>
+          Writer dark friendly
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

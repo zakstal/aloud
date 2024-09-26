@@ -185,12 +185,12 @@ class AudioPlayer extends React.Component {
 
     handleOnEnd() {
 
-        if (this.state.audioVersionsIdx === 0) {
-            this.setState({
-                audioVersionsIdx: 1
-            })
-            return
-        }
+        // if (this.state.audioVersionsIdx === 0) {
+        //     this.setState({
+        //         audioVersionsIdx: 1
+        //     })
+        //     return
+        // }
         console.log('onEnd', this.state.audioVersionDuration)
         const currentAudioVersion = this.state.currentAudioVersion
 

@@ -23,7 +23,7 @@ export function Characters({
 }: CharactersInput) {
   return (
     <div>
-      <div className="sticky top-0 z-50 header header-in" style={{ background: 'rgb(254, 252, 251)' }}>
+      <div className="sticky top-0 z-50 header header-in" >
         <CardHeader className="p-0 pb-6 pt-6">
           <div className="flex flex-row gap-4" >
               <CardTitle>Characters</CardTitle>

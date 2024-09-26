@@ -32,8 +32,13 @@ export const ScriptEditor =({
         secondaryOrderId,
     ] = useFountainNodes(scriptTokens, myRef)
 
+    useEffect(() => {
+        myRef.current && myRef.current.focus()
+    }, [myRef])
+
     return (
         <div
+            autofocus
             ref={myRef}
             contentEditable={true}
             suppressContentEditableWarning={true} 
@@ -63,8 +68,8 @@ export const ScriptEditor =({
 
                 
             >
-                <div style={{ position: 'sticky', top: 0 }}>currentOrderId: {currentOrderId}</div>
-                <div>secondaryOrderId: {secondaryOrderId}</div>
+                {/* <div style={{ position: 'sticky', top: 0 }}>currentOrderId: {currentOrderId}</div>
+                <div>secondaryOrderId: {secondaryOrderId}</div> */}
             <TokenContent tokens={tokens} />
         </div>
     )

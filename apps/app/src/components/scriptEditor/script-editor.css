@@ -1,4 +1,10 @@
 /* depreicated */
+.script-editor { 
+    background-color: hsl(var(--editor-background));  
+    /* background-color: var(--editor-background);   */
+    color: hsl(var(--editor-text));
+}
+
 .script-editor .dialogue-container { 
     display: flex;
     justify-content: center;
@@ -10,6 +16,7 @@
 .script-editor p {
     padding: 0;
     min-height: 28px; /* line height */
+    /* color: hsl(var(--editor-text)); */
 }
 
 .script-editor h3 {
@@ -19,6 +26,10 @@
 
 .script-editor h2 {
     text-align: right;
+}
+
+.script-editor h2 h3 h4 h5 h6 {
+    color: hsl(var(--editor-text-dark)); 
 }
 
 

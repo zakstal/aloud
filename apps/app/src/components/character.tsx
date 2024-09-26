@@ -34,7 +34,7 @@ export function Character ({
     <div
       
       style={style}
-      className={"flex items-center cursor-pointer hover:bg-zinc-100 pb-2 rounded-lg items-start" + className}
+      className={"flex items-center cursor-pointer hover:bg-[hsl(var(--card))] px-2 py-2 rounded-lg items-start" + className}
     >
       <div className="flex items-center w-40" style={{ flex: '2'}} onClick={onClick}>
         <Avatar className="h-9 w-9">
