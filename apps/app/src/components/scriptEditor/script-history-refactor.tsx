@@ -124,7 +124,7 @@ export class ScriptHistory extends History {
         this.setCallbackValues(dbTokenVersion, db, commitCallback, tokens)
     }
 
-    setCallbackValues(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[]) {
+    async setCallbackValues(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[]) {
         const commitUpdateCallback = (lastToUpdate: Diff) => {
             this.commitCallback && this.commitCallback(this.tokens, lastToUpdate?.caretPosition)
         }
@@ -140,8 +140,7 @@ export class ScriptHistory extends History {
         this.tokens = tokens
 
         if (commitCallback && tokens) {
-            console.log("commits and tokens")
-            this.applyChanges()
+            await this.applyChanges()
             this.commitCallback(this.tokens)
         }
 

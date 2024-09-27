@@ -53,9 +53,8 @@ export default class History {
     // could be run on setData
     async applyChanges() {
         if (!this.dbTokenVersion) return
-        console.log("apply forwards")
         const diffs = await this.diffs(this.dbTokenVersion);
-        console.log("apply forwards diffs", diffs)
+
         const diffsToApply = !this.lastInsertedId ? diffs : diffs.filter((update: Diff) => update.id > this.lastInsertedId)
         if (!diffs || !diffs.length) return
 

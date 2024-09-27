@@ -21,6 +21,7 @@ import * as db from './storage'
  * - merge enter, backspace and  keypress into one update function
  * - remappable hotkeys for cut, copy and paste
  * - handle mouse paste and cut
+ * - script history, caret is on a position, unfocus browser then refocus, the caret looses position
  * 
  * UPDATES
  * - saveing state in the browser. Indexd db?
@@ -100,10 +101,9 @@ export function useFountainNodes(tokensIn = [], versionNumber: string) {
         // NB ScriptHistory has an internal representation of tokens. not sure if we should keep 
         // to sets, hoever we can change the internal as we like and only update it later if needed
         window.scriptStorage.setCallbackValues(
-            versionNumber || '1',
+            versionNumber,
             db,
             (tokens: Tokens[], caretPosition: number | null, currentOrderId: number | null) => { // call back that runs on "commit"
-                console.log("set forward", tokens)
                 setTokens(tokens)
                 caretPosition && setNextCaretPosition(caretPosition)
                 currentOrderId && setCurrentOrderId(currentOrderId)

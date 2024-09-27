@@ -41,7 +41,7 @@ export const ScriptEditor =({
 
     return (
         <div
-            autofocus
+            autoFocus
             ref={myRef}
             contentEditable={true}
             suppressContentEditableWarning={true} 

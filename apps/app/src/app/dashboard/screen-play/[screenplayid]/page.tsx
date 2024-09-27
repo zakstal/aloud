@@ -59,7 +59,6 @@ export default function Page() {
       getScreenPlay({ screenPlayId: params.screenplayid })
         .then((screenPlay) => {
           const data = screenPlay?.data?.data && screenPlay?.data?.data
-          console.log("data-------------------------", data)
           const audio_screenplay_version = data?.audio_screenplay_versions && data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1]
           const audio_version = audio_screenplay_version?.audio_version
 
