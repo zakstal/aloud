@@ -9,6 +9,7 @@ import './AudioPlayer.css';
 // import Switch from './Switch'
 // import Loading from './Loading'
 // import TimeItem from './TimeItem'
+const BUTTON_SIZE = 12
 
 function createThrottle(callback) {
     let int = null
@@ -197,6 +198,8 @@ class AudioPlayer extends React.Component {
         let nextIndex = this.state.audioVersionsIdx + 1
         const newAudioVersion = currentAudioVersion ? this.state.audioVersions[nextIndex] : null
 
+        this.props.setCurrentLinePlaying && this.props.setCurrentLinePlaying(newAudioVersion)
+        console.log('newAudioVersion', newAudioVersion)
         this.setState({
             playing: newAudioVersion ? true : false,
             currentAudioVersion: newAudioVersion || (this.state.audioVersions || this.state.audioVersions[0]),
@@ -288,7 +291,7 @@ class AudioPlayer extends React.Component {
         const finaLength = this.state.syntheticDuration ? new Date(this.state.syntheticDuration * 1000).toISOString().substring(14, 19) : '--'
         const currentLength = this.state.seek ? new Date(this.state.seek * 1000).toISOString().substring(14, 19) : '--'
         return (
-            <div className={'max-w-[600px] audio-player-container pb-4 ' + disabledClass}>
+            <div className={'max-w-[600px] audio-player-container py-3 px-6 z-50 border-t' + disabledClass}>
                 {/* { src ?  */}
                     <ReactHowler
                         src={src || 'none'}
@@ -309,54 +312,49 @@ class AudioPlayer extends React.Component {
                     {/* // : null
                     // } */}
            
-                <div className="flex bg-[#101010] grey-400 font-mono rounded-lg gap-8 pt-4 items-center">
-                
-                    <div className="flex text-2xl">
-                        <div className="mx-auto flex gap-4">
-                            {
-                                this.state.playing 
-                                ?
-                                <button
-                                    disabled={this.props.disabled}
-                                    className="play-button"
-                                    onClick={this.handleStop}
-                                >
-                                    <Image width="10" height="10" src="/pause.png" alt="pause button"/> 
-                                </button>
-                                :
-                                <button
-                                disabled={this.props.disabled}
-                                    className="play-button"
-                                    onClick={this.handleToggle}
-                                >
-                                    <Image className="play-icon" width="10" height="10" src="/play.png" alt="play button"/>
-                                </button>
-                            }
-                        </div>
-                    </div>
-                    <div>
-                        <p className="text-xs">{`${currentLength} / ${finaLength}`}</p>
-                    </div>
-                </div>
-                    <div>
-                        <Slider.Root
-                            className="SliderRoot w-full"
-                            type='range'
-                            min='0'
-                            max={this.state.duration ? this.state.duration.toFixed(2) : 0}
-                            step='.01'
-                            value={[this.state.seek]}
-                            onValueChange={this.handleSeekingChange}
-                            onMouseDown={this.handleMouseDownSeek}
-                            onMouseUp={this.handleMouseUpSeek}
-                        >
-                            <Slider.Track className="SliderTrack">
-                                <Slider.Range className="SliderRange" />
-                            </Slider.Track>
-                            <Slider.Thumb className={'SliderThumb ' + disabledClass} aria-label="Volume" />
-                        </Slider.Root>
+                <div className="flex bg-[#101010] grey-400 font-mono rounded-lg gap-8 items-center">
 
+                    <div className="mx-auto flex gap-4 play-button-container justify-center">
+                        {
+                            this.state.playing 
+                            ?
+                            <button
+                                disabled={this.props.disabled}
+                                className="play-button"
+                                onClick={this.handleStop}
+                            >
+                                <Image width={BUTTON_SIZE} height={BUTTON_SIZE} src="/pause.png" alt="pause button"/> 
+                            </button>
+                            :
+                            <button
+                            disabled={this.props.disabled}
+                                className="play-button"
+                                onClick={this.handleToggle}
+                            >
+                                <Image className="play-icon" width={BUTTON_SIZE} height={BUTTON_SIZE} src="/play.png" alt="play button"/>
+                            </button>
+                        }
                     </div>
+
+                    
+                    <Slider.Root
+                        className="SliderRoot w-full"
+                        type='range'
+                        min='0'
+                        max={this.state.duration ? this.state.duration.toFixed(2) : 0}
+                        step='.01'
+                        value={[this.state.seek]}
+                        onValueChange={this.handleSeekingChange}
+                        onMouseDown={this.handleMouseDownSeek}
+                        onMouseUp={this.handleMouseUpSeek}
+                    >
+                        <Slider.Track className="SliderTrack">
+                            <Slider.Range className="SliderRange" />
+                        </Slider.Track>
+                        <Slider.Thumb className={'SliderThumb ' + disabledClass} aria-label="Volume" />
+                    </Slider.Root>
+                    <p className="text-xs time-container flex justify-center">{`${currentLength} / ${finaLength}`}</p>
+                </div>
             </div>
         )
     }

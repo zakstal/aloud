@@ -41,7 +41,7 @@ export function VoiceActors({
         onClick={onClose}
         />
         <div className="sticky top-0 z-50 header header-in">
-          <CardHeader className="p-2 pt-0">
+          <CardHeader className="p-2 pt-0 border-0">
             <div className="flex flex-row gap-4" >
                 <CardTitle>Fined a voice for</CardTitle>
                 <CardDescription>

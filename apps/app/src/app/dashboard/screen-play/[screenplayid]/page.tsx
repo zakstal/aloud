@@ -92,13 +92,18 @@ export default function Page() {
           title={data?.title}
           isLoading={isLoading}
           screenPlayText={data?.screen_play_text}
-          startScreenPlay={async () => {
-            const res = await startScreenPlay()
+          startScreenPlay={async (obj) => {
+            try {
 
-            const id = res?.data?.id
-
-            if (id) {
-              router.push(`/dashboard/screen-play/${id}`);
+              const res = await startScreenPlay(obj)
+              console.log('res', res)
+              const id = res?.data?.id
+              
+              if (id) {
+                router.push(`/dashboard/screen-play/${id}`);
+              }
+            } catch(e) {
+              console.log('error uploading screenplay', e)
             }
           }}
           characters={characters}

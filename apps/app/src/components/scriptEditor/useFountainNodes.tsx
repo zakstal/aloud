@@ -85,7 +85,7 @@ function getElementAtCaret() {
 
 window.scriptStorage = window.scriptStorage || new ScriptHistory()
 
-export function useFountainNodes(tokensIn = [], versionNumber: string) {
+export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) {
 
     const [tokens, setTokens] = useState(prepareTokensRender(tokensIn))
     const tokensChanged = useMemo(() => tokens, [tokens])
@@ -96,7 +96,22 @@ export function useFountainNodes(tokensIn = [], versionNumber: string) {
     const [slections, setSelections] = useState(null)
 
     useEffect(() => {
+        console.log('pdfText', pdfText)
+        if (!pdfText || tokensIn.length) return
+        const [ didUpdate ] = window.scriptStorage.updateText({
+            text: pdfText
+        }, 0, 0)
+        console.log('didUpdate', didUpdate)
 
+        // This is to save updating. if we are not changing the type or the tranformation of the text,
+        // we can just register the changeand if we rerender later, all the text will be updated.
+        if (didUpdate) {
+            window.scriptStorage.commit()
+            // setNextCaretPosition(selection?.anchorOffset)
+        }
+    }, [pdfText])
+
+    useEffect(() => {
         window.scriptStorage = window.scriptStorage || new ScriptHistory()
         // NB ScriptHistory has an internal representation of tokens. not sure if we should keep 
         // to sets, hoever we can change the internal as we like and only update it later if needed
@@ -112,6 +127,8 @@ export function useFountainNodes(tokensIn = [], versionNumber: string) {
         )
 
     }, [versionNumber])
+
+
     useEffect(() => {
         if (!currentOrderId) return
 
@@ -272,14 +289,21 @@ export function useFountainNodes(tokensIn = [], versionNumber: string) {
             e.preventDefault()
 
             const [currentOffset, secondOffset] = rangeOffsets || []
-            const [carotPostiion, focusId] = window.scriptStorage?.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
-            window.scriptStorage.commit()
-
-            setCurrentOrderId(focusId)
-            setNextCaretPosition(carotPostiion)
-            setSecondaryOrderId(null)
-            setRangeOffsets(null)
-            // setTokens(newTokens)
+            if (!currentOffset)
+            try {
+                const res = window.scriptStorage?.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+                console.log('res', res)
+                const [carotPostiion, focusId] = res
+                window.scriptStorage.commit()
+                
+                setCurrentOrderId(focusId)
+                setNextCaretPosition(carotPostiion)
+                setSecondaryOrderId(null)
+                setRangeOffsets(null)
+                // setTokens(newTokens)
+            } catch(e) {
+                console.log("error", e)
+            }
         },
         function clearCurrrentNode() {
             setCurrentOrderId(null)

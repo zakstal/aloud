@@ -6,7 +6,6 @@
   touch-action: none;
   width: 100%;
   height: 20px;
-  padding-top: 30px
 }
 
 .SliderTrack {
@@ -41,6 +40,14 @@
   box-shadow: 0 0 0 5px color(display-p3 0 0 0/0.6);
 }
 
+.play-button-container {
+  min-width: 56px;
+}
+
+.time-container {
+  min-width: 139px;
+}
+
 .play-button {
     border-radius: 100%;
     padding: 10px;
@@ -53,6 +60,13 @@
 }
 
 .audio-player-container.disabled {
-    /* background-color: rgba(239, 247, 255, 0.615); */
+    background-color: red;
     opacity: 0.3;
+}
+
+.audio-player-container {
+  background-color: hsl(var(--editor-background));
+  border-color: hsl(var(--border));
+  z-index: 10000;
+  position: relative;
 }

@@ -169,7 +169,7 @@ export class ScriptHistory extends History {
             nextOffset = currentOffsetTemp
         }
 
-        if (!currentOrderId || !this.tokens[currentOrderId]) return
+        if (!currentOrderId || !this.tokens[currentOrderId]) return [ currentOffset || 0, currentOrderId]
     
         const nextText = this.tokens[nextId].text || ''
         const carotPostiion = this.tokens[currentOrderId].text?.length || 0 
@@ -179,7 +179,7 @@ export class ScriptHistory extends History {
 
         const textCombined = combineText(currentText, nextText, currentOffset, nextOffset)
 
-        const isLastCharacter = this.tokens[currentOrderId - 1]?.type === 'character'
+        const isLastCharacter =  this.tokens[currentOrderId - 1] ? this.tokens[currentOrderId - 1]?.type === 'character' : false
         const foundTokens = tokenize(textCombined, { isLastCharacter })
 
             foundTokens.forEach((token, foundIdx) => {
@@ -238,9 +238,10 @@ export class ScriptHistory extends History {
     }
 
     updateText(tokenPartialMaybe, idxIn: number, caretPosition: number) {
+        console.log('idxIn', idxIn)
         const idx = Number(idxIn)
 
-        const lastToken = this.tokens[idx - 1]
+        const lastToken = this.tokens[Math.max(idx - 1, 0)]
         const token = this.tokens[idx]
         if (!token) return
 

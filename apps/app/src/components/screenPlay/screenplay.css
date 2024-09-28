@@ -8,9 +8,7 @@
 }
 .script-characters {
     align-self: flex-start;
-    position: sticky;
-    top: 0;
-    margin-top: 30px;
+    /* background-color: hsl(var(--editor-background)); */
 }
 
 .script-text p {
@@ -27,5 +25,5 @@
 }
 
 .script-parent {
-    height: 100vh;
+    height: 93vh;
 }

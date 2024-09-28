@@ -69,7 +69,7 @@ export function Character ({
 
         preview 
         ?
-        <div className="pl-16" style={{ flex: '1'}}> 
+        <div className="" > 
           <AudioPlayerButton
               url={preview}
             />

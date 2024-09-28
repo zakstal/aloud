@@ -32,7 +32,7 @@ export function Characters({
               </CardDescription>
           </div>
           <div className="flex items-center justify-between">
-                <div className="flex" style={{ flex: '1'}}>
+                {/* <div className="flex" style={{ flex: '1'}}>
                   <p className="text-xs font-small leading-none text-muted-foreground" >{'Character name'}</p>
                 </div>
                 <div style={{ flex: '1'}}>
@@ -40,7 +40,7 @@ export function Characters({
                 </div>
                 <div>
                   <p className="text-xs font-small leading-none text-muted-foreground">{''}</p>
-              </div>
+              </div> */}
             </div>
         </CardHeader>
       </div>
