@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { getDocument } from 'pdfjs-dist/build/pdf.min';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker';
+import { getDocument } from 'pdfjs-dist/build/pdf.min.mjs';
+import * as pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs';
 import { FilePond } from 'react-filepond';
 import 'filepond/dist/filepond.min.css';
 
