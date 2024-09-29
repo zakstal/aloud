@@ -29,7 +29,7 @@
     "./parsers": "./src/scriptParsers/fountainParser.ts",
     "./pdfToText": "./src/pdfToText.js",
     "./voices": "./src/voices.ts",
-    "./voiceApis": "./src/voiceApis",
+    "./voiceApis": "./src/voiceApis/index.js",
     "./audioUtils": "./src/audioUtils.js"
   }
 }
