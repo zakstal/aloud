@@ -78,6 +78,8 @@ class AudioPlayer extends React.Component {
             return final + version.duration_in_seconds
         }, 0)
 
+        console.log('syntheticDuration', syntheticDuration)
+
         console.log("this.props.audioVersions", this.props.audioVersions)
 
         let disabled = false
@@ -288,10 +290,10 @@ class AudioPlayer extends React.Component {
         const disabledClass = this.state.disabled ? 'disabled' : ''
         const src = this.getSrc()
 
-        const finaLength = this.state.syntheticDuration ? new Date(this.state.syntheticDuration * 1000).toISOString().substring(14, 19) : '--'
-        const currentLength = this.state.seek ? new Date(this.state.seek * 1000).toISOString().substring(14, 19) : '--'
+        const finaLength = this.state.syntheticDuration ? new Date(this.state.syntheticDuration * 1000).toISOString().substring(14, 19) : '00'
+        const currentLength = this.state.seek ? new Date(this.state.seek * 1000).toISOString().substring(14, 19) : '00'
         return (
-            <div className={'max-w-[600px] audio-player-container py-3 px-6 z-50 border-t' + disabledClass}>
+            <div className={'max-w-[600px] audio-player-container py-3 px-6 z-50 border-t' + ' ' + disabledClass}>
                 {/* { src ?  */}
                     <ReactHowler
                         src={src || 'none'}
@@ -353,7 +355,7 @@ class AudioPlayer extends React.Component {
                         </Slider.Track>
                         <Slider.Thumb className={'SliderThumb ' + disabledClass} aria-label="Volume" />
                     </Slider.Root>
-                    <p className="text-xs time-container flex justify-center">{`${currentLength} / ${finaLength}`}</p>
+                    <p className="text-xs time-container flex justify-start">{`${currentLength} / ${finaLength}`}</p>
                 </div>
             </div>
         )

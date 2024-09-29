@@ -145,3 +145,17 @@ Vercel deployment will guide you through creating a Supabase account and project
 ## Issues
 - get real images for the in the public space for voice actors
 - character column on the scren play detail page goes to low on the page
+
+
+## TODO
+- terms and conditions
+- privacy policy
+- saving of different versions
+- saving script changes to db
+- offline maybe
+- better login page
+- account limits
+- skip forward and back on the player
+- disable editing
+- fix how characters and dialog is parsed
+

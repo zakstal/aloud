@@ -60,7 +60,6 @@
 }
 
 .audio-player-container.disabled {
-    background-color: red;
     opacity: 0.3;
 }
 
@@ -69,4 +68,5 @@
   border-color: hsl(var(--border));
   z-index: 10000;
   position: relative;
+  color: hsl(var(--editor-text-dark))
 }

@@ -28,7 +28,8 @@ export default function ScreenPlayConatiner({
   audioVersions,
   scriptTokens,
   isLoading,
-  startScreenPlay
+  startScreenPlay,
+  audioScreenPlayVersion
 }) {
   const [voiceSelectionOpen, setVoiceSelectionOpen] = useState(false)
   const [selectedCharacter, setSelectedCharacter] = useState(null)
@@ -40,7 +41,7 @@ export default function ScreenPlayConatiner({
     <>
     <div>
         <div className="flex flex-row gap-4 text-lg script-parent items-streatch">
-            <aside className="script-characters flex-1 pb-8 pt-16 max-w-72 pl-8 pr-4 ">
+            <aside className="script-characters flex-1 pt-16 max-w-72">
                 { screenPlayText !== undefined
                 ?
                 <>
@@ -50,7 +51,7 @@ export default function ScreenPlayConatiner({
                         ? 
                             <div
                                 className={cn(
-                                `relative  hidden flex-none transition-[width] duration-500 md:block`,
+                                ` pl-8 pr-4 relative  hidden flex-none transition-[width] duration-500 md:block`,
                                 voiceSelectionOpen ? 'w-75' : 'w-[75px]',
                                 )}
                             >
@@ -69,7 +70,7 @@ export default function ScreenPlayConatiner({
                             />
                             </div>
                         : (
-                            <ScrollArea >
+                            <div className="pl-8" >
                                 <Button
                                     type="button"
                                     className='mb-4'
@@ -88,7 +89,7 @@ export default function ScreenPlayConatiner({
                                     setVoiceSelectionOpen(true)
                                 }}
                                 />
-                            </ScrollArea>
+                            </div>
                         )
                     }
                 </div>
@@ -102,7 +103,7 @@ export default function ScreenPlayConatiner({
                 <ScriptEditor
                     className="script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-4xl font-courier"
                     scriptTokens={scriptTokens}
-                    audioVersionNumber={audioVersionNumber}
+                    audioScreenPlayVersion={audioScreenPlayVersion}
                     currentLinePlaying={currentLinePlaying}
                     pdfText={screenPlayText}
                 />

@@ -53,7 +53,7 @@ function VirtualizedList({ items, itemHeight, containerHeight }) {
 export const ScriptEditor =({
     scriptTokens,
     className,
-    audioVersionNumber,
+    audioScreenPlayVersion,
     pdfText,
 }: ScriptEditorInput) => {
 
@@ -71,7 +71,7 @@ export const ScriptEditor =({
         handleCut,
         currentOrderId,
         secondaryOrderId,
-    ] = useFountainNodes(scriptTokens, audioVersionNumber, pdfText)
+    ] = useFountainNodes(scriptTokens, audioScreenPlayVersion, pdfText)
 
     useEffect(() => {
         myRef.current && myRef.current.focus()

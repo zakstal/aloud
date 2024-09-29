@@ -62,7 +62,7 @@ export function VoiceActors({
           </CardHeader>
         </div>
         <Character key={character?.name} name={character?.name} gender={character?.gender} className="mb-2" />
-        <Separator className=""/>
+        <Separator className="mt-2"/>
         {/* <div>
           <div className="flex gap-2">
             <SmallHeading text="Eleven labs" />

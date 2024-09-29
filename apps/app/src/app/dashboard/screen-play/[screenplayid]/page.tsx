@@ -62,6 +62,7 @@ export default function Page() {
           const audio_screenplay_version = data?.audio_screenplay_versions && data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1]
           const audio_version = audio_screenplay_version?.audio_version
 
+          console.log("data", data)
           updateAudioVersions(audio_version, setAudioVersions)
           setScreenPlay(screenPlay)
           setCharacters(data?.characters)
@@ -108,7 +109,8 @@ export default function Page() {
           }}
           characters={characters}
           voices={voices}
-          audioVersionNumber={audioScreenPlayVersion?.id}
+          audioScreenPlayVersion={audioScreenPlayVersion?.id}
+          audioVersionNumber={audioVersionNumber}
           audioVersions={audioVersions}
           scriptTokens={data?.screen_play_fountain}
           processAudio={async () => {

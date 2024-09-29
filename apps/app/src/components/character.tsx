@@ -34,9 +34,9 @@ export function Character ({
     <div
       
       style={style}
-      className={"flex items-center cursor-pointer hover:bg-[hsl(var(--card))] px-2 py-2 rounded-lg items-start" + className}
+      className={"flex items-start cursor-pointer hover:bg-[hsl(var(--card))] px-2 py-2 rounded-lg items-start" + className}
     >
-      <div className="flex items-center w-40" style={{ flex: '2'}} onClick={onClick}>
+      <div className="flex items-start w-[110px]" style={{ flex: '2'}} onClick={onClick}>
         <Avatar className="h-9 w-9">
           <AvatarImage src={avatar} alt="Avatar" />
           <AvatarFallback>{abbreveation}</AvatarFallback>
@@ -56,7 +56,7 @@ export function Character ({
               ? <p className="text-sm font-medium leading-none">{''}</p>
               :  <div className="ml-4 space-y-1" >
               <p className="text-sm font-medium leading-none">{assigned.voice_name}</p>
-              <p className="text-xs text-muted-foreground italic self-stretch pr-4">
+              <p className="text-xs text-muted-foreground italic self-stretch">
                 {`${assigned.voice_data.gender}  ${assigned.voice_data.age}  ${assigned.voice_data.accent}`}
               </p>
             </div>

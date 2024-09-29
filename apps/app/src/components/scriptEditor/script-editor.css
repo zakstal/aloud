@@ -3,6 +3,7 @@
     background-color: hsl(var(--editor-background));  
     /* background-color: var(--editor-background);   */
     color: hsl(var(--editor-text));
+    box-shadow: 0 2px 5px color(display-p3 0 0 0/0.1);
 }
 
 .script-editor .dialogue-container { 
