@@ -1,11 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from "next/image";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger
-} from './ui/tooltip';
+
 
 export const AudioPlayerButton = ({
     url
@@ -19,16 +14,13 @@ export const AudioPlayerButton = ({
     audioRef.current.addEventListener("ended", function(){
         setIsPlaying(false)
    });
-}, [audioRef.current])
+}, [])
 
   const togglePlayPause = () => {
     const audio = audioRef.current;
-    console.log('audio', audio, isPlaying)
     if (isPlaying) {
-        console.log("pause")
         audio.pause();
     } else {
-        console.log("play",audio.play)
       audio.play();
     }
   
@@ -42,7 +34,7 @@ export const AudioPlayerButton = ({
         Your browser does not support the audio element.
       </audio>
       <button className="p-4" onClick={togglePlayPause}>
-        {isPlaying ? <Image width="10" height="10" src="/pause.png"/> : <Image width="10" height="10" src="/play.png"/>}
+        {isPlaying ? <Image alt="pause button" width="10" height="10" src="/pause.png"/> : <Image alt="play button" width="10" height="10" src="/play.png"/>}
         
       </button>
     </div>

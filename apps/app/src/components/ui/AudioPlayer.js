@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React from 'react'
 import ReactHowler from 'react-howler'
 import raf from 'raf'
 import Image from "next/image";
@@ -14,56 +14,53 @@ const BUTTON_SIZE = 12
 function createThrottle(callback) {
     let int = null
     return function(val) {
-        console.log("here")
         if (int) {
-            console.log("here")
             clearTimeout(int)
         }
 
         int = setTimeout(function() {
-            console.log("here 2")
             callback(val)
         }, 1000)
     }
 }
 
-const SliderSeek = ({
-    handleSeekingChange,
-    handleMouseDownSeek,
-    handleMouseUpSeek,
-    max,
-    seek,
-    classNameThumb,
- }) => {
-    // const [seekInternal, setSeekInternal ] = useState(seek)
-    // const handleSeek = useCallback(createThrottle((e) => {
-    //     setSeekInternal(seek)
-    //     handleSeekingChange(e)
-    // }).bind(this), [])
-    return (
-        <Slider.Root
-            className="SliderRoot w-full"
-            type='range'
-            min='0'
-            max={max}
-            step='.01'
-            value={ seek}
-            onValueChange={(e) => {
-                handleSeekingChange(e)
-                // setSeekInternal(e)
-                // handleSeek(e)
-            }}
-            onMouseDown={handleMouseDownSeek}
-            onMouseUp={handleMouseUpSeek}
-        >
-        <Slider.Track className="SliderTrack">
-            <Slider.Range className="SliderRange" />
-        </Slider.Track>
-        <Slider.Thumb className={'SliderThumb ' + classNameThumb} aria-label="Volume" />
-    </Slider.Root>
+// const SliderSeek = ({
+//     handleSeekingChange,
+//     handleMouseDownSeek,
+//     handleMouseUpSeek,
+//     max,
+//     seek,
+//     classNameThumb,
+//  }) => {
+//     // const [seekInternal, setSeekInternal ] = useState(seek)
+//     // const handleSeek = useCallback(createThrottle((e) => {
+//     //     setSeekInternal(seek)
+//     //     handleSeekingChange(e)
+//     // }).bind(this), [])
+//     return (
+//         <Slider.Root
+//             className="SliderRoot w-full"
+//             type='range'
+//             min='0'
+//             max={max}
+//             step='.01'
+//             value={ seek}
+//             onValueChange={(e) => {
+//                 handleSeekingChange(e)
+//                 // setSeekInternal(e)
+//                 // handleSeek(e)
+//             }}
+//             onMouseDown={handleMouseDownSeek}
+//             onMouseUp={handleMouseUpSeek}
+//         >
+//         <Slider.Track className="SliderTrack">
+//             <Slider.Range className="SliderRange" />
+//         </Slider.Track>
+//         <Slider.Thumb className={'SliderThumb ' + classNameThumb} aria-label="Volume" />
+//     </Slider.Root>
 
-    )
-}
+//     )
+// }
 
 class AudioPlayer extends React.Component {
     constructor(props) {
@@ -78,9 +75,6 @@ class AudioPlayer extends React.Component {
             return final + version.duration_in_seconds
         }, 0)
 
-        console.log('syntheticDuration', syntheticDuration)
-
-        console.log("this.props.audioVersions", this.props.audioVersions)
 
         let disabled = false
         if (this.props.disabled === undefined) {
@@ -150,10 +144,6 @@ class AudioPlayer extends React.Component {
             return true
         })
 
-
-        console.log('duration', duration)
-        console.log('seekNumber', seekNumber)
-        console.log('seekNumber - duration', duration - seekNumber)
         this.player.seek(duration - seekNumber)
 
         
@@ -194,14 +184,14 @@ class AudioPlayer extends React.Component {
         //     })
         //     return
         // }
-        console.log('onEnd', this.state.audioVersionDuration)
+
         const currentAudioVersion = this.state.currentAudioVersion
 
         let nextIndex = this.state.audioVersionsIdx + 1
         const newAudioVersion = currentAudioVersion ? this.state.audioVersions[nextIndex] : null
 
         this.props.setCurrentLinePlaying && this.props.setCurrentLinePlaying(newAudioVersion)
-        console.log('newAudioVersion', newAudioVersion)
+
         this.setState({
             playing: newAudioVersion ? true : false,
             currentAudioVersion: newAudioVersion || (this.state.audioVersions || this.state.audioVersions[0]),
@@ -240,7 +230,6 @@ class AudioPlayer extends React.Component {
     }
 
     handleMouseUpSeek(e) {
-        console.log('mouse seek')
         this.setState({
             isSeeking: false
         })
@@ -249,7 +238,6 @@ class AudioPlayer extends React.Component {
     }
 
     handleSeekingChange(e) {
-        console.log('seek---', e)
         this.setState({
             isSeeking: true,
             seek: parseFloat(e || 0)
@@ -305,7 +293,7 @@ class AudioPlayer extends React.Component {
                         mute={this.state.mute}
                         volume={this.state.volume}
                         onSeek={() => {
-                            console.log('seeking-------')
+                            // console.log('seeking-------')
                         }}
                         ref={(ref) => {
                             this.player = ref

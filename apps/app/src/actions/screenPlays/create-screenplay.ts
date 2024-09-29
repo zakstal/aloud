@@ -13,7 +13,6 @@ export const startScreenPlay = authActionClient
   })
   .action(async ({ parsedInput: { screenPlayText = '' } = {}, ctx: { user } }) => {
     const text = decodeURIComponent(escape(atob(screenPlayText)))
-    console.log('screenPlayText', text)
     const parsed = await parse(text)
 
     try {
@@ -31,7 +30,7 @@ export const startScreenPlay = authActionClient
         )
     return result;
     } catch(e) {
-        console.log("error in start screenplay", e)
+        // console.log("error in start screenplay", e)
     }
 
   });

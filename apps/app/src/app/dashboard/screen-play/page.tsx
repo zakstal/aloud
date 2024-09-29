@@ -2,13 +2,12 @@
 
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import PageContainer from '@/components/layout/page-container';
-import { deleteScreenPlayPermanatlyAction } from '@/actions/screenPlays/delete-screen-pay-permanat'
+// import { deleteScreenPlayPermanatlyAction } from '@/actions/screenPlays/delete-screen-pay-permanat'
 import { columns } from '@/components/tables/employee-tables/columns';
 import { EmployeeTable } from '@/components/tables/employee-tables/employee-table';
 import { buttonVariants } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
-import { Employee } from '@/constants/data';
 import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
@@ -29,12 +28,10 @@ type paramsProps = {
 
 export default async function page({ searchParams }: paramsProps) {
   const page = Number(searchParams.page) || 1;
-  const pageLimit = Number(searchParams.limit) || 10;
-  const country = searchParams.search || null;
-  const offset = (page - 1) * pageLimit;
+  // const pageLimit = Number(searchParams.limit) || 10;
+  // const country = searchParams.search || null;
+  // const offset = (page - 1) * pageLimit;
   const resplay = await getScreenPlays()
-
-  console.log('resplay', resplay?.data?.data)
 
   // const res = await fetch(
   //   `https://api.slingacademy.com/v1/sample-data/users?offset=${offset}&limit=${pageLimit}` +

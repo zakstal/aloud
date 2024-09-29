@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { getDocument } from 'pdfjs-dist/build/pdf.min.mjs';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs';
-import { FilePond, FileStatus } from 'react-filepond';
+import { FilePond } from 'react-filepond';
 import 'filepond/dist/filepond.min.css';
 
 // Set the workerSrc globally
@@ -10,15 +10,8 @@ globalThis.pdfjsLib = { GlobalWorkerOptions: { workerSrc: pdfjsWorker } };
 function PDFLocalUplaod({
     startScreenPlay
 }) {
-    console.log('FileStatus', FileStatus)
     const [files, setFiles] = useState([]);
   const handleFileChange = (file) => {
-    // console.log('files', event)
-    // const firstFile = event[0]
-    // const file = firstFile && firstFile.file;
-
-    console.log('fiel----', file)
-    // const file = event.target.files[0];
     if (file && file.type === 'application/pdf') {
       const reader = new FileReader();
 
@@ -78,7 +71,6 @@ function PDFLocalUplaod({
         
         server={{
             process: (fieldName, file, metadata, load, error, progress, abort) => {
-                console.log('processing', file)
               // Simulate an uploading process with progress
               const simulateProgress = (bytesUploaded) => {
                 setTimeout(() => {

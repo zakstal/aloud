@@ -5,8 +5,6 @@ import { ChevronLeft } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Voice } from '@v1/script-to-audio/voices'
 import {
-  Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle
@@ -77,9 +75,9 @@ export function VoiceActors({
       </div>
       <div className="space-y-2 overflow-scroll h-screen appear appear-in" style={{ marginBottom: '50px'}}>
         <SmallHeading text="Eleven labs" />
-        { voices?.elevenLabs?.map(data => <Character name={data?.id} name={data.name} avatar={data.avatar} gender={`${data.gender}  ${data.age}  ${data.accent}`} assigned="" preview={data?.preview} onClick={() => onSelectVoice(data, character)}/> )}
+        { voices?.elevenLabs?.map(data => <Character key={data?.id} name={data.name} avatar={data.avatar} gender={`${data.gender}  ${data.age}  ${data.accent}`} assigned="" preview={data?.preview} onClick={() => onSelectVoice(data, character)}/> )}
         <SmallHeading text="Murph" />
-        { voices?.murph?.map(data => <Character name={data?.id} name={data.name} avatar={data.avatar} gender={`${data.gender}  ${data.age}  ${data.accent}`} assigned="" onClick={() => onSelectVoice(data, character)}/> )}
+        { voices?.murph?.map(data => <Character key={data?.id} name={data.name} avatar={data.avatar} gender={`${data.gender}  ${data.age}  ${data.accent}`} assigned="" onClick={() => onSelectVoice(data, character)}/> )}
       </div>
     </div>
   );

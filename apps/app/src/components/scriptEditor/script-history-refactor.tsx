@@ -238,7 +238,6 @@ export class ScriptHistory extends History {
     }
 
     updateText(tokenPartialMaybe, idxIn: number, caretPosition: number) {
-        console.log('idxIn', idxIn)
         const idx = Number(idxIn)
 
         const lastToken = this.tokens[Math.max(idx - 1, 0)]
@@ -341,12 +340,11 @@ export class ScriptHistory extends History {
             const forHowMany = idxRange ? ((idxRange - idx) + 1) : 1 
             this.tokens = this.tokens.toSpliced(idx, forHowMany)
         } catch (e) {
-            console.error('Error deleting', e)
+            // console.error('Error deleting', e)
         }
     }
 
     modifyInternal(udpate: Diff, isForward: boolean = true) {
-        const allowedModificationKeys = ['']
         const updateValue = isForward ? udpate.newValue : udpate.oldValue
         this.tokens[udpate.idx] = {...this.tokens[udpate.idx]}
 
@@ -356,7 +354,7 @@ export class ScriptHistory extends History {
                 this.tokens[udpate.idx][key] = value
             }
         } catch (e) {
-            console.error('Error modifying', e)
+            // console.error('Error modifying', e)
         }
 
         this.tokens = [...this.tokens]
@@ -367,7 +365,7 @@ export class ScriptHistory extends History {
         try {
             this.tokens = this.tokens.toSpliced(update.idx, 0, update.newValue)
         } catch (e) {
-            console.error('Error adding', e)
+            // console.error('Error adding', e)
         }
     }
 
@@ -394,7 +392,7 @@ export class ScriptHistory extends History {
         try {
             this.tokens = this.tokens.toSpliced(updates.idx, 0, ...(Array.isArray(updates.oldValue) ? updates.oldValue : [updates.oldValue]))
         } catch (e) {
-            console.error('Error adding', e)
+            // console.error('Error adding', e)
         }
     }
 

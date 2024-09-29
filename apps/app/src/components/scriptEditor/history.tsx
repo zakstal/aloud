@@ -195,7 +195,6 @@ export default class History {
     }
 
     redo() {
-        console.log('REDO')
         const nextUndoGroup = this.pendingRedos.pop()
         if (!nextUndoGroup) return;
 
@@ -219,7 +218,6 @@ export default class History {
         const groupId = getId()
         this.pendingUpdates.forEach(obj => obj.group = groupId)
 
-        console.log('COMMIT UPDATES')
         this.lastInsertedId = await this.db.bulkAdd(this.pendingUpdates)
 
         const lastToUpdate = last(this.pendingUpdates)
@@ -233,7 +231,6 @@ export default class History {
 
     async commitRedos() {
         if (!this.pendingRedos.length) return
-        console.log('COMMIT PENDING REDOS')
         // if there are pending redos when we start making new changes
         // apply them to history 
         const prepPending = this.pendingRedos

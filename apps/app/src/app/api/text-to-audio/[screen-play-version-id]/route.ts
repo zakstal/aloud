@@ -12,8 +12,6 @@ import url from 'url';
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = Path.dirname(__filename);
 
-var pdf_path = "barbershop-wars-1.pdf";
-const pathPDf = Path.join(__dirname, pdf_path)
 
 // temporary function 
 async function getAudioQueue(data) {
@@ -52,7 +50,6 @@ async function getAudioQueue(data) {
     }
   }
 
-  console.log("finished----------------")
 }
 
   
@@ -62,7 +59,6 @@ export async function GET(req: NextRequest, { params }, res: NextResponse) {
   const screenPlayVersionId = params["screen-play-version-id"]
 
   const audioVersions = await getAudioVersionsByScreenplayId(screenPlayVersionId)
-  console.log('audioVersion--s', audioVersions)
   try {
     await getAudioQueue(audioVersions)
   } catch(e) {

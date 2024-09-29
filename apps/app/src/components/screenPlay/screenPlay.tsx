@@ -1,25 +1,20 @@
 'use client'
 
 import './screenplay.css'
-import { Heading } from '@/components/ui/heading';
 import { Characters } from '@/components/characters';
 import { VoiceActors } from '@/components/voice-actors';
 import { useState } from 'react'
 import { cn } from '@/lib/utils';
 import { Voice } from '@v1/script-to-audio/voices'
-import { ScrollArea } from '@/components/ui/scroll-area';
 import AudioPlayer from '@/components/ui/AudioPlayer'
 import { Button } from '@/components/ui/button';
-import { ScrollText } from 'lucide-react';
 import { Progress } from '@/components/ui/progress'
 import { ScriptEditor } from '@/components/scriptEditor/script-editor'
-import { ProductForm } from '@/components/forms/product-form';
 import PDFLocalUplaod from '@/components/pdf-upload-local'
 
 
 export default function ScreenPlayConatiner({
   screenPlayText,
-  title,
   characters,
   voices,
   onSelectVoice,

@@ -8,11 +8,10 @@ import {
   DEFAULT_SERVER_ERROR_MESSAGE,
   createSafeActionClient,
 } from "next-safe-action";
-import { headers } from "next/headers";
 import { z } from "zod";
 
 const handleServerError = (e: Error) => {
-  console.error("Action error:", e.message);
+  // console.error("Action error:", e.message);
 
   if (e instanceof Error) {
     return e.message;
@@ -55,7 +54,7 @@ export const authActionClient = actionClientWithMeta
     return result;
   })
   .use(async ({ next, metadata }) => {
-    const ip = headers().get("x-forwarded-for");
+    // const ip = headers().get("x-forwarded-for");
 
     // const { success, remaining } = await ratelimit.limit(
     //   `${ip}-${metadata.name}`,

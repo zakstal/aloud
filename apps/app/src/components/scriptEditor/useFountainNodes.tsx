@@ -1,4 +1,4 @@
-import { Tokens, tokenize } from './script-tokens'
+import { Tokens } from './script-tokens'
 import { useEffect, useState, useMemo } from 'react';
 import { ScriptHistory } from './script-history-refactor'
 // import { ScriptHistory } from './script-history'
@@ -61,10 +61,10 @@ const prepareTokensRender = (tokens: Tokens[]) => {
     return tokens.filter((token: Tokens) => !removeTokens.includes(token.type))
 }
 
-const prepareTokensSave = (tokens: Tokens[]) => {
-    // dialogue_end
-    // dialogue_begin
-}
+// const prepareTokensSave = (tokens: Tokens[]) => {
+//     // dialogue_end
+//     // dialogue_begin
+// }
 
 const noUpdateKeySet = new Set(noUpdateKyes)
 
@@ -93,15 +93,12 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
     const [currentOrderId, setCurrentOrderId] = useState(null)
     const [secondaryOrderId, setSecondaryOrderId] = useState(null) // for ranges
     const [rangeOffsets, setRangeOffsets] = useState(null) // for ranges
-    const [slections, setSelections] = useState(null)
 
     useEffect(() => {
-        console.log('pdfText', pdfText)
         if (!pdfText || tokensIn.length) return
         const [ didUpdate ] = window.scriptStorage.updateText({
             text: pdfText
         }, 0, 0)
-        console.log('didUpdate', didUpdate)
 
         // This is to save updating. if we are not changing the type or the tranformation of the text,
         // we can just register the changeand if we rerender later, all the text will be updated.
@@ -147,13 +144,12 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
         // This is to handle situations where the nextCaretPosition is off for some reason.
         const caret = textLength < nextCaretPosition ? textLength : nextCaretPosition
 
-        console.log('set range')
         try {
             if (el) {
                 range.setStart(el, caret);
             }
         } catch(e) {
-            console.error(e)
+            // console.error(e)
         }
             
         sel.removeAllRanges();
@@ -215,7 +211,7 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
 
             // hande range and key press
             const [currentOffset, secondOffset] = rangeOffsets || []
-            const [carotPostiion, focusId, foundText] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            const [carotPostiion, focusId   ] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
 
             setNextCaretPosition(selection?.anchorOffset)
             window.scriptStorage.commit()
@@ -246,12 +242,9 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
             if (e.keyCode === 32) return // space bar. having a space sometimes doesn't register in the inner text and setting the caret can fail
             if (orderId) {
 
-                console.log('handleKeyUp currentElement.innerText', currentElement.innerText)
                 const [ didUpdate ] = window.scriptStorage.updateText({
                     text: currentElement.innerText
                 }, orderId, selection?.anchorOffset)
-
-                console.log('didUpdate', didUpdate)
 
                 // This is to save updating. if we are not changing the type or the tranformation of the text,
                 // we can just register the changeand if we rerender later, all the text will be updated.
@@ -279,7 +272,7 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
 
 
             } catch (e) {
-                console.log('error', e)
+                // console.log('error', e)
             }
         },
         function handleOnBackSpace(e) {
@@ -292,7 +285,6 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
             if (!currentOffset)
             try {
                 const res = window.scriptStorage?.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
-                console.log('res', res)
                 const [carotPostiion, focusId] = res
                 window.scriptStorage.commit()
                 
@@ -302,7 +294,7 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
                 setRangeOffsets(null)
                 // setTokens(newTokens)
             } catch(e) {
-                console.log("error", e)
+                // console.log("error", e)
             }
         },
         function clearCurrrentNode() {

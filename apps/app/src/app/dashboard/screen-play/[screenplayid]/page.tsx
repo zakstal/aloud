@@ -1,8 +1,5 @@
 'use client'
 
-import { Breadcrumbs } from '@/components/breadcrumbs';
-import { ProductForm } from '@/components/forms/product-form';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { getScreenPlay } from '@/actions/screenPlays/get-screen-play'
 import { updateAudioCharacterVersionAction } from '@/actions/audioCharacterVersion/update-audio-character-version'
 import React, { useState, useEffect} from 'react';
@@ -18,10 +15,6 @@ const breadcrumbItems = [
   { title: 'Screen-play', link: '/dashboard/screen-play' },
   { title: 'Create', link: '/dashboard/screen-play/create' }
 ];
-
-type screenPlay = {
-  error: string | null;
-}
 
 function updateCharacter(character, characters, setCharacters) {
 // TODO put this into an update function
@@ -62,7 +55,6 @@ export default function Page() {
           const audio_screenplay_version = data?.audio_screenplay_versions && data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1]
           const audio_version = audio_screenplay_version?.audio_version
 
-          console.log("data", data)
           updateAudioVersions(audio_version, setAudioVersions)
           setScreenPlay(screenPlay)
           setCharacters(data?.characters)
@@ -97,14 +89,13 @@ export default function Page() {
             try {
 
               const res = await startScreenPlay(obj)
-              console.log('res', res)
               const id = res?.data?.id
               
               if (id) {
                 router.push(`/dashboard/screen-play/${id}`);
               }
             } catch(e) {
-              console.log('error uploading screenplay', e)
+              // console.log('error uploading screenplay', e)
             }
           }}
           characters={characters}
@@ -128,13 +119,11 @@ export default function Page() {
                 voice_name: voice.name,
               })
 
-              console.log("here", res)
               if (res.data.error) {
                 throw 'Error updating voice'
               }
 
               const updatedCharacter = res?.data?.data
-              console.log('updatedCharacter------', updatedCharacter)
               updateCharacter(updatedCharacter, characters, setCharacters)
               
             } catch(e) {

@@ -1,6 +1,6 @@
 // import { Fountain } from 'fountain-js';
-import fountain from './fountainParser2'
-import { getGenders } from '../genderapi'
+import fountain from './fountainParser2.ts'
+import { getGenders } from '../genderapi.ts'
 
 
 

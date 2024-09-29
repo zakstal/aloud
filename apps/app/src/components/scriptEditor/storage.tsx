@@ -37,19 +37,15 @@ export function add(diffObj: Diff) {
 }
 
 export function getById(id: number) {
-    console.log("id", id)
     // return db.diff.where('id').equals(id)
     return db.diff.get(id)
 }
 
 export function getByGroupId(id: number, version: string) {
-  console.log('getByGroupId', version)
-    console.log("id", id)
     return db.diff.where('group').equals(id).and(item => item.remoteDBVersion === version).toArray();
 }
 
 export async function getByIdGroup(id: number, version: string) {
-  console.log('getByIdGroup', version)
     const last = await db.diff.get(id)
     if (!last) return []
 
@@ -62,13 +58,6 @@ export async function bulkAdd(diffObj: Diff[]) {
 
 export function resetDb() {
    db.delete();
-}
-
-export function createDiff(newArr, OldArr = []) {
-    for (const idx in newArr) {
-        const item = newArr[idx]
-
-    }
 }
 
 export type { Friend };

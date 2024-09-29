@@ -3,10 +3,12 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "react": [ "./node_modules/@types/react" ]
     },
     "strict": true
   },
+  "allowJs": false,
   "include": [
     "next-env.d.ts",
     "next.config.js",

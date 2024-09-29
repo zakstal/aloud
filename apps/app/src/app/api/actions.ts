@@ -12,7 +12,6 @@ export async function myTask() {
 
     return { handle };
   } catch (error) {
-    console.error(error);
     return {
       error: "something went wrong",
     };

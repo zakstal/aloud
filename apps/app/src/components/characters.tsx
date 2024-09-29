@@ -2,7 +2,6 @@
 
 import { Character, CharacterType } from '@/components/character';
 import {
-  Card,
   CardContent,
   CardDescription,
   CardHeader,

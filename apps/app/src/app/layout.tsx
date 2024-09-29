@@ -6,7 +6,6 @@ import NextTopLoader from 'nextjs-toploader';
 import { Inter } from 'next/font/google';
 import './globals.css';
 // import { auth } from '@/auth';
-import { getUser } from "@v1/supabase/queries";
 import localFont from '@next/font/local'
 const inter = Inter({ subsets: ['latin'] });
 

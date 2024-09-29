@@ -11,7 +11,6 @@ export const deleteScreenPlayPermanatlyAction = authActionClient
   })
   .action(async ({ parsedInput: { screenPlayId } = {}, ctx: { user } }) => {
     if (!screenPlayId) return {}
-    console.log('screenPlayId', screenPlayId)
     const result = await deleteScreenplay(screenPlayId);
 
     return result;

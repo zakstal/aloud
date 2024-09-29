@@ -1,7 +1,5 @@
-import next from 'next'
 import { Tokens, tokenize as tokenizeIn } from './script-tokens'
 import { Diff } from './storage'
-import { consoleIntegration } from '@sentry/nextjs'
 
 const DELETE = 'delete'
 const MODIFY = 'modify'
@@ -354,12 +352,11 @@ export class ScriptHistory {
             const forHowMany = idxRange ? ((idxRange - idx) + 1) : 1 
             this.tokens = this.tokens.toSpliced(idx, forHowMany)
         } catch (e) {
-            console.error('Error deleting', e)
+            // console.error('Error deleting', e)
         }
     }
 
     modifyInternal(udpate: Diff, isForward: boolean = true) {
-        const allowedModificationKeys = ['']
         const updateValue = isForward ? udpate.newValue : udpate.oldValue
         this.tokens[udpate.idx] = {...this.tokens[udpate.idx]}
 
@@ -369,7 +366,7 @@ export class ScriptHistory {
                 this.tokens[udpate.idx][key] = value
             }
         } catch (e) {
-            console.error('Error modifying', e)
+            // console.error('Error modifying', e)
         }
 
         this.tokens = [...this.tokens]
@@ -380,7 +377,7 @@ export class ScriptHistory {
         try {
             this.tokens = this.tokens.toSpliced(update.idx, 0, update.newValue)
         } catch (e) {
-            console.error('Error adding', e)
+            // console.error('Error adding', e)
         }
     }
 
@@ -407,7 +404,7 @@ export class ScriptHistory {
         try {
             this.tokens = this.tokens.toSpliced(updates.idx, 0, ...(Array.isArray(updates.oldValue) ? updates.oldValue : [updates.oldValue]))
         } catch (e) {
-            console.error('Error adding', e)
+            // console.error('Error adding', e)
         }
     }
 
@@ -515,7 +512,6 @@ export class ScriptHistory {
     }
 
     redo() {
-        console.log('REDO')
         const nextUndoGroup = this.pendingRedos.pop()
         if (!nextUndoGroup) return;
 
@@ -538,7 +534,6 @@ export class ScriptHistory {
         const groupId = getId()
         this.pendingUpdates.forEach(obj => obj.group = groupId)
 
-        console.log('COMMIT UPDATES')
         this.lastInsertedId = await this.db.bulkAdd(this.pendingUpdates)
 
         const lastToUpdate = last(this.pendingUpdates)
@@ -553,7 +548,6 @@ export class ScriptHistory {
 
     async commitRedos() {
         if (!this.pendingRedos.length) return
-        console.log('COMMIT PENDING REDOS')
         // if there are pending redos when we start making new changes
         // apply them to history 
         const prepPending = this.pendingRedos

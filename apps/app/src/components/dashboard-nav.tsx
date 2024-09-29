@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import { NavItem } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { useSidebar } from '@/hooks/useSidebar';
 import {
@@ -14,6 +13,18 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from './ui/tooltip';
+
+
+export interface NavItem {
+  title: string;
+  href?: string;
+  disabled?: boolean;
+  external?: boolean;
+  icon?: keyof typeof Icons;
+  label?: string;
+  description?: string;
+}
+
 
 interface DashboardNavProps {
   items: NavItem[];
@@ -32,8 +43,6 @@ export function DashboardNav({
   if (!items?.length) {
     return null;
   }
-
-  console.log('isActive', isMobileNav, isMinimized);
 
   return (
     <nav className="grid items-start gap-2">

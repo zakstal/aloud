@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'; // To handle the request and response
 import { promises as fs } from 'fs'; // To save the file temporarily
 import { v4 as uuidv4 } from 'uuid'; // To generate a unique filename
-import PDFParser from 'pdf2json'; // To parse the pdf
+// import PDFParser from 'pdf2json'; // To parse the pdf
 import { createScreenPlay } from "@v1/supabase/mutations";
 import { parse } from "@v1/script-to-audio/parsers";
 import { getTextFromPdf } from "@v1/script-to-audio/pdfToText";
 // import { getServerSession } from "next-auth/next"
 // import { authOptions } from "./auth/[...nextauth]"
-import { consoleIntegration } from '@sentry/nextjs';
+// import { consoleIntegration } from '@sentry/nextjs';
 
   
 //TODO make sure route is behind auth
@@ -21,7 +21,6 @@ export async function POST(req: NextRequest, res: NextResponse) {
   const userId = req.headers.get("x-customheader") as string;
   if (uploadedFiles && uploadedFiles.length > 0) {
     const uploadedFile = uploadedFiles[1];
-    console.log('Uploaded file:', uploadedFile);
 
     // Check if uploadedFile is of type File
     // if (uploadedFile instanceof 'File') {
@@ -44,7 +43,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
       // do not allow for any constructor arguments.
       // You can either modify the type definitions or bypass the type checks.
       // I chose to bypass the type checks.
-      const pdfParser = new (PDFParser as any)(null, 1);
+      // const pdfParser = new (PDFParser as any)(null, 1);
 
       // See pdf2json docs for more info on how the below works.
       // const res = await new Promise((resolve, reject) => {
@@ -64,7 +63,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
       parsedText = await getTextFromPdf(tempFilePath)
 
     } else {
-      console.log('Uploaded file is not in the expected format.');
+      // console.log('Uploaded file is not in the expected format.');
     }
     // } else {
       //   console.log('No files found.');

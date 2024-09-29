@@ -286,7 +286,7 @@ export async function createScreenPlay(
 
 export async function updateAudioCharacterVersion(
   audioCharacterVersionId: string,
-  data: { voice_id: string, voice_data: JSON, voice_name: string}
+  data: { voice_id: string | undefined, voice_data: JSON, voice_name: string | undefined}
 ) {
   const supabase = createClient();
   console.log("data here ===============", data)

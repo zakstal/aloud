@@ -26,7 +26,7 @@
     "@types/dotenv": "^8.2.0"
   },
   "exports": {
-    "./parsers": "./src/scriptParsers/fountainParser.js",
+    "./parsers": "./src/scriptParsers/fountainParser.ts",
     "./pdfToText": "./src/pdfToText.js",
     "./voices": "./src/voices.ts",
     "./voiceApis": "./src/voiceApis",
