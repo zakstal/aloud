@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { getDocument } from 'pdfjs-dist/build/pdf.min.mjs';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs';
+import { getDocument } from 'pdfjs-dist/build/pdf.min';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker';
 import { FilePond } from 'react-filepond';
 import 'filepond/dist/filepond.min.css';
 
 // Set the workerSrc globally
 globalThis.pdfjsLib = { GlobalWorkerOptions: { workerSrc: pdfjsWorker } };
+
+// globalThis.pdfjs.GlobalWorkerOptions.workerSrc = //unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js;
 
 function PDFLocalUplaod({
     startScreenPlay
