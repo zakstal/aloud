@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'; // To handle the reques
 import fs from 'fs'; // To save the file temporarily
 import { getAudioVersionsByScreenplayId } from "@v1/supabase/queries";
 import { updateAudioVersionUrl } from "@v1/supabase/mutations";
-import textToVoiceProvders from "@v1/script-to-audio/voiceApis";
+// import textToVoiceProvders from "@v1/script-to-audio/voiceApis";
 
 
 // temproary
@@ -27,7 +27,7 @@ async function getAudioQueue(data) {
   for (const voiceVersion of data) {
     const audioCharacter = voiceVersion.audio_character_version
     const audioProviderName = audioCharacter.voice_data.audioProvider
-    const textToSpeech = textToVoiceProvders[audioProviderName]
+    const textToSpeech = ''//textToVoiceProvders[audioProviderName]
     const orderNumber = voiceVersion.lines.order
     const versionId = voiceVersion.audio_screenplay_version_id
     const text = voiceVersion.lines.text
