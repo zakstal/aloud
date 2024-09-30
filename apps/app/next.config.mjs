@@ -19,7 +19,9 @@ const nextConfig = {
   env: {
     ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY,
   },
-  removeConsole: false,
+  compiler: {
+    removeConsole: true,
+  },
 };
 
 export default withSentryConfig(nextConfig, {
