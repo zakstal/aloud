@@ -7,6 +7,9 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 // import { auth } from '@/auth';
 import localFont from '@next/font/local'
+import { getUser } from "@v1/supabase/queries";
+import { redirect } from 'next/navigation'
+
 const inter = Inter({ subsets: ['latin'] });
 
 const courierPrime = localFont({
@@ -37,16 +40,10 @@ export default async function RootLayout({
   children: any;
   // children: React.ReactNode;
 }) {
-  const session = {
-    user: {
-      name: 'zak',
-      image: '',
-      email: 'ssdf@me.com'
-    },
-    expires: 'never'
-  };
-  // const session = await auth();
   // const session = await getUser();
+
+  // console.log("session-------", session)
+ 
   return (
     <html lang="en" className={`${courierPrime.variable} font-courierprime`}>
       <body
@@ -54,10 +51,10 @@ export default async function RootLayout({
         suppressHydrationWarning={true}
       >
         <NextTopLoader showSpinner={false} />
-        <Providers session={session}>
+        {/* <Providers session={session}> */}
           <Toaster />
           {children}
-        </Providers>
+        {/* </Providers> */}
       </body>
     </html>
   );

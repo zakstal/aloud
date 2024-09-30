@@ -110,7 +110,7 @@ export default function ScreenPlayConatiner({
                     <Button
                         variant="outline"
                         className="text-md h-20 mt-6 w-full"
-                        onClick={startScreenPlay}
+                        onClick={() => startScreenPlay()}
                     >
                         Go to a blank document
                     </Button>
