@@ -2,14 +2,13 @@
 
 import { createClient } from "@v1/supabase/client";
 import { Button } from "@v1/ui/button";
+import { getWindow } from '@/getWindow'
 
-let window = {}
-if (typeof window !== "undefined")  {
-  window = window
-}
+let window = getWindow()
 
 export function GoogleSignin() {
   const supabase = createClient();
+  let window = getWindow()
 console.log("redirect locaiton",  `${window?.location?.origin}/dashboard/screen-play/new`)
   const handleSignin = () => {
     supabase.auth.signInWithOAuth({

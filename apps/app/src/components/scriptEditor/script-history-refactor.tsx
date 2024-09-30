@@ -173,10 +173,9 @@ export class ScriptHistory extends History {
             nextOffset = currentOffsetTemp
         }
 
-        console.log("before combine", !currentOrderId && currentOrderId !== 0 || !this.tokens[currentOrderId], this.tokens[currentOrderId], currentOrderId, nextId, currentOffsetIn, nextOffsetIn)
+
         if (!currentOrderId && currentOrderId !== 0 || !this.tokens[currentOrderId]) return [ currentOffset || 0, currentOrderId]
     
-        console.log("after combine")
         const nextText = this.tokens[nextId].text || ''
         const carotPostiion = this.tokens[currentOrderId].text?.length || 0 
         const currentText = this.tokens[currentOrderId].text
