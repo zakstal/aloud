@@ -5,7 +5,7 @@ import { Button } from "@v1/ui/button";
 
 export function GoogleSignin() {
   const supabase = createClient();
-
+console.log("redirect locaiton",  `${window.location.origin}/dashboard/screen-play/new`)
   const handleSignin = () => {
     supabase.auth.signInWithOAuth({
       provider: "google",
