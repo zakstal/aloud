@@ -3,8 +3,8 @@ import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { Provider as AnalyticsProvider } from "@v1/analytics/client";
 import { cn } from "@v1/ui/cn";
-import { GeistMono } from "geist/font/mono";
-import { GeistSans } from "geist/font/sans";
+// import { GeistMono } from "geist/font/mono";
+// import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 
@@ -29,7 +29,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          `${DepartureMono.variable} ${GeistSans.variable} ${GeistMono.variable}`,
+          // `${DepartureMono.variable} ${GeistSans.variable} ${GeistMono.variable}`,
           "antialiased dark",
         )}
       >
