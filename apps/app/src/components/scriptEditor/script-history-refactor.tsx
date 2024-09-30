@@ -156,6 +156,7 @@ export class ScriptHistory extends History {
     }
 
     combineRange(currentOrderIdIn: number, nextIdIn: number, currentOffsetIn: number, nextOffsetIn: number) {
+        console.log('combine')
         let currentOrderId = currentOrderIdIn
         let nextId = nextIdIn || currentOrderIdIn - 1
         let currentOffset = currentOffsetIn
@@ -172,8 +173,10 @@ export class ScriptHistory extends History {
             nextOffset = currentOffsetTemp
         }
 
-        if (!currentOrderId || !this.tokens[currentOrderId]) return [ currentOffset || 0, currentOrderId]
+        console.log("before combine", !currentOrderId && currentOrderId !== 0 || !this.tokens[currentOrderId], this.tokens[currentOrderId], currentOrderId, nextId, currentOffsetIn, nextOffsetIn)
+        if (!currentOrderId && currentOrderId !== 0 || !this.tokens[currentOrderId]) return [ currentOffset || 0, currentOrderId]
     
+        console.log("after combine")
         const nextText = this.tokens[nextId].text || ''
         const carotPostiion = this.tokens[currentOrderId].text?.length || 0 
         const currentText = this.tokens[currentOrderId].text
@@ -199,6 +202,7 @@ export class ScriptHistory extends History {
                 this.add(toAdd, currentOrderId + foundIdx, currentOffset || carotPostiion)
             })
     
+        console.log('this.pendingUpdates', this.pendingUpdates)
         return [currentOffset || carotPostiion, currentOrderId]
     }
 

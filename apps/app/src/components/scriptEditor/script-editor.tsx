@@ -95,6 +95,7 @@ export const ScriptEditor =({
             //     console.log('Element:', event.target);
             // }}
             onKeyDown={(e) => {
+
                 if (e.key === 'Backspace') {
                    return  handleOnBackSpace(e)
                 }

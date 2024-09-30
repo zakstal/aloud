@@ -20,7 +20,7 @@ const nextConfig = {
     ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY,
   },
   compiler: {
-    removeConsole: true,
+    removeConsole: false,
   },
 };
 

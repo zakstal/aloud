@@ -111,7 +111,6 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
         }
     }, [pdfText])
 
-    console.log('tokens', tokens)
     useEffect(() => {
         window.scriptStorage = window.scriptStorage || new ScriptHistory()
         // NB ScriptHistory has an internal representation of tokens. not sure if we should keep 
@@ -220,7 +219,6 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             setNextCaretPosition(selection?.anchorOffset)
             window.scriptStorage.commit()
 
-           
   
             setCurrentOrderId(focusId)
             setNextCaretPosition(carotPostiion)
@@ -283,10 +281,11 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             const selection = window.getSelection();
             
             if (selection.anchorOffset !== 0 && !rangeOffsets) return
+            console.log('backaspace----------', rangeOffsets)
             e.preventDefault()
-
+            
             const [currentOffset, secondOffset] = rangeOffsets || []
-            if (!currentOffset)
+            // if (!currentOffset) return
             try {
                 const res = window.scriptStorage?.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
                 const [carotPostiion, focusId] = res
@@ -298,7 +297,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
                 setRangeOffsets(null)
                 // setTokens(newTokens)
             } catch(e) {
-                // console.log("error", e)
+                console.log("error", e)
             }
         },
         function clearCurrrentNode() {
