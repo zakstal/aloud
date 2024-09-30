@@ -75,6 +75,7 @@ async function createLines({
       : {} // Optionally, return the inserted data
       
       if (error) {
+        console.log("error lines", error)
         throw error;
       }
 
@@ -299,7 +300,8 @@ export async function updateAudioCharacterVersion(
       .single()
 
     if (error) {
-      throw error;
+      console.log("audio_character_version", error)
+      throw new Error(error);
     }
 
     const character = supabase
@@ -341,9 +343,8 @@ export async function deleteScreenplay(screenplayId: string) {
       .delete()
       .eq("id", screenplayId)
 
-
-      console.log("error", error)
     if (error) {
+      console.log("screenplays", error)
       throw error;
     }
 
@@ -386,6 +387,7 @@ export async function createJobsForScreenPlayVersion(screenplayVersionId: string
 
 
       if (error) {
+        console.log("audio_version", error)
         throw error;
       }
 
@@ -419,6 +421,7 @@ export async function createJobsForScreenPlayVersion(screenplayVersionId: string
         `);
 
     if (errorJobs) {
+      console.log("error jobs", error)
       throw errorJobs;
     }
 
@@ -443,7 +446,7 @@ console.log('newAudioFileUrl', newAudioFileUrl)
       .eq("id", audioVersionId);
 
     if (error) {
-      console.log("error", error)
+      console.log("error audioVersion", error)
       throw error;
     }
 

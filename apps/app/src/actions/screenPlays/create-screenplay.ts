@@ -12,9 +12,11 @@ export const startScreenPlay = authActionClient
     name: "create-screenplay",
   })
   .action(async ({ parsedInput: { screenPlayText = '' } = {}, ctx: { user } }) => {
+    console.log('create')
     const text = decodeURIComponent(escape(atob(screenPlayText)))
+    console.log('after decode')
     const parsed = await parse(text)
-
+    console.log('after parse')
     try {
         const result = await createScreenPlay(
             user.id,
@@ -28,6 +30,8 @@ export const startScreenPlay = authActionClient
                 screen_play_fountain:  parsed?.output && parsed.output.tokens
             }
         )
+
+        console.log("result-----------", result)
     return result;
     } catch(e) {
         console.log("error in start screenplay", e)

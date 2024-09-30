@@ -111,6 +111,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
         }
     }, [pdfText])
 
+    console.log('tokens', tokens)
     useEffect(() => {
         window.scriptStorage = window.scriptStorage || new ScriptHistory()
         // NB ScriptHistory has an internal representation of tokens. not sure if we should keep 
