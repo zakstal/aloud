@@ -3,19 +3,19 @@
 import { createClient } from "@v1/supabase/client";
 import { Button } from "@v1/ui/button";
 
-let windoww = {}
+let window = {}
 if (typeof window !== "undefined")  {
-  windoww = window
+  window = window
 }
 
 export function GoogleSignin() {
   const supabase = createClient();
-console.log("redirect locaiton",  `${windoww?.location?.origin}/dashboard/screen-play/new`)
+console.log("redirect locaiton",  `${window?.location?.origin}/dashboard/screen-play/new`)
   const handleSignin = () => {
     supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${windoww?.location?.origin}/dashboard/screen-play/new`,
+        redirectTo: `${window?.location?.origin}/dashboard/screen-play/new`,
         // redirectTo: `${window.location.origin}/api/auth/callback`,
       },
     });
@@ -27,3 +27,5 @@ console.log("redirect locaiton",  `${windoww?.location?.origin}/dashboard/screen
     </Button>
   );
 }
+
+

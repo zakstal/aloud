@@ -1,10 +1,8 @@
 import { Tokens, tokenize as tokenizeIn } from './script-tokens'
 import { Diff } from './storage'
+import { getWindow } from '@/getWindow'
 
-let windoww = {}
-if (typeof window !== "undefined")  {
-  windoww = window
-}
+let window = getWindow()
 
 const DELETE = 'delete'
 const MODIFY = 'modify'
@@ -158,12 +156,12 @@ export class ScriptHistory {
             this.applyChanges()
         }
 
-        windoww.resetDb = async () => {
+        window.resetDb = async () => {
             await db?.resetDb()
-            windoww.location.reload()
+            windowlocation.reload()
         }
-        windoww.undo = db?.undo
-        windoww.diffs = () => db?.diffs(dbTokenVersion)
+        window.undo = db?.undo
+        window.diffs = () => db?.diffs(dbTokenVersion)
     }
 
     combineRange(currentOrderIdIn: number, nextIdIn: number, currentOffsetIn: number, nextOffsetIn: number) {

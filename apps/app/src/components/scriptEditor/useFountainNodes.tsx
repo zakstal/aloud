@@ -3,12 +3,9 @@ import { useEffect, useState, useMemo } from 'react';
 import { ScriptHistory } from './script-history-refactor'
 // import { ScriptHistory } from './script-history'
 import * as db from './storage'
+import { getWindow } from '@/getWindow'
 
-let windoww = {}
-if (typeof window !== "undefined")  {
-  windoww = window
-}
-
+let window = getWindow()
 
 /**
  * 
@@ -74,7 +71,7 @@ const prepareTokensRender = (tokens: Tokens[]) => {
 const noUpdateKeySet = new Set(noUpdateKyes)
 
 function getElementAtCaret() {
-    const selection = windoww.getSelection();
+    const selection = windowtSelection();
     
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
@@ -88,7 +85,7 @@ function getElementAtCaret() {
 }
 
 
-windoww.scriptStorage = windoww.scriptStorage || new ScriptHistory()
+window.scriptStorage = window.scriptStorage || new ScriptHistory()
 
 export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) {
 
@@ -101,23 +98,23 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
 
     useEffect(() => {
         if (!pdfText || tokensIn.length) return
-        const [ didUpdate ] = windoww.scriptStorage.updateText({
+        const [ didUpdate ] = window.scriptStorage.updateText({
             text: pdfText
         }, 0, 0)
 
         // This is to save updating. if we are not changing the type or the tranformation of the text,
         // we can just register the changeand if we rerender later, all the text will be updated.
         if (didUpdate) {
-            windoww.scriptStorage.commit()
+            window.scriptStorage.commit()
             // setNextCaretPosition(selection?.anchorOffset)
         }
     }, [pdfText])
 
     useEffect(() => {
-        windoww.scriptStorage = windoww.scriptStorage || new ScriptHistory()
+        window.scriptStorage = window.scriptStorage || new ScriptHistory()
         // NB ScriptHistory has an internal representation of tokens. not sure if we should keep 
         // to sets, hoever we can change the internal as we like and only update it later if needed
-        windoww.scriptStorage.setCallbackValues(
+        window.scriptStorage.setCallbackValues(
             versionNumber,
             db,
             (tokens: Tokens[], caretPosition: number | null, currentOrderId: number | null) => { // call back that runs on "commit"
@@ -167,18 +164,18 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
     return [
         tokens,
         async function handleKeyDown(e) {
-            const selection = windoww.getSelection();
+            const selection = window.getSelection();
             const currentElement = getElementAtCaret()
             const orderId = currentElement?.dataset?.order
 
             if (e.key === 'Tab' && orderId) {
                 e.preventDefault()
 
-                windoww.scriptStorage.modify({
+                window.scriptStorage.modify({
                     type: 'character',
                 }, orderId, selection?.anchorOffset)
 
-                windoww.scriptStorage.commit()
+                window.scriptStorage.commit()
                 setCurrentOrderId(orderId)
                 setNextCaretPosition(selection?.anchorOffset)
                 return
@@ -196,10 +193,10 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
             if (isCtrlUndo || isMetalUndo ) {
                 e.preventDefault()
                 if (isShift) {
-                    await windoww.scriptStorage.redo()
+                    await window.scriptStorage.redo()
                     return
                 }
-                await windoww.scriptStorage.undo()
+                await window.scriptStorage.undo()
                 return
             }
 
@@ -216,10 +213,10 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
 
             // hande range and key press
             const [currentOffset, secondOffset] = rangeOffsets || []
-            const [carotPostiion, focusId   ] = windoww.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            const [carotPostiion, focusId   ] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
 
             setNextCaretPosition(selection?.anchorOffset)
-            windoww.scriptStorage.commit()
+            window.scriptStorage.commit()
 
            
   
@@ -233,7 +230,7 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
             const isMetalPaste = e.metaKey && e.key === 'v' 
             if (isCtrlPaste || isMetalPaste) return
 
-            const selection = windoww.getSelection();
+            const selection = window.getSelection();
             const currentElement = getElementAtCaret()
             const orderId = currentElement?.dataset?.order
 
@@ -247,14 +244,14 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
             if (e.keyCode === 32) return // space bar. having a space sometimes doesn't register in the inner text and setting the caret can fail
             if (orderId) {
 
-                const [ didUpdate ] = windoww.scriptStorage.updateText({
+                const [ didUpdate ] = window.scriptStorage.updateText({
                     text: currentElement.innerText
                 }, orderId, selection?.anchorOffset)
 
                 // This is to save updating. if we are not changing the type or the tranformation of the text,
                 // we can just register the changeand if we rerender later, all the text will be updated.
                 if (didUpdate) {
-                    windoww.scriptStorage.commit()
+                    window.scriptStorage.commit()
                     setNextCaretPosition(selection?.anchorOffset)
                 }
             }
@@ -262,13 +259,13 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
         function handleOnEnter(e) {
             e.preventDefault()
             try {
-                const selection = windoww.getSelection();
+                const selection = window.getSelection();
 
                 let carotPostiion = 0
                 let focusId = currentOrderId
 
-                windoww.scriptStorage.combineSplitRange(focusId, carotPostiion || selection?.anchorOffset)
-                windoww.scriptStorage.commit()
+                window.scriptStorage.combineSplitRange(focusId, carotPostiion || selection?.anchorOffset)
+                window.scriptStorage.commit()
 
                 setCurrentOrderId(Number(currentOrderId) + 1)
                 setNextCaretPosition(0)
@@ -281,7 +278,7 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
             }
         },
         function handleOnBackSpace(e) {
-            const selection = windoww.getSelection();
+            const selection = window.getSelection();
             
             if (selection.anchorOffset !== 0 && !rangeOffsets) return
             e.preventDefault()
@@ -289,9 +286,9 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
             const [currentOffset, secondOffset] = rangeOffsets || []
             if (!currentOffset)
             try {
-                const res = windoww.scriptStorage?.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+                const res = window.scriptStorage?.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
                 const [carotPostiion, focusId] = res
-                windoww.scriptStorage.commit()
+                window.scriptStorage.commit()
                 
                 setCurrentOrderId(focusId)
                 setNextCaretPosition(carotPostiion)
@@ -313,7 +310,7 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
             }
         },
         function handleOnSelect(e) {
-            const selection = windoww.getSelection();
+            const selection = window.getSelection();
 
             // selection.anchorNode // start node
             // selection.anchorOffset // start node cursor start
@@ -335,32 +332,32 @@ export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) 
         },
         function handlePaste(e) {
             e.preventDefault()
-            const selection = windoww.getSelection();
+            const selection = window.getSelection();
             const currentElement = getElementAtCaret()
             const orderId = currentElement?.dataset?.order
 
-            const [didUpdate, focusId, nextCaretPostion] = windoww.scriptStorage.updateText({
+            const [didUpdate, focusId, nextCaretPostion] = window.scriptStorage.updateText({
                 text: e.clipboardData.getData('text/plain')
             }, orderId, selection?.anchorOffset)
 
             // This is to save updating. if we are not changing the type or the tranformation of the text,
             // we can just register the changeand if we rerender later, all the text will be updated.
             if (didUpdate) {
-                windoww.scriptStorage.commit()
+                window.scriptStorage.commit()
                 setCurrentOrderId(focusId)
                 setNextCaretPosition(nextCaretPostion)
             }
 
         },
         function handleCut(e) {
-            const selection = windoww.getSelection();
+            const selection = window.getSelection();
             
             if (!rangeOffsets) return
             e.preventDefault()
 
             const [currentOffset, secondOffset] = rangeOffsets || []
-            const [carotPostiion, focusId] = windoww.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
-            windoww.scriptStorage.commit()
+            const [carotPostiion, focusId] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            window.scriptStorage.commit()
 
             setCurrentOrderId(focusId)
             setNextCaretPosition(carotPostiion)
