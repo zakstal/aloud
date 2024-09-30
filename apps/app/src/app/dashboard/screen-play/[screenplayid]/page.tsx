@@ -86,6 +86,7 @@ export default function Page() {
           isLoading={isLoading}
           screenPlayText={data?.screen_play_text}
           startScreenPlay={async (obj = {}) => {
+            console.log("start screen play")
             try {
 
               const res = await startScreenPlay(obj)
