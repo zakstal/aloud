@@ -10,7 +10,6 @@ if (typeof window !== "undefined")  {
 
 export function GoogleSignin() {
   const supabase = createClient();
-  if (typeof window !== "undefined") return <div></div>
 console.log("redirect locaiton",  `${windoww?.location?.origin}/dashboard/screen-play/new`)
   const handleSignin = () => {
     supabase.auth.signInWithOAuth({
