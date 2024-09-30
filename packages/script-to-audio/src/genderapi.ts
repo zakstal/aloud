@@ -1,4 +1,5 @@
 export const getGenders = async (namesArr) => {
+    if (!namesArr || !namesArr.length) return []
     try {
         const body = JSON.stringify({
             personalNames: namesArr.map(name => ({ id: '', name }))

@@ -201,6 +201,18 @@ const getCharacters = (dialog) => {
 
 export async function parse(scriptText) {
     // let fountain = new Fountain();
+    if (!scriptText) {
+      return {
+        dialog: [],
+        output: {
+          title: '',
+          tokens: []
+        },
+        characters: [],
+        characterGenders: [],
+      }
+    }
+
     let output = fountain.parse(scriptText, true);
     console.log("scriptText", output.tokens)
     const dialog = getDialog(output)    

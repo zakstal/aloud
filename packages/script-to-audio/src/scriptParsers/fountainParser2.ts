@@ -210,13 +210,14 @@ inline.lexer = function (s) {
 };
 
 var parse = function (script, toks, callback) {
+
     if (callback === undefined && typeof toks === 'function') {
     callback = toks;
     toks = undefined;
     }
     
     var tokens = tokenize(script)
-    , i      = tokens.length, token
+    , i      = tokens?.length, token
     , title, title_page = [], html = [], output;
 
     while (i--) {

@@ -71,7 +71,7 @@ const prepareTokensRender = (tokens: Tokens[]) => {
 const noUpdateKeySet = new Set(noUpdateKyes)
 
 function getElementAtCaret() {
-    const selection = windowtSelection();
+    const selection = window.getSelection();
     
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
@@ -87,9 +87,10 @@ function getElementAtCaret() {
 
 window.scriptStorage = window.scriptStorage || new ScriptHistory()
 
-export function useFountainNodes(tokensIn = [], versionNumber: string, pdfText) {
+export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string, pdfText) {
 
-    const [tokens, setTokens] = useState(prepareTokensRender(tokensIn))
+
+    const [tokens, setTokens] = useState(prepareTokensRender(tokensIn?.length ? tokensIn : [{ type: 'editNode', text: ' '}]))
     const tokensChanged = useMemo(() => tokens, [tokens])
     const [nextCaretPosition, setNextCaretPosition] = useState([])
     const [currentOrderId, setCurrentOrderId] = useState(null)

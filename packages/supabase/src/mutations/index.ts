@@ -108,7 +108,7 @@ async function insertCharacters ({
   screenplayId,
   supabase,
 }: CreateCharacersInput) {
-  if (!characters || !characters.length) return null
+  if (!characters || !characters?.length) return null
   const charactersInsert = characters && characters.map((obj) => ({
     screenplay_id: screenplayId,
     name: obj.name,
@@ -143,7 +143,7 @@ async function insertCharacterVersions ({
   screenplayVersionId,
   supabase
 }: CreateCharacersVersionInput) {
-  if (!insertedCharacters || !insertedCharacters.length) return null
+  if (!insertedCharacters || !insertedCharacters?.length) return null
 
   const characterVersionInsert = insertedCharacters?.map(insertedChar => ({
     audio_screenplay_version_id: screenplayVersionId,
@@ -376,7 +376,7 @@ export async function createJobsForScreenPlayVersion(screenplayVersionId: string
       .eq("audio_screenplay_version_id", screenplayVersionId); // Filter by screenplay_id
 
       const toInsertJob = data?.map(obj => {
-        if (obj.audio_jobs.length && obj.audio_jobs.some(job => ['in progress', 'pending'].includes(job.job_status))) return null
+        if (obj.audio_jobs?.length && obj.audio_jobs.some(job => ['in progress', 'pending'].includes(job.job_status))) return null
         return {
           audio_version_id: obj.id,
           line_id: obj.lines.id,

@@ -19,18 +19,19 @@ export const startScreenPlay = authActionClient
         const result = await createScreenPlay(
             user.id,
             {
-                title: parsed?.dialog && parsed.dialog[0]?.text.toLowerCase(), 
+                title: parsed?.dialog && parsed.dialog[0]?.text?.toLowerCase() || '', 
                 dialog: parsed?.dialog,
                 type: 'movie', 
                 characters: (parsed?.characterGenders?.length ? parsed?.characterGenders : parsed?.characterGenders) || [], 
                 total_lines: 0, 
-                screen_play_text:  parsed?.output && parsed.output.html.script,
+                screen_play_text:  parsed?.output && parsed.output?.html?.script || '',
                 screen_play_fountain:  parsed?.output && parsed.output.tokens
             }
         )
     return result;
     } catch(e) {
-        // console.log("error in start screenplay", e)
+        console.log("error in start screenplay", e)
+        return {error: e}
     }
 
   });
