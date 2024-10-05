@@ -140,6 +140,7 @@ Vercel deployment will guide you through creating a Supabase account and project
 ## Services we are using/paying for
 - supabase, not paying for yet
 - namesor.app, free tire - get name genders
+- trigger.dev dashboard (https://cloud.trigger.dev/projects/v3/proj_zehvrgpxuqenrdxgbkfq)[https://cloud.trigger.dev/projects/v3/proj_zehvrgpxuqenrdxgbkfq]
 
 
 ## Issues

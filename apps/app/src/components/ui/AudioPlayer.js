@@ -3,6 +3,7 @@ import ReactHowler from 'react-howler'
 import raf from 'raf'
 import Image from "next/image";
 import * as Slider from '@radix-ui/react-slider';
+import { cn } from '@/lib/utils';
 import './AudioPlayer.css';
 
 // import { FaPlay, FaStop } from 'react-icons/fa'
@@ -20,7 +21,7 @@ function createThrottle(callback) {
 
         int = setTimeout(function() {
             callback(val)
-        }, 1000)
+        }, 200)
     }
 }
 
@@ -103,7 +104,11 @@ class AudioPlayer extends React.Component {
             audioVersionsLength: this.props?.audioVersions?.length,
             currentAudioVersion,
             syntheticDuration,
-            disabled: disabled
+            disabled: disabled,
+            signedUrlById: {},
+            isLoading: false,
+            retryOnNoSrc: 0,
+            seekedTo: null,
         }
 
 
@@ -122,6 +127,59 @@ class AudioPlayer extends React.Component {
         this.handleRate = this.handleRate.bind(this)
         this.setAudioVersionOnSeek = this.setAudioVersionOnSeek.bind(this)
         this.throttledSetAudioVersion = createThrottle(this.setAudioVersionOnSeek.bind(this)).bind(this)
+    }
+
+    async getSignedUrl(url, isPlaying) {
+        const res = await this.props.getSignedUrl(url)
+        console.log('res', url, res)
+
+        const singedUrl = res?.data
+        if (!singedUrl && isPlaying !== null) {
+            // do some sort of error
+            this.setNotIsLoading(false)
+            return 
+        }
+        this.state.signedUrlById[url] = singedUrl
+
+        if (isPlaying !== null) {
+            this.setNotIsLoading(isPlaying)
+        }
+    }
+ 
+    async getSignedUrlNextN(number, isPlaying) {
+
+        const currentAudioVersion = this.state.currentAudioVersion
+
+        let nextIndex = this.state.audioVersionsIdx
+        const batchUrls = []
+        for (let i = nextIndex; i < nextIndex + number; i++ ) {
+
+            const newAudioVersion = this.state.audioVersions[i]
+
+            if (!newAudioVersion) break
+    
+            batchUrls.push(newAudioVersion?.audio_file_url)
+        }
+
+        const res = await this.props.getSignedUrl(batchUrls.filter(Boolean))
+
+        const singedUrls = res?.data
+        console.log('batchUrls =============', batchUrls)
+        console.log('res =============', res)
+        console.log('res =============2', singedUrls)
+        if ((!singedUrls || !singedUrls.length) && isPlaying !== null) {
+            // do some sort of error
+            this.setNotIsLoading(false)
+            return 
+        }
+        
+        for (let i = 0; i < batchUrls.length; i++) {
+            this.state.signedUrlById[batchUrls[i]] = singedUrls[i]?.signedUrl
+        }
+
+        if (isPlaying !== null) {
+            this.setNotIsLoading(isPlaying)
+        }
     }
 
     componentWillUnmount() {
@@ -144,11 +202,14 @@ class AudioPlayer extends React.Component {
             return true
         })
 
+
+        console.log('duration - seekNumber', duration - seekNumber)
         this.player.seek(duration - seekNumber)
 
         
         this.setState({
-            audioVersionDuration: duration - version?.duration_in_seconds,
+            audioVersionDuration: seekNumber,
+            seekedTo: seekNumber,
             currentAudioVersion: version,
             isSeeking: false,
             audioVersionsIdx: foundIdx,
@@ -163,8 +224,12 @@ class AudioPlayer extends React.Component {
     }
 
     handleOnLoad() {
+        if (this.state.seekedTo) {
+            this.player.seek(this.state.seekedTo)
+        }
         this.setState({
             loaded: true,
+            seekedTo: null,
             duration: this.state.syntheticDuration || this.player.duration()
         })
     }
@@ -176,14 +241,20 @@ class AudioPlayer extends React.Component {
         this.renderSeekPos()
     }
 
-    handleOnEnd() {
+    getSignedUrlNext() {
+        const currentAudioVersion = this.state.currentAudioVersion
 
-        // if (this.state.audioVersionsIdx === 0) {
-        //     this.setState({
-        //         audioVersionsIdx: 1
-        //     })
-        //     return
-        // }
+        let nextIndex = this.state.audioVersionsIdx + 1
+        const newAudioVersion = currentAudioVersion ? this.state.audioVersions[nextIndex] : null
+
+        const originalUrl = newAudioVersion?.audio_file_url
+
+        if (!this.state.signedUrlById[originalUrl]) {
+            this.getSignedUrl(originalUrl)
+        }
+    }
+
+    handleOnEnd() {
 
         const currentAudioVersion = this.state.currentAudioVersion
 
@@ -194,8 +265,10 @@ class AudioPlayer extends React.Component {
 
         this.setState({
             playing: newAudioVersion ? true : false,
+            isLoading: false,
             currentAudioVersion: newAudioVersion || (this.state.audioVersions || this.state.audioVersions[0]),
-            audioVersionDuration: this.state.audioVersionDuration + (newAudioVersion?.duration_in_seconds || 0),
+            audioVersionDuration: this.state.seek || 0,
+            // audioVersionDuration: this.state.audioVersionDuration + (newAudioVersion?.duration_in_seconds || 0),
             audioVersionsIdx: nextIndex > this.state.audioVersionsLength ? 0 : nextIndex
         })
         if (!newAudioVersion) {
@@ -238,6 +311,10 @@ class AudioPlayer extends React.Component {
     }
 
     handleSeekingChange(e) {
+        const seekChange = parseFloat(e || 0)
+     
+
+        console.log('seekChange', seekChange)
         this.setState({
             isSeeking: true,
             seek: parseFloat(e || 0)
@@ -247,6 +324,8 @@ class AudioPlayer extends React.Component {
     }
 
     renderSeekPos() {
+
+        // console.log('this.player.seek()', this.player.seek(), this.state.audioVersionDuration)
         if (!this.state.isSeeking && this.player.seek) {
             this.setState({
                 seek: this.player.seek() + this.state.audioVersionDuration
@@ -267,11 +346,46 @@ class AudioPlayer extends React.Component {
         raf.cancel(this._raf)
     }
 
+    setIsLoading(callback) {
+        this.setState({
+            isLoading: true,
+            playing: false
+        }, callback)
+    }
+
+    setNotIsLoading(isPlaying) {
+        this.setState({
+            isLoading: false,
+            playing: isPlaying === undefined ?  true : isPlaying
+        })
+    }
+
+    removeCurrentSrc() {
+        const id = this.state?.currentAudioVersion?.id
+        if (!id) return
+        this.state.signedUrlById[id] = null
+        this.handleToggle()
+    }
+
     getSrc() {
+        if (!this.state.playing) return null
         if (this.props.src) return this.props.src
         if (!this.state.currentAudioVersion) return ''
+        
+        // const id = this.state?.currentAudioVersion?.id
+        const originalUrl = this.state?.currentAudioVersion?.audio_file_url
+        let url = this.state.signedUrlById[originalUrl]
+        console.log("get id url", JSON.stringify(this.state.signedUrlById, null, 2))
+        console.log("url-----------------", url)
 
-        return this.state?.currentAudioVersion?.audio_file_url
+        if (!url) {
+            // console.log("isNOt url------------------", originalUrl)
+            let isPlaying = this.state.playing
+            this.setIsLoading(() => {
+                this.getSignedUrlNextN(5, isPlaying)
+            })
+        }
+        return url
     }
 
     render() {
@@ -292,6 +406,16 @@ class AudioPlayer extends React.Component {
                         loop={this.state.loop}
                         mute={this.state.mute}
                         volume={this.state.volume}
+                        onLoadError={(e) => {
+                            console.log("onLoadError-----------", e, this.state.playing, src)
+                            if (this.state.playing) {
+                                // this.handleToggle()
+                                if (src) {
+                                    // this will cuase getSrc to try getting a signed url
+                                    // this.removeCurrentSrc()
+                                }
+                            }
+                        }}
                         onSeek={() => {
                             // console.log('seeking-------')
                         }}
@@ -310,7 +434,7 @@ class AudioPlayer extends React.Component {
                             ?
                             <button
                                 disabled={this.props.disabled}
-                                className="play-button"
+                                className={cn("play-button", this.state.isLoading ? 'pulse' : '')}
                                 onClick={this.handleStop}
                             >
                                 <Image width={BUTTON_SIZE} height={BUTTON_SIZE} src="/pause.png" alt="pause button"/> 
@@ -318,7 +442,7 @@ class AudioPlayer extends React.Component {
                             :
                             <button
                             disabled={this.props.disabled}
-                                className="play-button"
+                            className={cn("play-button", this.state.isLoading ? 'pulse' : '')}
                                 onClick={this.handleToggle}
                             >
                                 <Image className="play-icon" width={BUTTON_SIZE} height={BUTTON_SIZE} src="/play.png" alt="play button"/>

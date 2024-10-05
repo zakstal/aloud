@@ -6,9 +6,9 @@
       "@/*": ["./src/*"],
       "react": [ "./node_modules/@types/react" ]
     },
-    "strict": true
+    "strict": false
   },
-  "allowJs": false,
+  "allowJs": true,
   "include": [
     "next-env.d.ts",
     "next.config.js",

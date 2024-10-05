@@ -6,12 +6,13 @@ import { VoiceActors } from '@/components/voice-actors';
 import { useState } from 'react'
 import { cn } from '@/lib/utils';
 import { Voice } from '@v1/script-to-audio/voices'
-import AudioPlayer from '@/components/ui/AudioPlayer'
+import AudioPlayer from '@/components/ui/AudioPlayer-refactor'
+// import AudioPlayer from '@/components/ui/AudioPlayer'
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress'
 import { ScriptEditor } from '@/components/scriptEditor/script-editor'
 import PDFLocalUplaod from '@/components/pdf-upload-local'
-
+import { getSignedUrl } from '@/actions/screenPlays/get-signed-url'
 
 export default function ScreenPlayConatiner({
   screenPlayText,
@@ -120,6 +121,7 @@ export default function ScreenPlayConatiner({
         <AudioPlayer
             audioVersions={audioVersions}
             setCurrentLinePlaying={setCurrentLinePlaying}
+            getSignedUrl={(url: string) => getSignedUrl({ url })}
         />
     </div>
     </>

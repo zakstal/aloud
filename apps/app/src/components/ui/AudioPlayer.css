@@ -49,10 +49,12 @@
 }
 
 .play-button {
-    border-radius: 100%;
-    padding: 10px;
-    box-shadow: 0 2px 10px color(display-p3 0 0 0/0.3);
-    /* background-color: color(display-p3 0.872 0.575 0.572); */
+  position: relative;
+  border-radius: 100%;
+  padding: 10px;
+  /* border: 1px solid hsl(var(--border)); */
+  box-shadow: 0 2px 10px color(display-p3 0 0 0/0.3);
+  /* background-color: color(display-p3 0.872 0.575 0.572); */
 }
 
 .play-icon {
@@ -69,4 +71,28 @@
   z-index: 10000;
   position: relative;
   color: hsl(var(--editor-text-dark))
+}
+
+.pulse {
+  /* background-color: #ffd791; */
+  box-shadow: 0 2px 10px color(display-p3 0 0 0/0.3);
+	border-radius: 50%;
+	animation: pulse-effect 1s infinite;
+}
+
+@keyframes pulse-effect {
+	0% {
+		transform: scale(0.9);
+		box-shadow: 0 2px 10px color(display-p3 0 0 0/0.3);
+	}
+
+	70% {
+		transform: scale(1);
+		box-shadow: 0 0 0 5px rgba(255, 82, 82, 0);
+	}
+
+	100% {
+		transform: scale(0.9);
+		box-shadow: 0 0 0 0 rgba(255, 82, 82, 0);
+	}
 }

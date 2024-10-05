@@ -4,6 +4,7 @@ create table public.lines (
     character_id uuid not null,
     text text not null,
     "order" int not null,
+    -- line_obj: jsonb,
     created_at timestamptz not null default now(),
     constraint fk_line_screenplay foreign key (screenplay_id) references public.screenplays(id) on delete cascade,
     constraint fk_line_character foreign key (character_id) references public.characters(id) on delete cascade

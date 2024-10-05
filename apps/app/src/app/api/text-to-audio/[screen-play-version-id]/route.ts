@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'; // To handle the request and response
 import fs from 'fs'; // To save the file temporarily
-import { getAudioVersionsByScreenplayId } from "@v1/supabase/queries";
+import { getAudioVersionsByScreenplayId, getUser } from "@v1/supabase/queries";
 import { updateAudioVersionUrl } from "@v1/supabase/mutations";
 // import textToVoiceProvders from "@v1/script-to-audio/voiceApis";
+import { tasks } from "@trigger.dev/sdk/v3";
+
+// @ts-ignore
+import type { getAudioTask } from "@v1/jobs/triggersExample";
+//     👆 **type-only** import
+
+// export async function POST(request: Request) {
+//   const body = await request.json();
+
+//   // Trigger the task, this will return before the task is completed
+  
+
+//   return NextResponse.json(handle);
+// }
 
 
 // temproary
@@ -15,51 +29,30 @@ const __dirname = Path.dirname(__filename);
 
 // temporary function 
 async function getAudioQueue(data) {
-  // data.sort((a, b) => {
-  //   return a.lines.order = b.lines.order
-  // })
-  
-  const dirPath = Path.join(__dirname,'../../../../../' , `./public/readings`)
-  if (!fs.existsSync(dirPath)){
-    fs.mkdirSync(dirPath);
+  const session  = await getUser()
+  const userId = session.data.user.id
+  try {
+
+    const handle = await tasks.batchTrigger<typeof getAudioTask>("get-audio-2", data.slice(0, 4).map((u) => {
+      u.userId = userId
+      return { payload: u }
+    }));
+    console.log("handle------", handle)
+  } catch(e) {
+    console.log('handle task error--------', e)
   }
-
-  for (const voiceVersion of data) {
-    const audioCharacter = voiceVersion.audio_character_version
-    const audioProviderName = audioCharacter.voice_data.audioProvider
-    const textToSpeech = ''//textToVoiceProvders[audioProviderName]
-    const orderNumber = voiceVersion.lines.order
-    const versionId = voiceVersion.audio_screenplay_version_id
-    const text = voiceVersion.lines.text
-
-    const fileName = `/${versionId}-${orderNumber}-${audioProviderName}-${audioCharacter.voice_name}.mp3`
-    const path = Path.join(dirPath, fileName)
-    try {
-
-      const res = await textToSpeech(text, {
-        voiceId: audioCharacter.voice_id,
-        fileName: path
-      })
-
-      const playPath = `/readings` + fileName
-
-      await updateAudioVersionUrl(voiceVersion.id, playPath, res.audioLengthInSeconds)
-
-    } catch(e) {
-      throw `Error sending data ${e}`
-    }
-  }
-
 }
 
   
 //TODO make sure route is behind auth
 export async function GET(req: NextRequest, { params }, res: NextResponse) {
 
+  console.log("audio-req------------------", req)
   const screenPlayVersionId = params["screen-play-version-id"]
 
   const audioVersions = await getAudioVersionsByScreenplayId(screenPlayVersionId)
   try {
+    console.log("audio-versions------------------", audioVersions)
     await getAudioQueue(audioVersions)
   } catch(e) {
     const resp = new NextResponse(JSON.stringify({ error: e }));
