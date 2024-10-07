@@ -5,6 +5,8 @@ export const getGenders = async (namesArr) => {
             personalNames: namesArr.map(name => ({ id: '', name }))
         })
 
+        console.log("body==================", body)
+
         const res = await fetch('https://v2.namsor.com/NamSorAPIv2/api2/json/genderFullBatch', {
             method: 'POST',
             body,
@@ -15,12 +17,18 @@ export const getGenders = async (namesArr) => {
             }
         })
 
-        const data = await res.json()
+        const dataText = await res.text()
 
-        return data?.personalNames
+        try {
+            return JSON.parse(dataText).personalNames
+        } catch(e) {
+            console.log('error parsing gender res', dataText)
+            throw `genderapi.ts: ${dataText}`
+    }
+
 
     } catch(e) {
         console.log("Error getting genders", e)
-        return []
+        throw e
     }
 }

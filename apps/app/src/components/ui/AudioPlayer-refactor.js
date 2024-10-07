@@ -91,6 +91,7 @@ class AudioPlayer extends React.Component {
             return final + version.duration_in_seconds
         }, 0)
 
+        console.log('this.props.audioVersions', this.props.audioVersions)
 
         let disabled = false
         if (this.props.disabled === undefined) {
@@ -124,7 +125,8 @@ class AudioPlayer extends React.Component {
             isLoading: false,
             retryOnNoSrc: 0,
             seekedTo: null,
-            objSrc: null
+            objSrc: null,
+            isAudioVersions: false,
         }
 
 
@@ -175,15 +177,25 @@ class AudioPlayer extends React.Component {
             batchUrls.push(newAudioVersion?.audio_file_url)
         }
 
+        const batchUrlsAll = batchUrls.filter(Boolean)
+        if (!batchUrlsAll.length) {
+            this.setState({
+                isAudioVersions: false
+            })
+
+            return
+        }
+
         const res = await this.props.getSignedUrl(batchUrls.filter(Boolean))
 
-        const singedUrls = res?.data.map(obj => obj.signedUrl)
+        const singedUrls = res?.data?.map(obj => obj.signedUrl)
         console.log('batchUrls =============', batchUrls)
         console.log('res =============', res)
         console.log('res =============2', singedUrls)
         if ((!singedUrls || !singedUrls.length) && isPlaying !== null) {
             // do some sort of error
             this.setNotIsLoading(false)
+          
             return 
         }
         
@@ -387,7 +399,7 @@ class AudioPlayer extends React.Component {
         console.log("get id url", JSON.stringify(this.state.signedUrlById, null, 2))
         console.log("url-----------------", url)
 
-        if (!url && !this.state.isLoading) {
+        if (!url && !this.state.isLoading && this.state.isAudioVersions !== false) {
             let isPlaying = this.state.playing
             this.setIsLoading(() => {
                 this.getSignedUrlNextN(5, isPlaying)

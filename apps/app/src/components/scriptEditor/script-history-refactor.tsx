@@ -245,12 +245,15 @@ export class ScriptHistory extends History {
 
     updateText(tokenPartialMaybe, idxIn: number, caretPosition: number) {
         const idx = Number(idxIn)
+        if (!this.tokens) return
 
         const lastToken = this.tokens[Math.max(idx - 1, 0)]
         const token = this.tokens[idx]
         if (!token) return
 
+        console.log('lastToken', lastToken)
         const isLastCharacter = lastToken?.type === 'character'
+        const characterNameMaybe = lastToken?.characterName
 
         let nextText = null
         // combine text if text was pasted into the middle of text
@@ -260,8 +263,12 @@ export class ScriptHistory extends History {
             nextText = token.text.substring(0, caretPosition || 0) + tokenPartialMaybe.text + token.text.substring(caretPosition || 0, token?.text.length || 0)
         }
 
-        const foundTokens = tokenize(nextText, { isLastCharacter })
+        const foundTokens = tokenize(nextText, { isLastCharacter, characterNameMaybe })
         const [newText, didUpdate] = transformText(tokenPartialMaybe.text, token.type)
+
+        if (!didUpdate) {
+            this.tokens[idx].text = newText
+        }
 
         let textTransformed = false
         let tokensUpdated = didUpdate

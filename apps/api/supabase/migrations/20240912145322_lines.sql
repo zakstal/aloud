@@ -1,7 +1,10 @@
 create table public.lines (
     id uuid primary key default gen_random_uuid(),
     screenplay_id uuid not null,
-    character_id uuid not null,
+    character_id uuid,
+    type text not null, -- fountain type
+    isDialog boolean not null default false,
+    deleted boolean not null default false,
     text text not null,
     "order" int not null,
     -- line_obj: jsonb,

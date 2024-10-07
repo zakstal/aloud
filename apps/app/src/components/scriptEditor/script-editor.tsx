@@ -9,6 +9,9 @@ interface ScriptEditorInput {
     scriptTokens: Tokens[];
     className: string;
     audioVersionNumber: string;
+    audioScreenPlayVersion: string,
+    pdfText: string,
+    saveLines: () => null,
 }
 
 // function VirtualizedList({ items, itemHeight, containerHeight }) {
@@ -55,6 +58,7 @@ export const ScriptEditor =({
     className,
     audioScreenPlayVersion,
     pdfText,
+    saveLines,
 }: ScriptEditorInput) => {
 
     const myRef = useRef(null);
@@ -76,6 +80,14 @@ export const ScriptEditor =({
     }, [myRef])
 
     return (
+        <>
+        <button id="savebutton" onClick={async () => {
+            console.log("save0-------------", scriptTokens)
+            const res = await saveLines({ lines: tokens })
+            console.log('res----', res)
+
+        }}>Save----</button>
+        
         <div
             autoFocus
             ref={myRef}
@@ -108,9 +120,11 @@ export const ScriptEditor =({
 
                 
             >
+                
                 {/* <div style={{ position: 'sticky', top: 0 }}>currentOrderId: {currentOrderId}</div>
                 <div>secondaryOrderId: {secondaryOrderId}</div> */}
             <TokenContent tokens={tokens} />
         </div>
+        </>
     )
 }

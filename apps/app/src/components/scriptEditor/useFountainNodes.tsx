@@ -99,7 +99,8 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
 
     useEffect(() => {
         if (!pdfText || tokensIn.length) return
-        const [ didUpdate ] = window.scriptStorage.updateText({
+        if (window) return
+        const [ didUpdate ] = window?.scriptStorage?.updateText({
             text: pdfText
         }, 0, 0)
 
@@ -244,6 +245,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             if (e.keyCode === 32) return // space bar. having a space sometimes doesn't register in the inner text and setting the caret can fail
             if (orderId) {
 
+                console.log("update text")
                 const [ didUpdate ] = window.scriptStorage.updateText({
                     text: currentElement.innerText
                 }, orderId, selection?.anchorOffset)

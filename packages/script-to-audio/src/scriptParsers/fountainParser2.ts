@@ -65,7 +65,7 @@ var tokenize = function (script) {
         match = line.replace(regex.title_page, '\n$1').split(regex.splitter).reverse();
         for (x = 0, xlen = match.length; x < xlen; x++) {
         parts = match[x].replace(regex.cleaner, '').split(/\:\n*/);
-        tokens.push({ type: parts[0].trim().toLowerCase().replace(' ', '_'), text: parts[1].trim() });
+        tokens.push({ type: parts[0]?.trim()?.toLowerCase()?.replace(' ', '_'), text: parts[1]?.trim() });
         }
         continue;
     }
@@ -116,7 +116,7 @@ var tokenize = function (script) {
             }
         }
 
-        tokens.push({ type: 'character', text: match[1].trim() });
+        tokens.push({ type: 'character', text: match[1]?.trim() });
         tokens.push({ type: 'dialogue_begin', dual: match[2] ? 'right' : dual ? 'left' : undefined });
 
         if (dual) {
@@ -206,7 +206,7 @@ inline.lexer = function (s) {
     }
     // }
 
-    return s.replace(/\[star\]/g, '*').replace(/\[underline\]/g, '_').trim();
+    return s.replace(/\[star\]/g, '*').replace(/\[underline\]/g, '_')?.trim();
 };
 
 var parse = function (script, toks, callback) {

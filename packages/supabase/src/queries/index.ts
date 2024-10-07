@@ -55,17 +55,24 @@ export async function getScreenPlay(screenPlayId) {
         created_at,
         screen_play_text,
         screen_play_fountain,
+        lines (
+          id,
+          order,
+          type,
+          text,
+          isDialog,
+          characters (
+            id,
+            name
+          )
+        ),
         audio_screenplay_versions (
           id,
           version_number,
           audio_file_url,
           audio_version (
             audio_file_url,
-            duration_in_seconds,
-            lines (
-              id,
-              order
-            )
+            duration_in_seconds
           )
         ),
         characters (
@@ -87,9 +94,11 @@ export async function getScreenPlay(screenPlayId) {
       .eq('id', screenPlayId)
       .single();
 
+      console.log("result", result)
     return result;
   } catch (error) {
     logger.error(error);
+    console.log("error--------", error)
     throw error;
   }
 }
@@ -121,6 +130,7 @@ export async function getAudioVersionsByScreenplayId(screenplayVersionId: string
         )
       `)
       .eq("audio_screenplay_version_id", screenplayVersionId) // Filter by screenplay_id
+      .eq('lines.deleted', false) 
       .not("audio_file_url", "is", null)
       // .gte("lines(order)", minOrderNumber || 0)  // Filter where lines.order is greater than or equal to minOrderNumber
       .order("lines(order)", { ascending: false });

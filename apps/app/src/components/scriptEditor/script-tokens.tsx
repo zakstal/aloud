@@ -35,7 +35,7 @@ var regex = {
     scene_heading: /^((?:\*{0,3}_?)?(?:(?:int|ext|est|i\/e)[. ]).*)|^(?:\.(?!\.+))(.+)/i,
     scene_number: /( *#(.+)# *)/,
 
-    transition: /^((?:FADE (?:TO BLACK|OUT)|CUT TO BLACK)\.|.+ TO|.+ IN|.+ OUT\:)|^(?:> *)(.+)/,
+    transition: /^((?:FADE (?:TO BLACK|OUT)|CUT TO BLACK)\.|.+ TO|.+ IN|.+ OUT  \:)|^(?:> *)(.+)/,
     
     dialogue: /^([A-Z*_]+[0-9A-Z (._\-')]*)(\^?)?(?:\n(?!\n+))([\s\S]+)/,
     parenthetical: /^(\(.+\))$/,
@@ -79,6 +79,7 @@ var lexer = function (script) {
 export const tokenize = function (script, optionsIn = {}) {
     const options = Object.assign({}, {
         isLastCharacter: false,
+        characterNameMaybe: null,
     }, optionsIn)
 
     var src    = lexer(script).split(regex.splitter)
@@ -98,7 +99,7 @@ export const tokenize = function (script, optionsIn = {}) {
         match = line.replace(regex.title_page, '\n$1').split(regex.splitter).reverse();
         for (x = 0, xlen = match.length; x < xlen; x++) {
         parts = match[x].replace(regex.cleaner, '').split(/\:\n*/);
-        tokens.push({ type: parts[0].trim().toLowerCase().replace(' ', '_'), text: parts[1].trim() });
+        tokens.push({ type: parts[0]?.trim()?.toLowerCase()?.replace(' ', '_'), text: parts[1]?.trim() });
         }
         continue;
     }
@@ -138,7 +139,7 @@ export const tokenize = function (script, optionsIn = {}) {
     // dialog. 
     // TODO this does not handle dual dialog and parenthenticals. Its temporary
     if (options.isLastCharacter) {
-        tokens.push({ type: 'dialogue', text: line });
+        tokens.push({ type: 'dialogue', text: line, isDialog: true, characterName: options.characterNameMaybe });
         return tokens
     }
     // dialogue blocks - characters, parentheticals and dialogue
@@ -254,7 +255,7 @@ inline.lexer = function (s) {
     }
     // }
 
-    return s.replace(/\[star\]/g, '*').replace(/\[underline\]/g, '_').replace(/<br\/>/g, '').trim();
+    return s.replace(/\[star\]/g, '*').replace(/\[underline\]/g, '_').replace(/<br\/>/g, '')?.trim();
 };
 
 

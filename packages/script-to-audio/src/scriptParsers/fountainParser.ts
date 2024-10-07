@@ -163,10 +163,12 @@ function getDialog (output) {
         if (isDialog && character && is(tokenType, 'dialogue')) {
 
           // Identify mistakes in the parser
-          const characterName = character.endsWith(')') ? character.replace(/\(.+\)/g, '').trim() : character
+          const characterName = character.endsWith(')') ? character.replace(/\(.+\)/g, '')?.trim() : character
           if (excludNames.some(name => characterName.startsWith(name))) continue
           if (characterName.split(' ').length > 3) continue // arbitrary name length
 
+          token.characterName = characterName
+            token.isDialog = true
             toProcess.push({
                 characterName,
                 // character: characters[characterName],
@@ -175,11 +177,13 @@ function getDialog (output) {
         }
 
         if (is(tokenType, 'action')) {
+          token.characterName = 'Narrator'
+          token.isDialog = true
           toProcess.push({
-            characterName: 'Narrator',
-            // character: characters[characterName],
-            text: token.text
-        })
+              characterName: 'Narrator',
+              // character: characters[characterName],
+              text: token.text
+          })
         }
     }
 
@@ -199,9 +203,23 @@ const getCharacters = (dialog) => {
   })
 }
 
-export async function parse(scriptText) {
+async function handleErrorAsync(func: any, error: string[]) {
+  return (...data: any) => {
+
+    try {
+      return func(...data)
+    } catch(e) {
+      console.log("handleErrorAsync-------", e)
+      error.push(e)
+      return null
+    }
+  }
+}
+
+
+export async function parse(scriptText: string) {
     // let fountain = new Fountain();
-    if (!scriptText) {
+    if (!scriptText) {x
       return {
         dialog: [],
         output: {
@@ -214,14 +232,25 @@ export async function parse(scriptText) {
     }
 
     let output = fountain.parse(scriptText, true);
-    console.log("scriptText", output.tokens)
+
+
+    const errors: string[] = []
     const dialog = getDialog(output)    
     const characters = getCharacters(dialog)
-    const characterGenders = await getGenders(characters)
+    let characterGenders = []
+    try {
+      characterGenders = await getGenders(characters)
+    } catch(e) {
+      errors.push(e)
+      characterGenders = characters.map(characterName => ({ name: characterName, likelyGender: null }))
+    }
+
+    console.log("output", output)
     return {
         dialog,
         output,
         characters,
         characterGenders,
+        errors
     }
 }

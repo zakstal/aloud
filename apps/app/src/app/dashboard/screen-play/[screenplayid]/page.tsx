@@ -8,6 +8,7 @@ import ScreenPlayConatiner from '@/components/screenPlay/screenPlay'
 import voices, { Voice } from '@v1/script-to-audio/voices'
 import { processAudio } from '@/actions/screenPlays/process-audio'
 import { startScreenPlay } from '@/actions/screenPlays/create-screenplay'
+import { getSignedUrl } from '@/actions/screenPlays/get-signed-url'
 
 
 const breadcrumbItems = [
@@ -30,10 +31,10 @@ function updateCharacter(character, characters, setCharacters) {
 }
 
 
-function updateAudioVersions (audioVersions, setAudioVersions) {
+function updateLines (audioVersions, setAudioVersions) {
   if (!audioVersions) return
   const newAudioVersions = audioVersions.sort((a, b) => {
-    return a.lines.order - b.lines.order
+    return a.order - b.order
   })
   setAudioVersions(newAudioVersions)
 }
@@ -45,6 +46,7 @@ export default function Page() {
   const [isLoading, setIsLoading ] = useState(true)
   const [screenPlay, setScreenPlay ] = useState({})
   const [characters, setCharacters ] = useState([])
+  const [lines, setLines ] = useState([])
   const [audioVersions, setAudioVersions ] = useState([])
 
   useEffect(() => {
@@ -55,7 +57,9 @@ export default function Page() {
           const audio_screenplay_version = data?.audio_screenplay_versions && data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1]
           const audio_version = audio_screenplay_version?.audio_version
 
-          updateAudioVersions(audio_version, setAudioVersions)
+          console.log('data-----------------', data)
+          setAudioVersions(audio_version)
+          updateLines(data?.lines, setLines)
           setScreenPlay(screenPlay)
           setCharacters(data?.characters)
       })
@@ -104,6 +108,7 @@ export default function Page() {
           audioScreenPlayVersion={audioScreenPlayVersion?.id}
           audioVersionNumber={audioVersionNumber}
           audioVersions={audioVersions}
+          lines={lines}
           scriptTokens={data?.screen_play_fountain}
           processAudio={async () => {
             processAudio({ screenPlayVersionId: audioScreenPlayVersion.id })

@@ -5,6 +5,7 @@ create table public.audio_version (
     version_number int not null,
     duration_in_seconds float,
     audio_file_url text,
+    "order" int not null,
     created_at timestamptz not null default now(),
     constraint fk_audio_version_line foreign key (line_id) references public.lines(id) on delete cascade,
     constraint fk_audio_version_screenplay foreign key (screenplay_id) references public.screenplays(id) on delete cascade

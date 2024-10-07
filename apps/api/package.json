@@ -9,7 +9,8 @@
     "seed": "supabase db seed generate && supabase db seed run",
     "reset": "supabase db reset",
     "supabase": "supabase",
-    "push": "supabase db push --local",
+    "link": "supabase link",
+    "push": "supabase db push",
     "generate": "supabase gen types --lang=typescript --local --schema public > ../../packages/supabase/src/types/db.ts"
   },
   "dependencies": {

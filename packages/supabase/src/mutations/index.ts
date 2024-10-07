@@ -43,6 +43,7 @@ async function createLines({
 
   if (!dialog || !insertedCharacters || !insertedAudioCharactersVersions) return null
 
+  console.log("dialog-------------", dialog)
   const nameCharacterIdMap =  insertedCharacters.reduce((obj: { [key: string]: string }, charObj) => {
     obj[charObj.name] = charObj.id
     return obj
@@ -53,13 +54,14 @@ async function createLines({
     return obj
   }, {})
 
-  const toInsertLines = dialog.map(({ characterName, text }: Dialog, index: number) => {
+  const toInsertLines = dialog.map(({ characterName, text, isDialog, type }: Dialog, index: number) => {
     const characterId = nameCharacterIdMap && nameCharacterIdMap[characterName]
-    if (!characterId) return null
 
     return {
       screenplay_id: screenplayId,
       character_id: characterId,
+      isDialog,
+      type, 
       text,
       order: index,
     }
@@ -71,7 +73,7 @@ async function createLines({
       ? await supabase
         .from("lines")
         .insert(toInsertLines)
-        .select("id, character_id")
+        .select("id, character_id, isDialog")
       : {} // Optionally, return the inserted data
       
       if (error) {
@@ -79,7 +81,9 @@ async function createLines({
         throw error;
       }
 
-      const toInsertLineVersions = insertedData && insertedData.map((line: { id: string, character_id: string }) => ({
+      const toInsertLineVersions = insertedData && insertedData
+        .filter((line: { id: string, character_id: string, isDialog: boolean }) => line.isDialog )
+        .map((line: { id: string, character_id: string, isDialog: boolean  }) => ({
         line_id: line.id,
         version_number: 1,
         screenplay_id: screenplayId,
@@ -166,7 +170,7 @@ async function insertCharacterVersions ({
 }
 
 
-type Dialog = { characterName: string; text: string }
+type Dialog = { characterName: string; text: string, isDialog: boolean, type: string }
 type Fountain = { type: string; text: string, scene_number: number | null }
 // Define the data types for input
 interface CreateScreenplayInput {
@@ -455,4 +459,9 @@ console.log('newAudioFileUrl', newAudioFileUrl)
     console.error("Error updating audio_file_url:", error);
     throw error;
   }
+}
+
+
+export async function updateOrCreateLinesInDb(lines: Dialog) {
+  console.log('updateOrCreateLinesInDb--------------------', lines)
 }

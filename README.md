@@ -160,3 +160,24 @@ Vercel deployment will guide you through creating a Supabase account and project
 - disable editing
 - fix how characters and dialog is parsed
 
+
+
+## Supabase DB
+
+### create a new migration
+navigate to app/api
+`npm run migrate:new <name_of_migration>`
+
+
+### Reset db
+reset db and re-run migtion
+`npm run reset`
+
+
+### CLI Login
+`npm run login`
+
+
+### Push schema changes to remote db
+You must be logged in.
+`npm run push`
