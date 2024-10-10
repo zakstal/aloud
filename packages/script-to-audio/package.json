@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@v1/logger": "workspace:*",
     "@next/font": "^14.2.12",
     "audioconcat": "^0.1.4",
     "dotenv": "^16.4.5",

@@ -1,6 +1,8 @@
 import child_process from'child_process'
 import Path from 'path';
 import url from 'url';
+import fs from 'fs'
+import { logger } from "@v1/logger";
 
 // const parse = fountain.parse
 
@@ -9,6 +11,10 @@ const __dirname = Path.dirname(__filename);
 
 var pdf_path = "xpdf-wasm";
 const xpdf_path = Path.join(__dirname, pdf_path)
+
+fs.readdirSync(xpdf_path).forEach(file => {
+  logger.info(file);
+});
 
 /**
  * Extract text from pdf using pdftotext external program
