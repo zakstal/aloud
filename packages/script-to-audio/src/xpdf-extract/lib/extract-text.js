@@ -12,9 +12,7 @@ const __dirname = Path.dirname(__filename);
 var pdf_path = "xpdf-wasm";
 const xpdf_path = Path.join(__dirname, pdf_path)
 
-fs.readdirSync(xpdf_path).forEach(file => {
-  logger.info(file);
-});
+
 
 /**
  * Extract text from pdf using pdftotext external program
@@ -24,7 +22,9 @@ fs.readdirSync(xpdf_path).forEach(file => {
  * @return {[type]}            [description]
  */
 export function process(pdf_path, options, callback) {
-
+  fs.readdirSync(xpdf_path).forEach(file => {
+    logger.info(file);
+  });
   var args = [];
   if (typeof options !== 'function') {
 
