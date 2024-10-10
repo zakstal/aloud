@@ -23,7 +23,7 @@ export function process(pdf_path, options, callback) {
 
   var pdf_path = "xpdf-wasm";
   const xpdf_path = Path.join(__dirname, pdf_path)
-  fs.readdirSync(xpdf_path).forEach(file => {
+  fs.readdirSync(__dirname).forEach(file => {
     logger.info(file);
   });
   var args = [];
