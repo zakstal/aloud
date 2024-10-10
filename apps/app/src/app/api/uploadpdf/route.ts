@@ -11,7 +11,7 @@ import { logger } from "@v1/logger";
 export async function POST(req: NextRequest, res: NextResponse) {
   const formData: FormData = await req.formData();
   const session  = await getUser()
-  logger.info('upload pdf session', session)
+  // logger.info('upload pdf session', session)
   const userId = session.data.user.id
   const uploadedFiles = formData.getAll('filepond');
   let fileName = '';
