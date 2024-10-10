@@ -6,11 +6,7 @@ import { logger } from "@v1/logger";
 
 // const parse = fountain.parse
 
-const __filename = url.fileURLToPath(import.meta.url);
-const __dirname = Path.dirname(__filename);
 
-var pdf_path = "xpdf-wasm";
-const xpdf_path = Path.join(__dirname, pdf_path)
 
 
 
@@ -22,6 +18,11 @@ const xpdf_path = Path.join(__dirname, pdf_path)
  * @return {[type]}            [description]
  */
 export function process(pdf_path, options, callback) {
+  const __filename = url.fileURLToPath(import.meta.url);
+  const __dirname = Path.dirname(__filename);
+
+  var pdf_path = "xpdf-wasm";
+  const xpdf_path = Path.join(__dirname, pdf_path)
   fs.readdirSync(xpdf_path).forEach(file => {
     logger.info(file);
   });
