@@ -45,6 +45,7 @@ export async function getScreenPlays(screenPlayId) {
 export async function getScreenPlay(screenPlayId) {
   const supabase = createClient();
 
+  console.time('Get screenpaly')
   try {
     const result = await supabase
       .from("screenplays")

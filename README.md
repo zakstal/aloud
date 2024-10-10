@@ -140,7 +140,17 @@ Vercel deployment will guide you through creating a Supabase account and project
 ## Services we are using/paying for
 - supabase, not paying for yet
 - namesor.app, free tire - get name genders
-- trigger.dev dashboard (https://cloud.trigger.dev/projects/v3/proj_zehvrgpxuqenrdxgbkfq)[https://cloud.trigger.dev/projects/v3/proj_zehvrgpxuqenrdxgbkfq]
+- trigger.dev dashboard (https://cloud.trigger.dev/projects/v3/proj_zehvrgpxuqenrdxgbkfq)[https://cloud.trigger.dev/projects/v3/proj_zehvrgpxuqenrdxgbkfq] 
+
+## Service links
+- trigger.dev - Jobs (https://cloud.trigger.dev/orgs/aloud-8cc8/projects/v3/aloud-0V-A)[https://cloud.trigger.dev/orgs/aloud-8cc8/projects/v3/aloud-0V-A]
+- supabase - Database (https://supabase.com/dashboard/project/guefjgyrsxtgxuboyzen)[https://supabase.com/dashboard/project/guefjgyrsxtgxuboyzen]
+- Vercel - Deployment (https://vercel.com/zakstals-projects/aloud-app/BJX8mse2bjvFw9hqhtd1fpsWP3Kr)[https://vercel.com/zakstals-projects/aloud-app/BJX8mse2bjvFw9hqhtd1fpsWP3Kr]
+- ElevenLabs - voices (https://elevenlabs.io/app/speech-synthesis/text-to-speech)[https://elevenlabs.io/app/speech-synthesis/text-to-speech]
+- Murf.ai - voices (https://murf.ai/studio?workspaceId=WORKSPACEID017256620230338QV&folderId=WFRoot)[https://murf.ai/studio?workspaceId=WORKSPACEID017256620230338QV&folderId=WFRoot]
+- Google cloud - Oauth (https://console.cloud.google.com/apis/credentials?project=aloud-435319&inv=1&invt=AbeZrA)[https://console.cloud.google.com/apis/credentials?project=aloud-435319&inv=1&invt=AbeZrA]
+
+
 
 
 ## Issues
@@ -159,6 +169,7 @@ Vercel deployment will guide you through creating a Supabase account and project
 - skip forward and back on the player
 - disable editing
 - fix how characters and dialog is parsed
+- Merge packages/script-to-audio/src/parsers/fountainParser2 and apps/app/src/components/scriptEditor/script-tokens.tsx
 
 
 

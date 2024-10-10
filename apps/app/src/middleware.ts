@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getUser } from "@v1/supabase/queries";
+import { logger } from "@v1/logger";
 
 
 export async function middleware(req: NextRequest) {
@@ -9,7 +10,9 @@ export async function middleware(req: NextRequest) {
 
   // Get the authenticated user
   const session  = await getUser()
+  logger.info('Session---------')
   if (!session.data.user) {
+    logger.info('Is not user')
     return NextResponse.redirect(new URL('/', req.url))
   }
 

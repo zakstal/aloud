@@ -67,8 +67,9 @@ async function createLines({
     }
   }).filter(Boolean)
 
-
+  console.timeEnd("lines prepare")
   try {
+    console.time("lines insert")
     const { data: insertedData, error } = toInsertLines 
       ? await supabase
         .from("lines")
@@ -81,6 +82,9 @@ async function createLines({
         throw error;
       }
 
+      console.timeEnd("lines insert")
+      console.time("audio_versions insert")
+      
       const toInsertLineVersions = insertedData && insertedData
         .filter((line: { id: string, character_id: string, isDialog: boolean }) => line.isDialog )
         .map((line: { id: string, character_id: string, isDialog: boolean  }) => ({
@@ -101,6 +105,7 @@ async function createLines({
       if (audioVersionError) {
         throw audioVersionError;
       }
+      console.timeEnd("audio_versions insert")
     return insertedData;
   } catch (error) {
     console.error("Error inserting line:", error);
@@ -189,8 +194,10 @@ export async function createScreenPlay(
 ) {
   console.log('here 1 supabase')
   const supabase = createClient();
+  console.log('here 2 supabase')
   const { title, type, characters, total_lines, screen_play_text, dialog, screen_play_fountain } = data;
-
+  
+  console.log('here 3 supabase')
   const screenplayInsert = {
     user_id: userId,
     title: title || 'New script',
@@ -201,8 +208,10 @@ export async function createScreenPlay(
     // total_lines: characters.reduce((sum, char) => sum + char.lines.length, 0),
   };
 
+
   try {
   
+    console.time('Screen play insert')
     // Start a transaction
     const { data: screenplay, error: screenplayError } = await supabase
       .from("screenplays")

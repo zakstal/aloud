@@ -28,10 +28,13 @@ function createThrottle(callback) {
     }
 }
 
-const audioContext = window && new (window.AudioContext || window.webkitAudioContext)();
+let audioContext = null
 let totalDuration = 0
 
 async function appendBlob(blobUrl, sourceBuffer, totalDuration, duration, mediaSource) {
+    if (!audioContext) {
+        audioContext = window && new (window.AudioContext || window.webkitAudioContext)();
+    }
     const response = await fetch(blobUrl);
     const arrayBuffer = await response.arrayBuffer();
     if (!mediaSource.sourceBuffers.length) return

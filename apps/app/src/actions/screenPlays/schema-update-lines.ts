@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // Define the schema for a line object
 const lineSchema = z.object({
-  text: z.string().optional(),
+  text: z.string().nullable().optional(),
   type: z.string(),
   isDialog: z.boolean().nullable().optional(),
   characterName: z.string().optional(),

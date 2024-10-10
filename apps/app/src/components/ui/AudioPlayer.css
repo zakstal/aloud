@@ -68,7 +68,7 @@
 .audio-player-container {
   background-color: hsl(var(--editor-background));
   border-color: hsl(var(--border));
-  z-index: 10000;
+  z-index: 1000;
   position: relative;
   color: hsl(var(--editor-text-dark))
 }
