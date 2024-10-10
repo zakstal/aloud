@@ -151,6 +151,8 @@ Vercel deployment will guide you through creating a Supabase account and project
 - Google cloud - Oauth (https://console.cloud.google.com/apis/credentials?project=aloud-435319&inv=1&invt=AbeZrA)[https://console.cloud.google.com/apis/credentials?project=aloud-435319&inv=1&invt=AbeZrA]
 
 
+## How tos
+- (supabase google Oath set up)[https://supabase.com/docs/guides/auth/social-login/auth-google?queryGroups=environment&environment=client]
 
 
 ## Issues

@@ -5,11 +5,13 @@ import { createScreenPlay } from "@v1/supabase/mutations";
 import { getUser } from "@v1/supabase/queries";
 import { parse } from "@v1/script-to-audio/parsers";
 import { getTextFromPdf } from "@v1/script-to-audio/pdfToText";
+import { logger } from "@v1/logger";
 
 //TODO make sure route is behind auth
 export async function POST(req: NextRequest, res: NextResponse) {
   const formData: FormData = await req.formData();
   const session  = await getUser()
+  logger.info('upload pdf session', session)
   const userId = session.data.user.id
   const uploadedFiles = formData.getAll('filepond');
   let fileName = '';
