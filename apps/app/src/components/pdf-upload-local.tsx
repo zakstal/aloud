@@ -30,7 +30,7 @@ function PDFLocalUplaod({
                 return page.getTextContent().then(function (textContent) {
                   return textContent.items
                     .map((item) => {
-                      console.log('item', item)
+                      // console.log('item', item)
                       // Check if the item has an EOL and append a newline character
                       // if (item.str === '') {
                       //   return item.str + (item.hasEOL ? '\n\n' : '');
@@ -45,7 +45,7 @@ function PDFLocalUplaod({
 
           Promise.all(textPromises).then(function (pagesText) {
 
-            console.log('pagesText', pagesText)
+            // console.log('pagesText', pagesText)
             // return
             const screenPlayText = btoa(unescape(encodeURIComponent(pagesText.join('\n'))))
             // const screenPlayText = btoa(pagesText.join('\n'))

@@ -28,7 +28,7 @@ function createThrottle(callback) {
     }
 }
 
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+const audioContext = window && new (window.AudioContext || window.webkitAudioContext)();
 let totalDuration = 0
 
 async function appendBlob(blobUrl, sourceBuffer, totalDuration, duration, mediaSource) {

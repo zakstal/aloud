@@ -1,7 +1,8 @@
 import { Tokens, tokenize as tokenizeIn } from './script-tokens'
 import { Diff } from './storage'
-import History from './history'
+import History, { updateTypes, ChangeType } from './history'
 import { getWindow } from '@/getWindow'
+import { v4 as uuid } from 'uuid';
 
 let window = getWindow()
 
@@ -24,7 +25,13 @@ const tokenize = (text: string, options: any) => {
     return prepareTokensRender(newTokens)
 }
 
-const getId = () => (Math.random() + 1).toString(36).substring(7);
+const idSet = new Set()
+const getId = () => {
+    const id  = 'internal' + uuid()
+    if (idSet.has(id)) return getId()
+    idSet.add(id)
+    return id
+};
 
 function combineText(text1 = '', text2 = '', offset1: number, offset2: number) {
     return text1.slice(0, offset1 || text1.length) + text2.slice(offset2 || 0, text2.length)
@@ -35,7 +42,10 @@ const transformText = (text: string, type: string) => {
     return [text, false]
 }
 
+type Character = { name: string, gender: string | null }
+
 type commitCallbackType = ((tokens: Tokens[], caretPosition: number | null, currentId: number | null) => void) | null
+type setCharactersType = ((characters: Character[] | []) => void) | null
 
 
 /**
@@ -121,13 +131,18 @@ type commitCallbackType = ((tokens: Tokens[], caretPosition: number | null, curr
 export class ScriptHistory extends History {
     commitCallback: commitCallbackType = null
     tokens: Tokens[] = []
+    characters: Character[] =  []
+    charactersNameMap: { [key: string]: Character} = {}
 
-    constructor(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[]) {
+
+    setCharacters: setCharactersType = null
+
+    constructor(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[], setCharacters: setCharactersType) {
         super(dbTokenVersion, db)
-        this.setCallbackValues(dbTokenVersion, db, commitCallback, tokens)
+        this.setCallbackValues(dbTokenVersion, db, commitCallback, tokens, setCharacters)
     }
 
-    async setCallbackValues(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[]) {
+    async setCallbackValues(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[], setCharacters: setCharactersType) {
         const commitUpdateCallback = (lastToUpdate: Diff) => {
             this.commitCallback && this.commitCallback(this.tokens, lastToUpdate?.caretPosition)
         }
@@ -141,6 +156,9 @@ export class ScriptHistory extends History {
         this.db = db
         this.commitCallback = commitCallback
         this.tokens = tokens
+        this.setCharacters = setCharacters
+
+        tokens?.forEach(token => idSet.add(token.id))
 
         if (commitCallback && tokens) {
             await this.applyChanges()
@@ -153,6 +171,65 @@ export class ScriptHistory extends History {
         }
         window.undo = db?.undo
         window.diffs = () => db?.diffs(dbTokenVersion)
+    }
+
+    async applyChanges() {
+        if (!this.dbTokenVersion) return
+        const diffs = await this.diffs(this.dbTokenVersion);
+
+        console.log("diffs-------------------", this.dbTokenVersion, diffs)
+        const diffsToApply = !this.lastInsertedId ? diffs : diffs.filter((update: Diff) => update.id > this.lastInsertedId)
+        if (!diffs || !diffs.length) return
+
+        const last = diffs[diffs.length - 1]
+        this.lastInsertedId = last.id
+
+        // const addedModifed = diffs
+        //     .filter(update => update?.newValue?.type === 'character' || update?.oldValue?.type === 'character')
+
+
+        // console.log("addedModifed", addedModifed)
+        // this.updateOrCreateCharacters(addedModifed, this.setCharacters)
+
+        super.applyDo(diffs)
+    }
+
+    // updateOrCreateCharacters(idx) {
+    //     console.log('character token', this.tokens[idx])
+    // }
+
+    updateOrCreateCharacters(tokensIn: ChangeType[]) {
+        const tokens = tokensIn ? tokensIn : this.pendingUpdates
+        for (const token of tokens) {
+            // the token.id less than 6 is to check if the token is newly created. If 
+            console.log("token--------", token)
+            const character = this.charactersNameMap[token?.oldValue?.text]
+            if (token.type === updateTypes.MODIFY || token.type === updateTypes.ADD) {
+                // oldValue could be null in the case of ADD
+                if (!character && token?.newValue?.text) {
+                    this.charactersNameMap[token?.newValue?.text] = { name: token?.newValue?.text, gender: null, id: getId(), deleted: false }
+                }
+                
+                if (character && token?.newValue?.text !== character.name ) {
+                    delete this.charactersNameMap[token?.oldValue?.text]
+                    character.name = token?.newValue?.text
+                    this.charactersNameMap[token?.newValue?.text] = {...character}
+                    if (!token?.newValue?.text || token?.newValue?.text === '\n') {
+                        delete this.charactersNameMap[token?.newValue?.text]
+                    }
+                }
+            }
+
+            // if (token.type === updateTypes.DELETE) {
+            //     character.deleted = true
+            //     this.charactersNameMap[token?.oldValue?.text] = {...character}
+            // }
+
+            if (this.setCharacters) {
+                this.setCharacters(Object.values(this.charactersNameMap))
+            }
+        }
+    
     }
 
     combineRange(currentOrderIdIn: number, nextIdIn: number, currentOffsetIn: number, nextOffsetIn: number) {
@@ -252,6 +329,7 @@ export class ScriptHistory extends History {
         if (!token) return
 
         console.log('lastToken', lastToken)
+        console.log('token', token)
         const isLastCharacter = lastToken?.type === 'character'
         const characterNameMaybe = lastToken?.characterName
 
@@ -260,10 +338,14 @@ export class ScriptHistory extends History {
         if (!token.text) {
             nextText = tokenPartialMaybe.text
         } else {
-            nextText = token.text.substring(0, caretPosition || 0) + tokenPartialMaybe.text + token.text.substring(caretPosition || 0, token?.text.length || 0)
+            if (tokenPartialMaybe.text) {
+                nextText = token.text.substring(0, caretPosition || 0) + tokenPartialMaybe.text + token.text.substring(caretPosition || 0, token?.text.length || 0)
+            } else {
+                nextText = token.text
+            }
         }
 
-        const foundTokens = tokenize(nextText, { isLastCharacter, characterNameMaybe })
+        const foundTokens = tokenize(nextText, { isLastCharacter, characterNameMaybe }, this.setCharacters)
         const [newText, didUpdate] = transformText(tokenPartialMaybe.text, token.type)
 
         if (!didUpdate) {
@@ -286,6 +368,7 @@ export class ScriptHistory extends History {
                 type: foundTokens[0]?.type,
                 text: newText
             }, idx, caretPosition)
+
         } else {
             // Remove current and add new items 
             textTransformed = true
@@ -296,10 +379,10 @@ export class ScriptHistory extends History {
                 nextCaretPostion = foundToken?.text?.length
                 this.add(foundToken, focusId, caretPosition)
             })
-
         }
 
-        return [tokensUpdated || textTransformed, focusId, nextCaretPostion]
+        const updated = tokensUpdated || textTransformed
+        return [updated, focusId, nextCaretPostion]
     }
 
     /**
@@ -413,6 +496,16 @@ export class ScriptHistory extends History {
         const lastApplied = super.redo()
         if (!lastApplied) return
         this.commitCallback && this.commitCallback(this.tokens, lastApplied?.caretPosition, lastApplied.idx)
+    }
+
+    commit(options) {
+        const addedModifed = this.pendingUpdates
+            .filter(update => update?.newValue?.type === 'character' || update?.oldValue?.type === 'character')
+
+        // console.log("addedModifed", addedModifed)
+        
+        this.updateOrCreateCharacters(addedModifed)
+        super.commit(options)
     }
 
     async diffs() {

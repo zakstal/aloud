@@ -4,6 +4,12 @@ const DELETE = 'delete'
 const MODIFY = 'modify'
 const ADD = 'add'
 
+export const updateTypes = {
+    DELETE,
+    MODIFY,
+    ADD,
+}
+
 type UpdateType = 'delete' | 'modify' | 'add'
 
 const getId = () => (Math.random() + 1).toString(36).substring(7);

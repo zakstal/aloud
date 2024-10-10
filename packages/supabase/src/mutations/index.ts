@@ -41,15 +41,15 @@ async function createLines({
   insertedAudioCharactersVersions,
 }: CreateLinesInput) {
 
-  if (!dialog || !insertedCharacters || !insertedAudioCharactersVersions) return null
+  console.time("lines prepare")
+  if (!dialog) return null
 
-  console.log("dialog-------------", dialog)
-  const nameCharacterIdMap =  insertedCharacters.reduce((obj: { [key: string]: string }, charObj) => {
+  const nameCharacterIdMap =  insertedCharacters?.reduce((obj: { [key: string]: string }, charObj) => {
     obj[charObj.name] = charObj.id
     return obj
   }, {})
 
-  const characterIdToInsertedIdMap = insertedAudioCharactersVersions.reduce((obj: { [key: string]: string }, charObj) => {
+  const characterIdToInsertedIdMap = insertedAudioCharactersVersions?.reduce((obj: { [key: string]: string }, charObj) => {
     obj[charObj.character_id] = charObj.id
     return obj
   }, {})
@@ -117,7 +117,7 @@ async function insertCharacters ({
   const charactersInsert = characters && characters.map((obj) => ({
     screenplay_id: screenplayId,
     name: obj.name,
-    gender: obj?.likelyGender,
+    gender: obj?.likelyGender || obj?.gender,
   }));
 
   
@@ -233,22 +233,27 @@ export async function createScreenPlay(
     if (screenplayVersionError) {
       throw screenplayVersionError;
     }
-    console.log('here a supabase')
+    console.timeEnd('Screen play insert')
  
+    console.time('Character insert')
     const insertedCharacters = await insertCharacters({
       characters,
       screenplayId,
       supabase
     })
 
-    console.log('here 2 supabase')
+    console.timeEnd('Character insert')
+
+    console.time('Character version insert')
     const insertedAudioCharactersVersions = await insertCharacterVersions({
       insertedCharacters,
       screenplayVersionId: screenplayVersion.id,
       supabase
     })
+
+    console.timeEnd('Character version insert')
+    console.time('Create lines insert')
     
-    console.log('here 3 supabase')
     await createLines({
       insertedCharacters,
       insertedAudioCharactersVersions,
@@ -258,6 +263,7 @@ export async function createScreenPlay(
       supabase,
     })
 
+    console.timeEnd('Create lines insert')
 
     return screenplay
     // // Insert lines for each character
@@ -294,7 +300,6 @@ export async function updateAudioCharacterVersion(
   data: { voice_id: string | undefined, voice_data: JSON, voice_name: string | undefined}
 ) {
   const supabase = createClient();
-  console.log("data here ===============", data)
   try {
     const { data: updatedData, error } = await supabase
       .from("audio_character_version")
@@ -438,8 +443,8 @@ export async function createJobsForScreenPlayVersion(screenplayVersionId: string
 
 export async function updateAudioVersionUrl(audioVersionId: string, newAudioFileUrl: string, durationInSeconds: number) {
   const supabase = createClient();
-console.log('audioVersionId', audioVersionId)
-console.log('newAudioFileUrl', newAudioFileUrl)
+  console.log('audioVersionId', audioVersionId)
+  console.log('newAudioFileUrl', newAudioFileUrl)
   try {
     const { data, error } = await supabase
       .from("audio_version")
@@ -462,6 +467,111 @@ console.log('newAudioFileUrl', newAudioFileUrl)
 }
 
 
-export async function updateOrCreateLinesInDb(lines: Dialog) {
-  console.log('updateOrCreateLinesInDb--------------------', lines)
+
+export async function bumpAudioScreenplayVersion(screenplayId) {
+  const supabase = createClient();
+
+  const { data, error } = await supabase.rpc('bump_audio_screenplay_version', {
+    screenplayid: screenplayId,
+  });
+
+  if (error) {
+    console.error('Error bumping version:', error);
+    throw error;
+  }
+
+  return data;  // This is the new version ID
+}
+
+
+export async function processLines({ created, removed, updated, characters = [], screenplayId, screenPlayVersionId }) {
+  const supabase = createClient();
+
+  try {
+    // 1. Insert new lines
+    if (created.length > 0) {
+      console.log("insertCharacters---")
+      const insertedCharacters = await insertCharacters({
+        characters,
+        screenplayId,
+        supabase
+      })
+      console.log("insertCharacterVersions---")
+      const insertedAudioCharactersVersions = await insertCharacterVersions({
+        insertedCharacters,
+        screenplayVersionId: screenPlayVersionId,
+        supabase
+      })
+      console.log("createLines---")
+      await createLines({
+        insertedCharacters,
+        insertedAudioCharactersVersions,
+        screenplayId: screenplayId,
+        screenplayVersionId: screenPlayVersionId,
+        dialog: created,
+        supabase,
+      })
+    }
+
+    // 2. Mark lines as deleted (update "deleted" column to true)
+    console.log('removed------')
+    if (removed.length > 0) {
+      const { error: removeError } = await Promise.all(
+        removed.map(async (line) => {
+          return await supabase
+            .from('lines')
+            .update({ deleted: true }) // Set deleted to true
+            .eq('id', line.id);
+        })
+      );
+
+      if (removeError) {
+        throw new Error(`Error marking lines as deleted: ${removeError.message}`);
+      }
+    }
+
+    // 3. Update existing lines with new values
+    console.log('updated------')
+    if (updated.length > 0) {
+      const { error: updateError } = await Promise.all(
+        updated.map(async (line) => {
+          return await supabase
+            .from('lines')
+            .update({
+              text: line.text,
+              type: line.type,
+              isDialog: line.isDialog,
+              order: line.order,
+              character_id: line.character_id,
+            })
+            .eq('id', line.id);
+        })
+      );
+
+      if (updateError) {
+        throw new Error(`Error updating lines: ${updateError.message}`);
+      }
+    }
+
+    console.log('All operations completed successfully');
+    return { success: true };
+  } catch (error) {
+    console.error('Error processing lines:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+
+export async function updateOrCreateLinesInDb(created: Dialog[], removed: Dialog[], updated: Dialog[], characters: CharacterData[], screenplayId: string) {
+  console.log('created--------------------', created)
+  console.log('removed--------------------', removed)
+  console.log('updated--------------------', updated)
+  console.log('characters--------------------', characters)
+  console.log('screenplayId--------------------', screenplayId)
+
+  const screenPlayVersionId = await bumpAudioScreenplayVersion(screenplayId)
+
+  console.log('screenPlayVersionId--------------------', screenPlayVersionId)
+
+  return processLines({ created, removed, updated, characters, screenplayId, screenPlayVersionId })
 }

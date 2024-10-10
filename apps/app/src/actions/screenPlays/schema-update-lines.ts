@@ -4,11 +4,20 @@ import { z } from "zod";
 const lineSchema = z.object({
   text: z.string().optional(),
   type: z.string(),
-  isDialog: z.boolean().optional(),
+  isDialog: z.boolean().nullable().optional(),
   characterName: z.string().optional(),
+});
+
+const characterSchema = z.object({
+  name: z.string(),
+  gender: z.string().nullable().optional(),
 });
 
 // Create a schema for an array of lines
 export const updateOrCreateLinesSchema = z.object({
-  lines: z.array(lineSchema),
+  created: z.array(lineSchema),
+  removed: z.array(lineSchema),
+  updated: z.array(lineSchema),
+  characters: z.array(characterSchema).optional(),
+  screenplayId: z.string(),
 });

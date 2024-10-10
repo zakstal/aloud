@@ -47,10 +47,11 @@ export function Characters({
        
           <div className="space-y-2 overflow-scroll h-screen appear appear-in pb-8" style={{ paddingBottom: '50px' }}>
             { characters?.map(data => {
-              const characterVersion = audioVersionNumber ? data.audio_character_version.find(version => version.version_number === audioVersionNumber) : null
+              console.log("data character", data)
+              const characterVersion = audioVersionNumber ? data?.audio_character_version?.find(version => version.version_number === audioVersionNumber) : null
               return (
               <Character
-                key={data.name}
+                key={data.id}
                 name={data.name} 
                 gender={data.gender} 
                 avatar={characterVersion?.voice_data?.avatar}

@@ -5,8 +5,6 @@ export const getGenders = async (namesArr) => {
             personalNames: namesArr.map(name => ({ id: '', name }))
         })
 
-        console.log("body==================", body)
-
         const res = await fetch('https://v2.namsor.com/NamSorAPIv2/api2/json/genderFullBatch', {
             method: 'POST',
             body,

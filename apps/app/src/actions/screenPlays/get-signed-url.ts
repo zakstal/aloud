@@ -14,7 +14,6 @@ export const getSignedUrl = authActionClient
     try {
 
         const result = await getSignedUrlIn(input.url);
-        console.log("result-------------", result)
         return result;
     } catch (e) {
         console.log('error getting signed url', e)

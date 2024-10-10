@@ -16,7 +16,7 @@ var regex = {
     dialogue: /^([A-Z*_]+[0-9A-Z (._\-')]*)(\^?)?(?:\n(?!\n+))([\s\S]+)/,
     parenthetical: /^(\(.+\))$/,
 
-    action: /^(.+)/g,
+    action: /^(.+)\n/g,
     centered: /^(?:> *)(.+)(?: *<)(\n.+)*/g,
         
     section: /^(#+)(?: *)(.*)/,
@@ -38,7 +38,7 @@ var regex = {
     italic: /(\*{1}(?=.+\*{1}))(.+?)(\*{1})/g,
     underline: /(_{1}(?=.+_{1}))(.+?)(_{1})/g,
 
-    splitter: /\n{1,}/g,
+    splitter: /\n{2,}/g,
     cleaner: /^\n+|\n+$/,
     standardizer: /\r\n|\r/g,
     whitespacer: /^\t+|^ {3,}/gm
@@ -56,7 +56,6 @@ var tokenize = function (script) {
     , i      = src.length, line, match, parts, text, meta, x, xlen, dual
     , tokens = [];
 
-    console.log('src', src)
     while (i--) {
     line = src[i];
     
@@ -65,7 +64,7 @@ var tokenize = function (script) {
         match = line.replace(regex.title_page, '\n$1').split(regex.splitter).reverse();
         for (x = 0, xlen = match.length; x < xlen; x++) {
         parts = match[x].replace(regex.cleaner, '').split(/\:\n*/);
-        tokens.push({ type: parts[0]?.trim()?.toLowerCase()?.replace(' ', '_'), text: parts[1]?.trim() });
+        tokens.push({ type: parts[0].trim().toLowerCase().replace(' ', '_'), text: parts[1].trim() });
         }
         continue;
     }
@@ -116,7 +115,7 @@ var tokenize = function (script) {
             }
         }
 
-        tokens.push({ type: 'character', text: match[1]?.trim() });
+        tokens.push({ type: 'character', text: match[1].trim() });
         tokens.push({ type: 'dialogue_begin', dual: match[2] ? 'right' : dual ? 'left' : undefined });
 
         if (dual) {
@@ -193,7 +192,6 @@ inline.lexer = function (s) {
             , i = styles.length, style, match;
 
     s = s.replace(regex.note_inline, inline.note).replace(/\\\*/g, '[star]').replace(/\\_/g, '[underline]').replace(/\n/g, ' ');
-    // s = s.replace(regex.note_inline, inline.note).replace(/\\\*/g, '[star]').replace(/\\_/g, '[underline]').replace(/\n/g, inline.line_break);
 
     // if (regex.emphasis.test(s)) {                         // this was causing only every other occurence of an emphasis syntax to be parsed
     while (i--) {
@@ -206,18 +204,18 @@ inline.lexer = function (s) {
     }
     // }
 
-    return s.replace(/\[star\]/g, '*').replace(/\[underline\]/g, '_')?.trim();
+    return s.replace(/\[star\]/g, '*').replace(/\[underline\]/g, '_').trim();
 };
 
 var parse = function (script, toks, callback) {
-
     if (callback === undefined && typeof toks === 'function') {
     callback = toks;
     toks = undefined;
     }
     
     var tokens = tokenize(script)
-    , i      = tokens?.length, token
+    console.log("tokens", tokens)
+    var i      = tokens.length, token
     , title, title_page = [], html = [], output;
 
     while (i--) {

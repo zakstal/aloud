@@ -87,7 +87,7 @@ function getElementAtCaret() {
 
 window.scriptStorage = window.scriptStorage || new ScriptHistory()
 
-export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string, pdfText) {
+export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string, pdfText, setCharacters) {
 
 
     const [tokens, setTokens] = useState(prepareTokensRender(tokensIn?.length ? tokensIn : [{ type: 'editNode', text: ' '}]))
@@ -125,6 +125,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
                 currentOrderId && setCurrentOrderId(currentOrderId)
             },
             tokens,
+            setCharacters,
         )
 
     }, [versionNumber])
@@ -267,6 +268,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
                 let focusId = currentOrderId
 
                 window.scriptStorage.combineSplitRange(focusId, carotPostiion || selection?.anchorOffset)
+                window.scriptStorage.updateOrCreateCharacters(focusId)
                 window.scriptStorage.commit()
 
                 setCurrentOrderId(Number(currentOrderId) + 1)

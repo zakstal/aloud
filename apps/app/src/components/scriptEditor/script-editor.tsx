@@ -1,9 +1,16 @@
+'use client'
+
 import './script-editor.css';
 
 import { TokenContent, Tokens } from './script-tokens'
 import { useRef, useEffect } from 'react';
 import { useFountainNodes } from './useFountainNodes'
+import { max } from 'date-fns';
 
+type Character = {
+    name: string,
+    gender: string | null,
+}
 
 interface ScriptEditorInput {
     scriptTokens: Tokens[];
@@ -12,46 +19,71 @@ interface ScriptEditorInput {
     audioScreenPlayVersion: string,
     pdfText: string,
     saveLines: () => null,
+    setCharacters: (characters: string[]) => null,
+    screenplayId: string,
+    characters: Character[]
 }
 
-// function VirtualizedList({ items, itemHeight, containerHeight }) {
-//     const [scrollTop, setScrollTop] = useState(0);
-//     const startIndex = Math.floor(scrollTop / itemHeight);
-//     const endIndex = Math.min(
-//       startIndex + Math.ceil(containerHeight / itemHeight),
-//       items.length
-//     );
-//     const visibleItems = items.slice(startIndex, endIndex);
-//     const invisibleItemsHeight = (startIndex + visibleItems.length - endIndex) * itemHeight;
-//     const handleScroll = (event) => {
-//       setScrollTop(event.target.scrollTop);
-//     };
-//     return (
-//       <div
-//         style={{ height: `${containerHeight}px`, overflowY: "scroll" }}
-//         onScroll={handleScroll}
-//         className="VirtualizedList"
-//       >
-//         <div style={{ height: `${items.length * itemHeight}px` }}>
-//           <div
-//             style={{
-//               position: "relative",
-//               height: `${visibleItems.length * itemHeight}px`,
-//               top: `${startIndex * itemHeight}px`,
-//             }}
-//           >
-//             {visibleItems.map((item) => (
-//               <div key={item.id} style={{ height: `${itemHeight}px` }}>
-//               {/* <div key={item.id}> */}
-//                 {item.text}
-//               </div>
-//             ))}
-//           </div>
-//           {/* <div className="invisible-height" style={{ height: `${invisibleItemsHeight}px` }} /> */}
-//         </div>
-//       </div>
-//     );
-//   }
+function getChanges(oldTokens, updatedTokens, screenplayId, characters) {
+
+    // update ordering 
+    updatedTokens.forEach((token, i) => {
+        token.order = i
+    })
+
+    const newIds = {}
+
+    const newTokens = []
+    const removeTokens = []
+    const updateTokens = []
+
+    // check if new tokens have been created
+    for (const newToken of updatedTokens) {
+        const id = newToken.id
+
+        if (!id || id?.startsWith('internal')) {
+            console.log("newToken", newToken)
+            newTokens.push(newToken)
+            continue
+        }
+
+        newIds[id] =  newToken
+    }
+    
+    // check if tokens have been removed or changed
+    for (const oldToken of oldTokens) {
+        const id = oldToken.id
+        const newToken = newIds[id]
+
+        // check if removed
+        if (!newToken) {
+            removeTokens.push(oldToken)
+            continue
+        }
+
+
+        // check if changed
+        const isSame = 
+            newToken.text === oldToken.text &&
+            newToken.order === oldToken.order &&
+            newToken.isDialog === oldToken.isDialog &&
+            newToken.type === oldToken.type
+
+        if (!isSame) {
+            updateTokens.push(newToken)
+        }
+
+    }
+
+    return {
+        created: newTokens,
+        removed: removeTokens,
+        updated: updateTokens,
+        screenplayId,
+        characters: characters.filter(character => character.id.startsWith('internal'))
+    }
+
+}
 
 export const ScriptEditor =({
     scriptTokens,
@@ -59,6 +91,9 @@ export const ScriptEditor =({
     audioScreenPlayVersion,
     pdfText,
     saveLines,
+    setCharacters,
+    screenplayId,
+    characters,
 }: ScriptEditorInput) => {
 
     const myRef = useRef(null);
@@ -73,7 +108,7 @@ export const ScriptEditor =({
         handleOnSelect,
         handlePaste,
         handleCut,
-    ] = useFountainNodes(scriptTokens, audioScreenPlayVersion, pdfText)
+    ] = useFountainNodes(scriptTokens, audioScreenPlayVersion, pdfText, setCharacters)
 
     useEffect(() => {
         myRef.current && myRef.current.focus()
@@ -82,8 +117,10 @@ export const ScriptEditor =({
     return (
         <>
         <button id="savebutton" onClick={async () => {
-            console.log("save0-------------", scriptTokens)
-            const res = await saveLines({ lines: tokens })
+            const changes = getChanges(scriptTokens, tokens, screenplayId, characters)
+            console.log("save1-------------", screenplayId, characters)
+            console.log("save0-------------", changes)
+            const res = await saveLines(changes)
             console.log('res----', res)
 
         }}>Save----</button>

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress'
 import { ScriptEditor } from '@/components/scriptEditor/script-editor'
 import PDFLocalUplaod from '@/components/pdf-upload-local'
+import { ProductForm } from '@/components/forms/product-form';
 import { getSignedUrl } from '@/actions/screenPlays/get-signed-url'
 import { updateOrCreateLines } from '@/actions/screenPlays/update-lines'
 
@@ -28,12 +29,14 @@ export default function ScreenPlayConatiner({
   startScreenPlay,
   audioScreenPlayVersion,
   lines,
+  setCharacters,
+  screenplayId,
 }) {
   const [voiceSelectionOpen, setVoiceSelectionOpen] = useState(false)
   const [selectedCharacter, setSelectedCharacter] = useState(null)
   const [currentLinePlaying, setCurrentLinePlaying] = useState(null)
 
-  console.log('characters', characters)
+  console.log('ScreenPlayConatiner characters', characters)
 
   if (isLoading) return <div className="flex justify-center h-screen items-center"><Progress /></div>
 
@@ -107,12 +110,15 @@ export default function ScreenPlayConatiner({
                     currentLinePlaying={currentLinePlaying}
                     pdfText={screenPlayText}
                     saveLines={updateOrCreateLines}
+                    setCharacters={setCharacters}
+                    screenplayId={screenplayId}
+                    characters={characters}
                 />
                 : <div className={'script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-4xl font-courier script-editor'}>
                     <h1 className="text-3xl pb-6 pt-16 tracking-tight text-center ">🎉  Welcome! 🎊</h1>
                     <h4 className="text-3xl pb-6 pt-16 tracking-tight text-center ">Start a new script</h4>
-                    {/* <ProductForm /> */}
-                    <PDFLocalUplaod startScreenPlay={startScreenPlay} />
+                    <ProductForm />
+                    {/* <PDFLocalUplaod startScreenPlay={startScreenPlay} /> */}
                     <Button
                         variant="outline"
                         className="text-md h-20 mt-6 w-full"

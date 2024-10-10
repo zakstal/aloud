@@ -10,6 +10,7 @@ import { processAudio } from '@/actions/screenPlays/process-audio'
 import { startScreenPlay } from '@/actions/screenPlays/create-screenplay'
 import { getSignedUrl } from '@/actions/screenPlays/get-signed-url'
 
+type Character = { name: string, gender: string | null }
 
 const breadcrumbItems = [
   { title: 'Dashboard', link: '/dashboard' },
@@ -20,11 +21,17 @@ const breadcrumbItems = [
 function updateCharacter(character, characters, setCharacters) {
 // TODO put this into an update function
   const newCharacters: any[] = [...characters]
+  let didFind = false
   for (const idx in newCharacters) {
     const newCharacter: any = newCharacters[idx]
-    if (newCharacter.id !== character.id) continue
+    if (!newCharacter.id || newCharacter.id !== character.id) continue
     newCharacters[idx] = character
+    didFind = true
     break;
+  }
+
+  if (!didFind) {
+    newCharacters.push(character)
   }
 
   setCharacters(newCharacters)
@@ -46,6 +53,7 @@ export default function Page() {
   const [isLoading, setIsLoading ] = useState(true)
   const [screenPlay, setScreenPlay ] = useState({})
   const [characters, setCharacters ] = useState([])
+  const [charactersTemp, setCharactersTemp ] = useState([])
   const [lines, setLines ] = useState([])
   const [audioVersions, setAudioVersions ] = useState([])
 
@@ -61,7 +69,7 @@ export default function Page() {
           setAudioVersions(audio_version)
           updateLines(data?.lines, setLines)
           setScreenPlay(screenPlay)
-          setCharacters(data?.characters)
+          setCharacters(data?.characters || [])
       })
       .finally(() => {
         setIsLoading(false)
@@ -78,16 +86,19 @@ export default function Page() {
 
   const data = screenPlay?.data?.data && screenPlay?.data?.data
 
-  const audioScreenPlayVersion = data?.audio_screenplay_versions && data?.audio_screenplay_versions[0]
+  const audioScreenPlayVersion = data?.audio_screenplay_versions && data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1]
   const audioVersionNumber = audioScreenPlayVersion?.version_number
 
+  console.log('characters---------', characters)
   // TODO add type for character
   // TODO add type for audio character version
   return (
     <>  
         <ScreenPlayConatiner
           title={data?.title}
+          screenplayId={params?.screenplayid}
           isLoading={isLoading}
+          setCharacters={setCharactersTemp}
           screenPlayText={data?.screen_play_text}
           startScreenPlay={async (obj = {}) => {
             console.log("start screen play")
@@ -103,7 +114,7 @@ export default function Page() {
               console.log('error uploading screenplay', e)
             }
           }}
-          characters={characters}
+          characters={[...characters, ...charactersTemp]}
           voices={voices}
           audioScreenPlayVersion={audioScreenPlayVersion?.id}
           audioVersionNumber={audioVersionNumber}

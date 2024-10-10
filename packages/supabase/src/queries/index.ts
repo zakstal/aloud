@@ -94,12 +94,14 @@ export async function getScreenPlay(screenPlayId) {
       .eq('id', screenPlayId)
       .single();
 
-      console.log("result", result)
+    
     return result;
   } catch (error) {
     logger.error(error);
     console.log("error--------", error)
     throw error;
+  } finally {
+    console.timeEnd('Get screenpaly')
   }
 }
 

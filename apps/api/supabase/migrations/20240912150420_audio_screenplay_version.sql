@@ -2,7 +2,7 @@ create table public.audio_screenplay_versions (
     id uuid primary key default gen_random_uuid(),
     screenplay_id uuid not null,
     version_number int not null, -- to track different versions
-    audio_file_url text not null, -- URL to the full/partial assembled audio file
+    audio_file_url text, -- URL to the full/partial assembled audio file
     is_final boolean not null default false, -- flag to indicate if this is the final version
     status text check (status in ('partial', 'full')) default 'partial',
     created_at timestamptz not null default now(),

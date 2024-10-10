@@ -1,4 +1,4 @@
-import pdfUtil from 'pdf-to-text';
+import pdfUtil from './xpdf-extract';
 
 /**
  * Requires brew install xpdf
