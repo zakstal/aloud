@@ -12,7 +12,7 @@ export async function middleware(req: NextRequest) {
   const session  = await getUser()
   logger.info('Session---------')
   if (!session.data.user) {
-    logger.info('Is not user')
+    logger.info('Is not user', session)
     return NextResponse.redirect(new URL('/', req.url))
   }
 
