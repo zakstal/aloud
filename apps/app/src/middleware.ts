@@ -11,10 +11,10 @@ export async function middleware(req: NextRequest) {
   // Get the authenticated user
   const session  = await getUser()
   logger.info('Session---------')
-  if (!session.data.user) {
-    logger.info('Is not user', session)
-    return NextResponse.redirect(new URL('/', req.url))
-  }
+  logger.info('Is not user', session)
+  // if (!session.data.user) {
+  //   return NextResponse.redirect(new URL('/', req.url))
+  // }
 
   // If a user exists, proceed to the requested route
   return res;
