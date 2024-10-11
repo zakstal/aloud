@@ -18,14 +18,14 @@ import { logger } from "@v1/logger";
  * @return {[type]}            [description]
  */
 export function process(pdf_path, options, callback) {
-  const __filename = url.fileURLToPath(import.meta.url);
-  const __dirname = Path.dirname(__filename);
+  // const __filename = url.fileURLToPath(import.meta.url);
+  // const __dirname = Path.dirname(__filename);
 
-  var pdf_path = "xpdf-wasm";
-  const xpdf_path = Path.join(__dirname, pdf_path)
-  fs.readdirSync(__dirname).forEach(file => {
-    logger.info(file);
-  });
+  // var pdf_path = "xpdf-wasm";
+  // const xpdf_path = Path.join(__dirname, pdf_path)
+  // fs.readdirSync(__dirname).forEach(file => {
+  //   logger.info(file);
+  // });
   var args = [];
   if (typeof options !== 'function') {
 
@@ -62,8 +62,8 @@ export function process(pdf_path, options, callback) {
   console.log('args', args)
 
 //   var child = child_process.exec('/Users/zakstallings/projects/script-to-speech/script-to-speech/src/xpdf-extract/lib/xpdf-wasm pdftotext -layout -enc UTF-8 /Users/zakstallings/projects/script-to-speech/script-to-speech/experiments/barbershop-wars-1.pdf -');
-  var child = child_process.exec(`${xpdf_path} pdftotext ` + args.join(' '));
-  var child = child_process.exec(`./xpdf-wasm pdftotext ` + args.join(' '));
+  // var child = child_process.exec(`${xpdf_path} pdftotext ` + args.join(' '));
+  var child = child_process.exec(`../../xpdf-wasm pdftotext ` + args.join(' '));
 //   var child = child_process.exec('/Users/zakstallings/projects/script-to-speech/script-to-speech/src/xpdf-extract/lib/xpdf-wasm pdftotext ' + args.join(' '));
 
   var stdout = child.stdout;
