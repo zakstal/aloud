@@ -63,7 +63,7 @@ export function process(pdf_path, options, callback) {
 
 //   var child = child_process.exec('/Users/zakstallings/projects/script-to-speech/script-to-speech/src/xpdf-extract/lib/xpdf-wasm pdftotext -layout -enc UTF-8 /Users/zakstallings/projects/script-to-speech/script-to-speech/experiments/barbershop-wars-1.pdf -');
   // var child = child_process.exec(`${xpdf_path} pdftotext ` + args.join(' '));
-  var child = child_process.exec(`../../../xpdf-wasm pdftotext ` + args.join(' '));
+  var child = child_process.exec(`../../../../xpdf-wasm pdftotext ` + args.join(' '));
 //   var child = child_process.exec('/Users/zakstallings/projects/script-to-speech/script-to-speech/src/xpdf-extract/lib/xpdf-wasm pdftotext ' + args.join(' '));
 
   var stdout = child.stdout;
