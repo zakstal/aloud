@@ -12,7 +12,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
   const formData: FormData = await req.formData();
   const session  = await getUser()
   // logger.info('upload pdf session', session)
-  const userId = session.data.user.id
+  const userId = session?.data?.user?.id
   const uploadedFiles = formData.getAll('filepond');
   let fileName = '';
   let parsedText = '';
@@ -35,9 +35,10 @@ export async function POST(req: NextRequest, res: NextResponse) {
       await fs.writeFile(tempFilePath, fileBuffer);
 
       parsedText = await getTextFromPdf(tempFilePath)
+      console.log("parsedText", parsedText)
 
     } else {
-      // console.log('Uploaded file is not in the expected format.');
+      console.log('Uploaded file is not in the expected format.');
     }
       
     const parsed = await parse(parsedText)
