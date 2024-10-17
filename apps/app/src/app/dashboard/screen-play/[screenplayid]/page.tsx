@@ -9,6 +9,8 @@ import voices, { Voice } from '@v1/script-to-audio/voices'
 import { processAudio } from '@/actions/screenPlays/process-audio'
 import { startScreenPlay } from '@/actions/screenPlays/create-screenplay'
 import { getSignedUrl } from '@/actions/screenPlays/get-signed-url'
+import { createClient } from "@v1/supabase/client";
+const supabase = createClient();
 
 type Character = { name: string, gender: string | null }
 
@@ -56,6 +58,20 @@ export default function Page() {
   const [charactersTemp, setCharactersTemp ] = useState([])
   const [lines, setLines ] = useState([])
   const [audioVersions, setAudioVersions ] = useState([])
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('*')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) =>
+        console.log("paylaod-------------", payload)
+        // setPosts((posts: any) => [...posts, payload.new])
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
 
   useEffect(() => {
     if (params?.screenplayid) {

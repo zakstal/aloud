@@ -30,8 +30,8 @@ const courierPrime = localFont({
 })
 
 export const metadata: Metadata = {
-  title: 'Next Shadcn',
-  description: 'Basic dashboard with Next.js and Shadcn'
+  title: 'Aloud',
+  description: 'Aloud script app'
 };
 
 export default async function RootLayout({
