@@ -62,7 +62,7 @@ export default function Page() {
   useEffect(() => {
     const channel = supabase
       .channel('*')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) =>
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audio_version' }, (payload) =>
         console.log("paylaod-------------", payload)
         // setPosts((posts: any) => [...posts, payload.new])
       )
