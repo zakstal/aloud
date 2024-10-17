@@ -62,7 +62,7 @@ export default function Page() {
   useEffect(() => {
     console.log('connect to supeabase realtime----------------')
     const channel = supabase
-      .channel('custom-all-channel')
+      .channel('*')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'audio_version' }, (payload) =>
         console.log("paylaod-------------", payload)
         // setPosts((posts: any) => [...posts, payload.new])
