@@ -149,6 +149,9 @@ Vercel deployment will guide you through creating a Supabase account and project
 - ElevenLabs - voices (https://elevenlabs.io/app/speech-synthesis/text-to-speech)[https://elevenlabs.io/app/speech-synthesis/text-to-speech]
 - Murf.ai - voices (https://murf.ai/studio?workspaceId=WORKSPACEID017256620230338QV&folderId=WFRoot)[https://murf.ai/studio?workspaceId=WORKSPACEID017256620230338QV&folderId=WFRoot]
 - Google cloud - Oauth (https://console.cloud.google.com/apis/credentials?project=aloud-435319&inv=1&invt=AbeZrA)[https://console.cloud.google.com/apis/credentials?project=aloud-435319&inv=1&invt=AbeZrA]
+- Digital ocean - pdf-to-text internal api (https://cloud.digitalocean.com/apps/c3521227-e88d-4d93-aac9-b7dad804ec7b?source_ref=projects&i=5e4c8d)[https://cloud.digitalocean.com/apps/c3521227-e88d-4d93-aac9-b7dad804ec7b?source_ref=projects&i=5e4c8d]
+- aloud-api - repo for the pdf-to-text api ( https://github.com/zakstal/aloud-api)[https://github.com/zakstal/aloud-api]
+
 
 
 ## How tos
