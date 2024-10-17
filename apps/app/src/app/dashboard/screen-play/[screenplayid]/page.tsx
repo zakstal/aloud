@@ -3,7 +3,7 @@
 import { getScreenPlay } from '@/actions/screenPlays/get-screen-play'
 import { updateAudioCharacterVersionAction } from '@/actions/audioCharacterVersion/update-audio-character-version'
 import React, { useState, useEffect} from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import ScreenPlayConatiner from '@/components/screenPlay/screenPlay'
 import voices, { Voice } from '@v1/script-to-audio/voices'
 import { processAudio } from '@/actions/screenPlays/process-audio'
@@ -50,6 +50,7 @@ function updateLines (audioVersions, setAudioVersions) {
 
 export default function Page() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
 
   const [isLoading, setIsLoading ] = useState(true)
@@ -63,7 +64,7 @@ export default function Page() {
     console.log('connect to supeabase realtime----------------')
     const channel = supabase
       .channel('*')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'audio_version' }, (payload) =>
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'audio_character_version' }, (payload) =>
         console.log("paylaod-------------", payload)
         // setPosts((posts: any) => [...posts, payload.new])
       )
