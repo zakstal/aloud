@@ -60,6 +60,7 @@ export default function Page() {
   const [audioVersions, setAudioVersions ] = useState([])
 
   useEffect(() => {
+    console.log('connect to supeabase realtime----------------')
     const channel = supabase
       .channel('*')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audio_version' }, (payload) =>
