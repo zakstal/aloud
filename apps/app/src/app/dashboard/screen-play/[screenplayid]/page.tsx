@@ -53,6 +53,7 @@ export default function Page() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  console.log('searchParams', searchParams.get('version'))
   const [isLoading, setIsLoading ] = useState(true)
   const [screenPlay, setScreenPlay ] = useState({})
   const [characters, setCharacters ] = useState([])
@@ -60,11 +61,33 @@ export default function Page() {
   const [lines, setLines ] = useState([])
   const [audioVersions, setAudioVersions ] = useState([])
 
+  if (!screenPlay.error && screenPlay?.data?.data) {
+    // console.log('screenPlay&&&', screenPlay?.data?.data)
+    breadcrumbItems.pop()
+    breadcrumbItems.push({ title: screenPlay?.data?.data.title, link: `/dashboard/screen-play/${screenPlay?.title}` })
+  }
+
+  const data = screenPlay?.data?.data && screenPlay?.data?.data
+
+  const audioScreenPlayVersion = data?.audio_screenplay_versions && data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1]
+  const audioVersionNumber = audioScreenPlayVersion?.version_number
+
   useEffect(() => {
     console.log('connect to supeabase realtime----------------')
+    if (!audioScreenPlayVersion) {
+      console.log('no audioScreenPlayVersion')
+      return
+    }
     const channel = supabase
       .channel('*')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'audio_character_version' }, (payload) =>
+      .on('postgres_changes', 
+        { 
+          event: '*',
+          schema: 'public',
+          table: 'audio_version',
+          filter: 'screenplay_id=eq.' + audioScreenPlayVersion?.id
+        }
+        , (payload) =>
         console.log("paylaod-------------", payload)
         // setPosts((posts: any) => [...posts, payload.new])
       )
@@ -73,7 +96,7 @@ export default function Page() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [screenPlay])
 
   useEffect(() => {
     if (params?.screenplayid) {
@@ -96,16 +119,6 @@ export default function Page() {
 
   }, [params])
 
-  if (!screenPlay.error && screenPlay?.data?.data) {
-    // console.log('screenPlay&&&', screenPlay?.data?.data)
-    breadcrumbItems.pop()
-    breadcrumbItems.push({ title: screenPlay?.data?.data.title, link: `/dashboard/screen-play/${screenPlay?.title}` })
-  }
-
-  const data = screenPlay?.data?.data && screenPlay?.data?.data
-
-  const audioScreenPlayVersion = data?.audio_screenplay_versions && data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1]
-  const audioVersionNumber = audioScreenPlayVersion?.version_number
 
   console.log('characters---------', characters)
   // TODO add type for character
