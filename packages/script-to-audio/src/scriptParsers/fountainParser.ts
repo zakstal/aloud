@@ -167,7 +167,7 @@ function getDialog (output) {
           if (excludNames.some(name => characterName.startsWith(name))) continue
           if (characterName.split(' ').length > 3) continue // arbitrary name length
 
-          token.characterName = characterName
+            token.characterName = characterName
             token.isDialog = true
             toProcess.push({
                 characterName,
@@ -192,7 +192,7 @@ function getDialog (output) {
 
 
 
-const getCharacters = (dialog) => {
+export const getCharacters = (dialog) => {
   const characters = new Set()
   dialog.map(dialogObj => characters.add(dialogObj?.characterName))
   return Array.from(characters).filter(name => {
@@ -217,9 +217,10 @@ async function handleErrorAsync(func: any, error: string[]) {
 }
 
 
+
 export async function parse(scriptText: string) {
     // let fountain = new Fountain();
-    if (!scriptText) {x
+    if (!scriptText) {
       return {
         dialog: [],
         output: {
@@ -239,7 +240,7 @@ export async function parse(scriptText: string) {
     const characters = getCharacters(dialog)
     let characterGenders = []
     try {
-      characterGenders = await getGenders(characters)
+      characterGenders = characters && characters.length && await getGenders(characters)
     } catch(e) {
       errors.push(e)
       characterGenders = characters.map(characterName => ({ name: characterName, likelyGender: null }))
@@ -254,3 +255,41 @@ export async function parse(scriptText: string) {
         errors
     }
 }
+
+// export async function parse(scriptText: string) {
+//     // let fountain = new Fountain();
+//     if (!scriptText) {x
+//       return {
+//         dialog: [],
+//         output: {
+//           title: '',
+//           tokens: []
+//         },
+//         characters: [],
+//         characterGenders: [],
+//       }
+//     }
+
+//     let output = fountain.parse(scriptText, true);
+
+
+//     const errors: string[] = []
+//     const dialog = getDialog(output)    
+//     const characters = getCharacters(dialog)
+//     let characterGenders = []
+//     try {
+//       characterGenders = characters && characters.length && await getGenders(characters)
+//     } catch(e) {
+//       errors.push(e)
+//       characterGenders = characters.map(characterName => ({ name: characterName, likelyGender: null }))
+//     }
+
+//     console.log("output", output)
+//     return {
+//         dialog,
+//         output,
+//         characters,
+//         characterGenders,
+//         errors
+//     }
+// }
