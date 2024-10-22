@@ -584,3 +584,96 @@ export async function updateOrCreateLinesInDb(created: Dialog[], removed: Dialog
 
   return processLines({ created, removed, updated, characters, screenplayId, screenPlayVersionId })
 }
+
+export async function setAudioVersionInProgress(audioVersionId: string) {
+  const supabase = createClient();
+  console.log('audioVersionId', audioVersionId)
+  
+  try {
+    const { data, error } = await supabase
+      .from("audio_screenplay_versions")
+      .update({
+        status: 'inProgress'
+      })
+      .eq("id", audioVersionId);
+
+    if (error) {
+      console.log("error setting status to inProgress", error)
+      throw error;
+    }
+
+    return data;  // Return the updated audio version
+  } catch (error) {
+    console.error("Error setting status to inProgress:", error);
+    throw error;
+  }
+}
+
+export async function setAudioVersionCount(audioVersionId: string, count = 0) {
+  const supabase = createClient();
+  console.log('audioVersionId', audioVersionId)
+  
+  try {
+    const { data, error } = await supabase
+      .from("audio_screenplay_versions")
+      .update({
+        total_lines: count
+      })
+      .eq("id", audioVersionId);
+
+    if (error) {
+      console.log("error setting status to inProgress", error)
+      throw error;
+    }
+
+    return data;  // Return the updated audio version
+  } catch (error) {
+    console.error("Error setting status to inProgress:", error);
+    throw error;
+  }
+}
+
+export async function updateJobId(audioScreenplayVersionId: string, jobId: string) {
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('audio_screenplay_versions')
+      .update({ job_id: jobId })
+      .eq('id', audioScreenplayVersionId);
+
+    if (error) {
+      console.error('Error updating job_id:', error);
+      throw error;
+    }
+
+    return data;  // Return the updated record(s)
+  } catch (error) {
+    console.error('Error updating job_id:', error);
+    throw error;
+  }
+}
+
+interface updateScreenplayVersionInput {
+  status?: string;
+  job_id?: string;
+
+}
+export async function updateScreenplayVersion(audioScreenplayVersionId: string, updateObj: updateScreenplayVersionInput) {
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('audio_screenplay_versions')
+      .update(updateObj)
+      .eq('id', audioScreenplayVersionId);
+
+    if (error) {
+      console.error('Error updating job_id:', error);
+      throw error;
+    }
+
+    return data;  // Return the updated record(s)
+  } catch (error) {
+    console.error('Error updating job_id:', error);
+    throw error;
+  }
+}

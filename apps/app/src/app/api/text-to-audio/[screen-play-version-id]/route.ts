@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'; // To handle the request and response
 import fs from 'fs'; // To save the file temporarily
-import { getAudioVersionsByScreenplayId, getUser } from "@v1/supabase/queries";
-import { updateAudioVersionUrl } from "@v1/supabase/mutations";
+import { getAudioVersionsByScreenplayId, getUser, getScreenPlayAudioVersion } from "@v1/supabase/queries";
+import { setAudioVersionCount, setAudioVersionInProgress, updateJobId, updateScreenplayVersion } from "@v1/supabase/mutations";
 // import textToVoiceProvders from "@v1/script-to-audio/voiceApis";
 import { tasks } from "@trigger.dev/sdk/v3";
 
 // @ts-ignore
-import type { getAudioTask } from "@v1/jobs/triggersExample";
+import type { getAudioTask } from "@v1/jobs/getAudioTask";
+import type { trackAudioRuns } from "@v1/jobs/trackAudioRuns";
 //     👆 **type-only** import
 
 // export async function POST(request: Request) {
@@ -28,15 +29,23 @@ const __dirname = Path.dirname(__filename);
 
 
 // temporary function 
-async function getAudioQueue(data) {
+async function getAudioQueue(data, screenPlayVersionId) {
   const session  = await getUser()
   const userId = session.data.user.id
   try {
 
-    const handle = await tasks.batchTrigger<typeof getAudioTask>("get-audio-2", data.slice(0, 4).map((u) => {
+    const handle = await tasks.batchTrigger<typeof getAudioTask>("get-audio-4", data.map((u) => {
+    // const handle = await tasks.batchTrigger<typeof getAudioTask>("get-audio-2", data.slice(0, 1).map((u) => {
       u.userId = userId
       return { payload: u }
     }));
+
+    // const trackHandle = await tasks.trigger<typeof trackAudioRuns>("track-audio-runs-1", {
+    //   batch: handle,
+    //   screenPlayVersionId,
+    // })
+
+    await updateJobId(screenPlayVersionId, handle?.batchId)
     console.log("handle------", handle)
   } catch(e) {
     console.log('handle task error--------', e)
@@ -47,18 +56,45 @@ async function getAudioQueue(data) {
 //TODO make sure route is behind auth
 export async function GET(req: NextRequest, { params }, res: NextResponse) {
 
-  console.log("audio-req------------------", req)
+  console.log("audio-req------------------")
   const screenPlayVersionId = params["screen-play-version-id"]
+  console.log("audio-req------------------", screenPlayVersionId)
+  const audioVersion = await getScreenPlayAudioVersion(screenPlayVersionId)
+  const status = audioVersion.status
+  if (audioVersion.status !== 'partial') return new NextResponse(JSON.stringify({ status }));
 
-  const audioVersions = await getAudioVersionsByScreenplayId(screenPlayVersionId)
-  try {
-    console.log("audio-versions------------------", audioVersions)
-    await getAudioQueue(audioVersions)
-  } catch(e) {
-    const resp = new NextResponse(JSON.stringify({ error: e }));
-    return resp;
-  }
+  await setAudioVersionInProgress(screenPlayVersionId)
+
+  const session  = await getUser()
+  const userId = session.data.user.id
+
+    const trackHandle = await tasks.trigger<typeof trackAudioRuns>("track-audio-runs-2", {
+      screenPlayVersionId,
+      userId,
+    })
+
+  // const audioVersions = await getAudioVersionsByScreenplayId(screenPlayVersionId)
+
+  // console.log("audio-versions------------------", audioVersions)
+
+  // if (!audioVersions.length) {
+  //   await updateScreenplayVersion(screenPlayVersionId, { status: 'full' })
+  //   return new NextResponse(JSON.stringify({  status: 'full' }));
+  // }
+
+  // if (!audioVersion.total_lines) {
+  //   await setAudioVersionCount(screenPlayVersionId, audioVersions.length)
+  // }
+
+
+  // try {
+    
+  //   await getAudioQueue(audioVersions, screenPlayVersionId)
+  // } catch(e) {
+  //   const resp = new NextResponse(JSON.stringify({ error: e, status }));
+  //   return resp;
+  // }
  
-  const resp = new NextResponse();
+  const resp = new NextResponse(JSON.stringify({ status }));
   return resp;
 }

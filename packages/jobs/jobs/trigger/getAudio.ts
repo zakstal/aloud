@@ -1,6 +1,6 @@
 import { logger, task, wait } from "@trigger.dev/sdk/v3";
 import { getAudioVersion } from '@v1/supabase/queries'
-import { updateAudioVersionUrl } from "@v1/supabase/mutations";
+import { updateAudioVersionUrl, incrementTotalLinesCompleted } from "@v1/supabase/mutations";
 import { createClient } from '@v1/supabase/serviceClient'
 import textToVoiceProvders from "@v1/script-to-audio/voiceApis";
 import fs from 'fs'
@@ -10,17 +10,8 @@ const supabase = createClient();
 
 const BUCKET = 'audio_version_lines'
 
-
-async function getPublicUrl(filePath) {
-  const { data } = supabase.storage
-    .from(BUCKET)
-    .getPublicUrl(filePath);
-
-  return data.publicUrl;
-}
-
 export const getAudioTask = task({
-  id: "get-audio-2",
+  id: "get-audio-4",
   run: async (payload: unknown, { ctx }) => {
     logger.log("payload", { payload })
     const voiceVersion = payload
@@ -68,66 +59,67 @@ export const getAudioTask = task({
     // Get audio from text 
     let res = null
     let fullPath = null
-    try {
-      res = await textToSpeech(text, {
-        voiceId: audioCharacter.voice_id,
-        fileName: outputPath
-      })
-    } catch(e) {
-      throw `Error text to speeach ${e}`
-    }
+    // try {
+    //   res = await textToSpeech(text, {
+    //     voiceId: audioCharacter.voice_id,
+    //     fileName: outputPath
+    //   })
+    // } catch(e) {
+    //   throw `Error text to speeach ${e}`
+    // }
     
     logger.log("res", { res })
     
-    const fileData = fs.readFileSync(outputPath); 
+    // const fileData = fs.readFileSync(outputPath); 
     
-    // Store result in supbabase storage
-    try {
-      const { data: dataStorage, error: errorStorage } = await supabase.storage
-        .from(BUCKET) // Replace with your bucket name
-        .upload(userIdFileName, fileData, {
-          contentType: 'mp3',
-        });
+    // // Store result in supbabase storage
+    // try {
+    //   const { data: dataStorage, error: errorStorage } = await supabase.storage
+    //     .from(BUCKET) // Replace with your bucket name
+    //     .upload(userIdFileName, fileData, {
+    //       contentType: 'mp3',
+    //     });
 
         
-        fullPath = dataStorage?.path
+    //     fullPath = dataStorage?.path
  
-      logger.log('dataStorage', { dataStorage });
+    //   logger.log('dataStorage', { dataStorage });
 
-      logger.log('DATA FROM UPLOAD', { dataStorage })
-      logger.log('voiceVersion.id', { versionId: voiceVersion.id })
-      // Duplicate 
-      if (errorStorage && errorStorage.statusCode !== '409' ) {
-        logger.log('errorStorage', { errorStorage })
-        throw errorStorage
-      }
-    } catch(e) {
-      throw `Error sending data ${e}`
-    } finally {
-      logger.log('file unlinked');
-      fs.unlinkSync(outputPath)
-    }
+    //   logger.log('DATA FROM UPLOAD', { dataStorage })
+    //   logger.log('voiceVersion.id', { versionId: voiceVersion.id })
+    //   // Duplicate 
+    //   if (errorStorage && errorStorage.statusCode !== '409' ) {
+    //     logger.log('errorStorage', { errorStorage })
+    //     throw errorStorage
+    //   }
+    // } catch(e) {
+    //   throw `Error sending data ${e}`
+    // } finally {
+    //   logger.log('file unlinked');
+    //   fs.unlinkSync(outputPath)
+    // }
 
 
-    logger.log("befroe update audio version")
+    // logger.log("befroe update audio version")
     
-    if (!fullPath) return {
-      message: 'fail',
-      error: `fullPath does not exist`
-    }
+    // if (!fullPath) return {
+    //   message: 'fail',
+    //   error: `fullPath does not exist`
+    // }
 
     // Update audio version record with audio url 
     try {
       const { data: dataStorage, error: errorAudio } = await supabase
       .from("audio_version")
       .update({
-        audio_file_url: fullPath,
-        duration_in_seconds: res.audioLengthInSeconds
+        audio_file_url: 'dummypath',
+        // audio_file_url: fullPath,
+        duration_in_seconds: res?.audioLengthInSeconds || 0
       })
       .eq("id", voiceVersion.id);
       
-      logger.log('DATA FROM UPLOAD', { dataStorage })
-      logger.log('voiceVersion.id', { versionId: voiceVersion.id })
+      // logger.log('DATA FROM UPLOAD', { dataStorage })
+      // logger.log('voiceVersion.id', { versionId: voiceVersion.id })
 
       if (errorAudio) {
         console.log("error audioVersion", errorAudio)

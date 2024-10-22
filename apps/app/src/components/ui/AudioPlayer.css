@@ -9,8 +9,10 @@
 }
 
 .SliderTrack {
-  background-color: color(display-p3 0.004 0.039 0.2/0.122);
+  /* background: linear-gradient(to right, color(display-p3 0.004 0.039 0.2/0.122) 20%, color(display-p3 0 0 0/0.4) 20%); */
+  /* background-color: color(display-p3 0.004 0.039 0.2/0.122); */
   /* background-color: color(display-p3 0 0 0/0.8); */
+  transition: all 0.2s;
   position: relative;
   flex-grow: 1;
   border-radius: 9999px;
@@ -20,6 +22,7 @@
 .SliderRange {
   position: absolute;
   background-color: color(display-p3 0.004 0.039 0.2/0.4);
+  /* background-color: hsl(val(--loading-color)); */
   border-radius: 9999px;
   height: 100%;
 }
@@ -48,11 +51,16 @@
   min-width: 139px;
 }
 
+.play-button img {
+  width: 12px;
+  height: 12px;
+}
 .play-button {
+  
   position: relative;
   border-radius: 100%;
   padding: 10px;
-  /* border: 1px solid hsl(var(--border)); */
+  border: 1px solid hsl(var(--border));
   box-shadow: 0 2px 10px color(display-p3 0 0 0/0.3);
   /* background-color: color(display-p3 0.872 0.575 0.572); */
 }
@@ -68,7 +76,7 @@
 .audio-player-container {
   background-color: hsl(var(--editor-background));
   border-color: hsl(var(--border));
-  z-index: 1000;
+  z-index: 100;
   position: relative;
   color: hsl(var(--editor-text-dark))
 }
@@ -82,17 +90,17 @@
 
 @keyframes pulse-effect {
 	0% {
-		transform: scale(0.9);
+		/* transform: scale(0.9); */
 		box-shadow: 0 2px 10px color(display-p3 0 0 0/0.3);
 	}
 
 	70% {
-		transform: scale(1);
+		/* transform: scale(1); */
 		box-shadow: 0 0 0 5px rgba(255, 82, 82, 0);
 	}
 
 	100% {
-		transform: scale(0.9);
+		/* transform: scale(0.9); */
 		box-shadow: 0 0 0 0 rgba(255, 82, 82, 0);
 	}
 }

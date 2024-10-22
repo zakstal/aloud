@@ -1,5 +1,4 @@
 import React from 'react'
-import ReactHowler from 'react-howler'
 import raf from 'raf'
 import Image from "next/image";
 import * as Slider from '@radix-ui/react-slider';
@@ -8,79 +7,105 @@ import './AudioPlayer.css';
 import { getWindow } from '@/getWindow'
 
 let window = getWindow()
-
-// import { FaPlay, FaStop } from 'react-icons/fa'
-// import Switch from './Switch'
-// import Loading from './Loading'
-// import TimeItem from './TimeItem'
 const BUTTON_SIZE = 12
 
-function createThrottle(callback) {
-    let int = null
-    return function(val) {
-        if (int) {
-            clearTimeout(int)
-        }
-
-        int = setTimeout(function() {
-            callback(val)
-        }, 200)
-    }
-}
-
 let audioContext = null
-let totalDuration = 0
 
-async function appendBlob(blobUrl, sourceBuffer, totalDuration, duration, mediaSource) {
+async function appendBlob(arrayBuffer, sourceBuffer, mediaSource) {
     if (!audioContext) {
         audioContext = window && new (window.AudioContext || window.webkitAudioContext)();
     }
-    const response = await fetch(blobUrl);
-    const arrayBuffer = await response.arrayBuffer();
+    
     if (!mediaSource.sourceBuffers.length) return
 
-    if (!sourceBuffer.updating) {
-        sourceBuffer.appendBuffer(arrayBuffer); // Append the new audio data
+    if (sourceBuffer && !sourceBuffer?.updating) {
+        // TODO this QuotaExceededError is not being handled.
+        // a new source buffer may need to be added and then appended to ( mediaSource.addSourceBuffer('audio/mpeg')).
+        // this will require further testing
+        try {
+            sourceBuffer.appendBuffer(arrayBuffer); // Append the new audio data
+        }
+        catch(e) {
+            console.log('e', e.name, e)
+            if (e.name !== 'QuotaExceededError') {
+                throw e;
+            }
+        }
     }
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    totalDuration += audioBuffer.duration
-    duration = totalDuration
 
+    return Number(audioBuffer.duration)
 }               
 
 async function assembleSource(audioUrls, mediaSrcIn, setSrc) {
-    if ('MediaSource' in window && MediaSource.isTypeSupported('audio/mpeg')) {
+    if (!('MediaSource' in window && MediaSource.isTypeSupported('audio/mpeg'))) {
+        console.log('MediaSource API is not supported in this browser.');
+        return
+    }
 
-        let mediaSource = mediaSrcIn
-        if (!mediaSource) {
-            mediaSource = new MediaSource();
-            setSrc(URL.createObjectURL(mediaSource))
+    let mediaSource = mediaSrcIn
+    if (!mediaSource) {
+        mediaSource = new MediaSource();
+        setSrc(URL.createObjectURL(mediaSource), mediaSource)
+    }
+
+    if (mediaSource.readyState !== 'open') {
+        await new Promise((resolve) => mediaSource.addEventListener('sourceopen', resolve))
+    }
+
+    // audioPlayer.play();
+    
+    let sourceBuffer = mediaSource?.sourceBuffers[0]
+    // TODO this QuotaExceededError is not being handled
+    // not sure the best route when adding a source buffer.
+    // you can remove source buffers from mediaSource?.sourceBuffers[0]
+    try {
+
+        sourceBuffer = sourceBuffer ? sourceBuffer : mediaSource.addSourceBuffer('audio/mpeg');
+    } catch(e) {
+        console.log('e add source buffer', e.name, e)
+        if (e.name !== 'QuotaExceededError') {
+            throw e;
         }
+    }
+    const audioUrlLength = audioUrls.length
+    const resultBuffers = new Array(audioUrlLength)
+    let resolved = 0 
+    await new Promise((resolve, reject) => {                
+        for (const urlIdx in audioUrls) {
+            const url = audioUrls[urlIdx]
+            if (!url) continue
 
-        // audioPlayer.play();
-        mediaSource.addEventListener('sourceopen', async function () {
-            const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
-
-
-            for (const url of audioUrls) {
-                if (!url) continue
-
-                if (mediaSource.readyState !== 'open') {
-                    continue
-                }
-
-                await appendBlob(url, sourceBuffer, totalDuration, mediaSource.duration, mediaSource);
+            if (mediaSource.readyState !== 'open') {
+                continue
             }
 
-        });
-    } else {
-        console.log('MediaSource API is not supported in this browser.');
+            fetch(url)
+                .then(response => response.arrayBuffer())
+                .then(arrayBuffer => {
+                    resultBuffers[urlIdx] = arrayBuffer
+                    resolved++
+                    if (resolved === audioUrlLength) {
+                        resolve()
+                    }
+                })
+
+        }
+    })
+    
+    let appendedDuration = 0
+    for (const buffer of resultBuffers) {
+        const duration = await appendBlob(buffer, sourceBuffer, mediaSource);
+        appendedDuration += duration
     }
+
+    return appendedDuration
 } 
 
 class AudioPlayer extends React.Component {
     player = null;
     mediaSrc = null;
+    urlsAssembled = new Set()
 
     constructor(props) {
         super(props)
@@ -123,13 +148,14 @@ class AudioPlayer extends React.Component {
             audioVersionsLength: this.props?.audioVersions?.length,
             currentAudioVersion,
             syntheticDuration,
+            loadedDuration: 0,
             disabled: disabled,
             signedUrlById: {},
             isLoading: false,
             retryOnNoSrc: 0,
             seekedTo: null,
             objSrc: null,
-            isAudioVersions: false,
+            isAudioVersions: true,
         }
 
 
@@ -165,23 +191,14 @@ class AudioPlayer extends React.Component {
         }
     }
  
-    async getSignedUrlNextN(number, isPlaying) {
+    async getSignedUrlNextN(chunkSize, isPlaying) {
+        const audioVersions = this.state.audioVersions
+            .map(audioVersion => audioVersion.audio_file_url)
+            .filter(url => !this.urlsAssembled.has(url))
+            .filter(Boolean)
 
-        const currentAudioVersion = this.state.currentAudioVersion
-
-        let nextIndex = this.state.audioVersionsIdx
-        const batchUrls = []
-        for (let i = nextIndex; i < nextIndex + number; i++ ) {
-
-            const newAudioVersion = this.state.audioVersions[i]
-
-            if (!newAudioVersion) break
-    
-            batchUrls.push(newAudioVersion?.audio_file_url)
-        }
-
-        const batchUrlsAll = batchUrls.filter(Boolean)
-        if (!batchUrlsAll.length) {
+        // TODO this is probably not good to set as it will never be triggered
+        if (!audioVersions.length) {
             this.setState({
                 isAudioVersions: false
             })
@@ -189,29 +206,43 @@ class AudioPlayer extends React.Component {
             return
         }
 
-        const res = await this.props.getSignedUrl(batchUrls.filter(Boolean))
+        // batch get signed urls and append to mediaSrc in chunks
+        for (let i = 0; i < audioVersions.length; i += chunkSize ) {
 
-        const singedUrls = res?.data?.map(obj => obj.signedUrl)
-        console.log('batchUrls =============', batchUrls)
-        console.log('res =============', res)
-        console.log('res =============2', singedUrls)
-        if ((!singedUrls || !singedUrls.length) && isPlaying !== null) {
-            // do some sort of error
-            this.setNotIsLoading(false)
-          
-            return 
-        }
-        
-        console.log("assemble src--------")
-        assembleSource(singedUrls, this.mediaSrc, (src) => {
-            this.setState({
-                objSrc: src
+            const urls = audioVersions.slice(i, i + chunkSize)
+            const res = await this.props.getSignedUrl(urls)
+
+            const singedUrls = res?.data?.map(obj => obj.signedUrl)
+
+            // if no signed urls on the first batch stop loading
+            if (i === 0 && (!singedUrls || !singedUrls.length) && isPlaying !== null) {
+                // do some sort of error
+                this.setNotIsLoading(false)
+            
+                return 
+            }
+
+            const duration = await assembleSource(singedUrls, this.mediaSrc, (src, mediaSrc) => {
+                this.mediaSrc = mediaSrc
+                this.state.objSrc = src
             })
-        })
 
-        if (isPlaying !== null) {
-            this.setNotIsLoading(isPlaying)
+            urls.forEach(url => this.urlsAssembled.add(url));
+
+            this.setState({
+                syntheticDuration: this.state.syntheticDuration < this.state.loadedDuration ? this.state.loadedDuration + duration : this.state.syntheticDuration,
+                loadedDuration: this.state.loadedDuration + duration
+                
+            })
+
+            // If isPlaying is true we want to start playing asap
+            // once the objSrc has data
+            if (isPlaying !== null) {
+                this.setNotIsLoading(isPlaying)
+            }
         }
+
+
     }
 
     componentWillUnmount() {
@@ -245,7 +276,7 @@ class AudioPlayer extends React.Component {
         this.setState({
             loaded: true,
             seekedTo: null,
-            duration: this.state.syntheticDuration || this.player.duration()
+            duration: this.state.syntheticDuration || this?.player?.duration
         })
     }
 
@@ -333,7 +364,7 @@ class AudioPlayer extends React.Component {
     handleSeekingChange(e) {
         const seekChange = parseFloat(e || 0)
      
-        this.player.currentTime = seekChange
+        this.player.currentTime = seekChange || 0
         this.setState({
             isSeeking: true,
             seek: parseFloat(e || 0)
@@ -341,11 +372,6 @@ class AudioPlayer extends React.Component {
     }
 
     renderSeekPos() {
-
-        console.log('this.player.currentTime', this.player.currentTime, this.state.playing)
-        console.log('buffered', this.player.buffered)
-        console.log('this.player.currentTime is', this.player.currentTime === this.state.seek)
-        // console.log('this.player.seek()', this.player.seek(), this.state.audioVersionDuration)
         if (this.player.currentTime >= this.state.duration) {
             this.handleToggle()
         }
@@ -353,7 +379,6 @@ class AudioPlayer extends React.Component {
         if (!this.state.isSeeking) {
             this.setState({
                 seek: this.player.currentTime + this.state.audioVersionDuration
-                // seek: this.player.seek() + this.state.audioVersionDuration
             })
         }
         if (this.state.playing) {
@@ -372,7 +397,6 @@ class AudioPlayer extends React.Component {
     }
 
     setIsLoading(callback) {
-        console.log('setIsLoading-----------------')
         this.setState({
             isLoading: true,
             playing: false
@@ -382,7 +406,7 @@ class AudioPlayer extends React.Component {
     setNotIsLoading(isPlaying) {
         this.setState({
             isLoading: false,
-            playing: isPlaying === undefined ?  true : isPlaying
+            // playing: isPlaying === undefined ?  true : isPlaying
         })
     }
 
@@ -397,10 +421,7 @@ class AudioPlayer extends React.Component {
         if (this.props.src) return this.props.src
         if (!this.state.currentAudioVersion) return ''
         
-        // const id = this.state?.currentAudioVersion?.id
         let url = this.state.objSrc
-        console.log("get id url", JSON.stringify(this.state.signedUrlById, null, 2))
-        console.log("url-----------------", url)
 
         if (!url && !this.state.isLoading && this.state.isAudioVersions !== false) {
             let isPlaying = this.state.playing
@@ -414,6 +435,12 @@ class AudioPlayer extends React.Component {
     render() {
         const disabledClass = this.state.disabled ? 'disabled' : ''
         const src = this.getSrc()
+
+        const percentLoaded = Number(((this.state.loadedDuration / this.state.syntheticDuration) * 100).toFixed())
+        console.log("percentLoaded", percentLoaded)
+        console.log("this.state.loadedDuration / this.state.syntheticDuration", this.state.loadedDuration / this.state.syntheticDuration)
+        console.log("this.state.loadedDuration", this.state.loadedDuration)
+        console.log("this.state.syntheticDuration", this.state.syntheticDuration)
 
         const finaLength = this.state.syntheticDuration ? new Date(this.state.syntheticDuration * 1000).toISOString().substring(14, 19) : '00'
         const currentLength = this.state.seek ? new Date(this.state.seek * 1000).toISOString().substring(14, 19) : '00'
@@ -474,7 +501,7 @@ class AudioPlayer extends React.Component {
                         onValueChange={this.handleSeekingChange}
                         onValueCommit={this.handleMouseUpSeek}
                     >
-                        <Slider.Track className="SliderTrack">
+                        <Slider.Track className="SliderTrack" style={{ background: `linear-gradient(to right, color(display-p3 0 0 0/0.3) ${percentLoaded}%, color(display-p3 0.004 0.039 0.2/0.122) ${percentLoaded}%)`}}>
                             <Slider.Range className="SliderRange" />
                         </Slider.Track>
                         <Slider.Thumb className={'SliderThumb ' + disabledClass} aria-label="Volume" />

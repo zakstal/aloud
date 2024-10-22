@@ -10,14 +10,15 @@
     "typecheck": "tsc --noEmit"
   },
   "exports": {
-    "./triggersExample": "./jobs/triggers/getAudio.ts"
+    "./getAudioTask": "./jobs/triggers/getAudio.ts",
+    "./trackAudioRuns": "./jobs/triggers/trackAudioRuns.ts"
   },
   "dependencies": {
     "@v1/supabase": "workspace:*",
     "@v1/script-to-audio": "workspace:*",
-    "@trigger.dev/sdk": "3.0.9"
+    "@trigger.dev/sdk": "3.0.13"
   },
   "devDependencies": {
-    "@trigger.dev/build": "^3.0.9"
+    "@trigger.dev/build": "3.0.13"
   }
 }

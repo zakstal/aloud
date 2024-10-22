@@ -1,5 +1,6 @@
 :root {
     --hw: 70px;
+    --bw: 5px;
     --color: rgba(26, 44, 30, .8);
 }
 
@@ -7,7 +8,7 @@
 .loader {
   width: var(--hw);
   height: var(--hw);
-  border: 5px solid var(--color);
+  border: var(--bw) solid var(--color);
   border-radius: 50%;
   display: inline-block;
   box-sizing: border-box;
@@ -19,7 +20,7 @@
   position: absolute;
   width: var(--hw);
   height: var(--hw);
-  border: 5px solid var(--color);
+  border: var(--bw) solid var(--color);
   border-radius: 50%;
   display: inline-block;
   box-sizing: border-box;

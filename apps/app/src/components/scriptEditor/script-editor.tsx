@@ -116,14 +116,14 @@ export const ScriptEditor =({
 
     return (
         <>
-        <button id="savebutton" onClick={async () => {
+        {/* <button id="savebutton" onClick={async () => {
             const changes = getChanges(scriptTokens, tokens, screenplayId, characters)
             console.log("save1-------------", screenplayId, characters)
             console.log("save0-------------", changes)
             const res = await saveLines(changes)
             console.log('res----', res)
 
-        }}>Save----</button>
+        }}>Save----</button> */}
         
         <div
             autoFocus

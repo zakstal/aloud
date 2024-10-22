@@ -68,10 +68,15 @@ export async function getScreenPlay(screenPlayId) {
           )
         ),
         audio_screenplay_versions (
+          status,
           id,
+          total_lines,
+          total_lines_completed,
           version_number,
           audio_file_url,
           audio_version (
+            id,
+            line_id,
             audio_file_url,
             duration_in_seconds
           )
@@ -115,6 +120,7 @@ export async function getAudioVersionsByScreenplayId(screenplayVersionId: string
         id,
         screenplay_id,
         audio_file_url,
+        line_id,
         version_number,
         created_at,
         audio_screenplay_version_id,
@@ -122,7 +128,8 @@ export async function getAudioVersionsByScreenplayId(screenplayVersionId: string
         lines (
           id,
           text,
-          order
+          order,
+          deleted
         ),
         audio_character_version (
           id,
@@ -134,8 +141,7 @@ export async function getAudioVersionsByScreenplayId(screenplayVersionId: string
       `)
       .eq("audio_screenplay_version_id", screenplayVersionId) // Filter by screenplay_id
       .eq('lines.deleted', false) 
-      .not("audio_file_url", "is", null)
-      // .gte("lines(order)", minOrderNumber || 0)  // Filter where lines.order is greater than or equal to minOrderNumber
+      .is("audio_file_url", null)
       .order("lines(order)", { ascending: false });
 
     if (error) {
@@ -226,4 +232,28 @@ export async function getSignedUrl(filePath: string | string[], bucketName = BUC
   }
 
   return data.signedUrl;
+}
+
+
+export async function getScreenPlayAudioVersion(audioVersionId: string) {
+  const supabase = createClient();
+  console.log('Checking if audioVersionId is in progress:', audioVersionId);
+  
+  try {
+    const { data, error } = await supabase
+      .from("audio_screenplay_versions")
+      .select("status, job_id, id, total_lines")
+      .eq("id", audioVersionId)
+      .single(); // Ensure only one row is returned
+
+    if (error) {
+      console.log("error checking status", error);
+      throw error;
+    }
+
+    return data;  // The status is not 'inProgress'
+  } catch (error) {
+    console.error("Error checking audio version status:", error);
+    throw error;
+  }
 }

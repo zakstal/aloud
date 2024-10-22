@@ -1,0 +1,134 @@
+/* * {
+    box-sizing: border-box;
+  }
+  
+  html, body {
+    height: 100%;
+    font-size: 24px;
+  }
+  
+  body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    color: #D2D6E0;
+    background: #576892;
+  } */
+  
+  .wrapper {
+    max-width: 5px;
+    border: 1px solid green;
+  }
+  
+  .loaderpro:hover .loaderpro__circle {
+    opacity: 0.2;
+  }
+  
+  .loaderpro:hover .loaderpro__count.progress {
+    display: none;
+  }
+
+  .loaderpro__count.cancel {
+    display: none;
+  }
+  
+  .loaderpro:hover .loaderpro__count.cancel {
+    display: block;
+    cursor: pointer;
+  }
+
+  .loaderpro {
+    margin-left: -10px;
+    position: relative;
+    z-index: 0;
+    max-width: 80px;
+    max-height: 80px;
+    width: calc(100vmin - ( 30px * 2 ));
+
+  }
+  .loaderpro:before {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 0;
+    padding-bottom: 80%;
+  }
+  .loaderpro__graphics {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+  }
+  .loaderpro__circle {
+    opacity: 1;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotateZ(-90deg);
+    transition: opacity 0.2s;
+  }
+  .loaderpro__track, .loaderpro__bar, .loaderpro__animated-circle {
+    r: calc(50% - (30px / 2));
+    fill: none;
+    stroke-width: 3px;
+    vector-effect: non-scaling-stroke;
+  }
+  .loaderpro__bar {
+    stroke: hsl(val(--loading-color));
+    /* stroke: #010101; */
+    stroke-linecap: round;
+    stroke-opacity: 0;
+    transition: stroke-dashoffset 0.15s linear;
+  }
+  .loaderpro.is-reseting .loaderpro__bar {
+    transition: stroke-dashoffset 0s linear;
+  }
+  .loaderpro__track {
+    stroke: #8E99B5;
+    /* opacity: 0.5; */
+  }
+  .loaderpro__count {
+    /* font-weight: 900; */
+    font-size: 10px;
+  }
+
+  .loaderpro__animated-circle {
+    stroke: #ff6347; /* The color of the animated circle */
+    stroke-dasharray: 251px; /* Circumference of the circle */
+    stroke-opacity: 0.5;
+    animation: none;
+    transform-origin: center;
+    transform-box: fill-box;
+}
+
+/* Animation when the prop `isAnimating` is true */
+.loaderpro__animated-circle--animate {
+    animation: rotate 2s linear infinite;
+}
+
+.loaderpro__animated-circle {
+    stroke: hsl(val(--loading-color));
+    stroke-linecap: round;
+    stroke-opacity: 0;
+    transition: stroke-dashoffset 0.15s linear;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}

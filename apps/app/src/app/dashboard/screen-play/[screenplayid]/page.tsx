@@ -10,8 +10,8 @@ import { processAudio } from '@/actions/screenPlays/process-audio'
 import { startScreenPlay } from '@/actions/screenPlays/create-screenplay'
 import { getSignedUrl } from '@/actions/screenPlays/get-signed-url'
 import { createClient } from "@v1/supabase/client";
+import { useToast } from '@/components/ui/use-toast';
 const supabase = createClient();
-
 type Character = { name: string, gender: string | null }
 
 const breadcrumbItems = [
@@ -40,12 +40,20 @@ function updateCharacter(character, characters, setCharacters) {
 }
 
 
-function updateLines (audioVersions, setAudioVersions) {
-  if (!audioVersions) return
-  const newAudioVersions = audioVersions.sort((a, b) => {
+function updateLines (lines, setLines) {
+  if (!lines) return
+  const newLInes = lines.sort((a, b) => {
     return a.order - b.order
   })
-  setAudioVersions(newAudioVersions)
+  setLines(newLInes)
+}
+
+function updateItemInArray(item, array) {
+  const index = array.findIndex((arrItem) => arrItem.id === item.id);
+
+  if (index !== -1) {
+    array[index] = { ...array[index], ...item }; // Update the item in the array
+  }
 }
 
 export default function Page() {
@@ -60,6 +68,9 @@ export default function Page() {
   const [charactersTemp, setCharactersTemp ] = useState([])
   const [lines, setLines ] = useState([])
   const [audioVersions, setAudioVersions ] = useState([])
+  const [audioScreenPlayVersion, setAudioScreenPlayVersion ] = useState([])
+  const { toast } = useToast();
+
 
   if (!screenPlay.error && screenPlay?.data?.data) {
     // console.log('screenPlay&&&', screenPlay?.data?.data)
@@ -68,35 +79,88 @@ export default function Page() {
   }
 
   const data = screenPlay?.data?.data && screenPlay?.data?.data
-
-  const audioScreenPlayVersion = data?.audio_screenplay_versions && data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1]
+  
   const audioVersionNumber = audioScreenPlayVersion?.version_number
 
+
   useEffect(() => {
-    console.log('connect to supeabase realtime----------------')
     if (!audioScreenPlayVersion) {
-      console.log('no audioScreenPlayVersion')
       return
     }
-    const channel = supabase
-      .channel('*')
-      .on('postgres_changes', 
-        { 
-          event: '*',
-          schema: 'public',
-          table: 'audio_version',
-          filter: 'screenplay_id=eq.' + audioScreenPlayVersion?.id
-        }
-        , (payload) =>
-        console.log("paylaod-------------", payload)
-        // setPosts((posts: any) => [...posts, payload.new])
-      )
-      .subscribe()
+
+    const channel = supabase.channel('*');
+
+    // Subscribe to audio_screenplay_versions table changes
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'audio_screenplay_versions',
+        filter: 'id=eq.' + audioScreenPlayVersion?.id
+      },
+      (payload) => {
+        console.log("----------------------audio_screenplay_versions", payload)
+        setAudioScreenPlayVersion({
+          ...audioScreenPlayVersion,
+          ...payload.new,
+        })
+      }
+    );
+  
+    // Subscribe to audio_version table changes
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'audio_version',
+        // Uncomment if you want to filter by audio_screenplay_version_id
+        // filter: 'audio_screenplay_version_id=eq.' + audioScreenPlayVersion?.id
+      },
+      /**
+       * 
+       * @param payload 
+       * Example:
+       * {
+          "schema": "public",
+          "table": "audio_version",
+          "commit_timestamp": "2024-10-17T20:26:12.633Z",
+          "eventType": "UPDATE",
+          "new": {
+              "audio_character_version_id": "cf1513b9-753c-4b6c-84d4-506f71eae52d",
+              "audio_file_url": "091b4dc3-c34c-4ad3-87da-682bcf40d867/dc35ece7-d08a-4240-a3ad-54506fd19a50-44-elevenLabs-George.mp3",
+              "audio_screenplay_version_id": "dc35ece7-d08a-4240-a3ad-54506fd19a50",
+              "created_at": "2024-10-17T20:16:05.43333+00:00",
+              "duration_in_seconds": 13.142,
+              "id": "26903fa9-7df3-4926-a1de-2fcec6684dc4",
+              "line_id": "bf346567-26a9-47de-bbca-93dd33ec094f",
+              "order": null,
+              "screenplay_id": "dd0a8ddd-69ab-4828-bd8a-af2413fab29a",
+              "version_number": 1
+          },
+          "old": {
+              "id": "26903fa9-7df3-4926-a1de-2fcec6684dc4"
+          },
+          "errors": null
+      }
+       */
+      (payload) => {
+
+        // assuming for now that only inserts will be triggered
+
+        console.log("----------------------audio_version", payload)
+        updateItemInArray(payload.new, audioVersions)
+      }
+    );
+
+    channel.subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
   }, [screenPlay])
+
 
   useEffect(() => {
     if (params?.screenplayid) {
@@ -111,6 +175,7 @@ export default function Page() {
           updateLines(data?.lines, setLines)
           setScreenPlay(screenPlay)
           setCharacters(data?.characters || [])
+          setAudioScreenPlayVersion(audio_screenplay_version)
       })
       .finally(() => {
         setIsLoading(false)
@@ -119,8 +184,6 @@ export default function Page() {
 
   }, [params])
 
-
-  console.log('characters---------', characters)
   // TODO add type for character
   // TODO add type for audio character version
   return (
@@ -147,16 +210,57 @@ export default function Page() {
           }}
           characters={[...characters, ...charactersTemp]}
           voices={voices}
-          audioScreenPlayVersion={audioScreenPlayVersion?.id}
+          audioScreenPlayVersion={audioScreenPlayVersion}
           audioVersionNumber={audioVersionNumber}
           audioVersions={audioVersions}
           lines={lines}
           scriptTokens={data?.screen_play_fountain}
           processAudio={async () => {
-            processAudio({ screenPlayVersionId: audioScreenPlayVersion.id })
+            const res = await processAudio({ screenPlayVersionId: audioScreenPlayVersion.id })
+
+            let data = null
+            let error = false
+            if (res.ok) {
+              try {
+
+                data = await res.json()
+              } catch(e) {
+                console.log('error', e)
+                data = '' + e
+                error = true
+              }
+            } else {
+              error = true
+              data = await res.text()
+            }
+            console.log("process audio res", data)
+
+            if (error) {
+              toast({
+                title: 'Process audio error',
+                description: data
+              });
+            }
+            
+            if (data.status === 'inProgress') {
+              toast({
+                title: 'Process audio',
+                description: 'Your audio is already processing!'
+              });
+            }
+
+            if (data.status === 'full') {
+              toast({
+                title: 'Process audio',
+                description: 'Audio has already been processed.'
+              });
+            }
+            return data
           }}
           onSelectVoice={async (voice: Voice, character) => {
-            const audioCharacterVersion = character.audio_character_version.find(version => version.version_number === audioVersionNumber)
+            // get the version or the latest
+            let audioCharacterVersion = character.audio_character_version.find(version => version.version_number === audioVersionNumber)
+            audioCharacterVersion = audioCharacterVersion ? audioCharacterVersion : character.audio_character_version[character.audio_character_version.length - 1]
             const audioCharacterVersionId = audioCharacterVersion?.id
             // TODO add some error handling
             try {
@@ -167,6 +271,7 @@ export default function Page() {
                 voice_name: voice.name,
               })
 
+              console.log("res", res)
               if (res.data.error) {
                 throw 'Error updating voice'
               }

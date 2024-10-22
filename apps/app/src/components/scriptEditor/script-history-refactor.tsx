@@ -177,7 +177,6 @@ export class ScriptHistory extends History {
         if (!this.dbTokenVersion) return
         const diffs = await this.diffs(this.dbTokenVersion);
 
-        console.log("diffs-------------------", this.dbTokenVersion, diffs)
         const diffsToApply = !this.lastInsertedId ? diffs : diffs.filter((update: Diff) => update.id > this.lastInsertedId)
         if (!diffs || !diffs.length) return
 
