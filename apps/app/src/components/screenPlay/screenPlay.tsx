@@ -17,6 +17,26 @@ import { getSignedUrl } from '@/actions/screenPlays/get-signed-url'
 import { updateOrCreateLines } from '@/actions/screenPlays/update-lines'
 import { cancelProcessAudio } from '@/actions/screenPlays/cancel-process-audio'
 import { ProgressLoader } from '@/components/progressLoader';
+import * as Tooltip from "@radix-ui/react-tooltip";
+
+
+const TooltipContainer = ({ children, text, sideOffset = 1 }) => {
+	return (
+		<Tooltip.Provider>
+			<Tooltip.Root delayDuration={0}>
+				<Tooltip.Trigger asChild>
+					{children}
+				</Tooltip.Trigger>
+				<Tooltip.Portal>
+					<Tooltip.Content className="TooltipContent" sideOffset={sideOffset}>
+                            {text}
+						<Tooltip.Arrow className="TooltipArrow" />
+					</Tooltip.Content>
+				</Tooltip.Portal>
+			</Tooltip.Root>
+		</Tooltip.Provider>
+	);
+};
 
 function GetAudio({ audioBeingGotten, processAudio, setAudioBeingGotten, audioScreenPlayVersion }) {
     const status = audioScreenPlayVersion.status
@@ -26,11 +46,9 @@ function GetAudio({ audioBeingGotten, processAudio, setAudioBeingGotten, audioSc
     if (status === 'full') return (
         <div className="text-sm px-4 completed py-2 border-1 rounded-2xl">Completed</div>
     )
-    // if (status === 'full') return (
-    //     <SplatButton/>
-    // )
+    
 
-    if (status === 'inProgress') return (
+    if (status === 'inProgress' ) return (
         <div className="flex gap-2 items-center text-sm">
             <ProgressLoader
                 className="progress-loading "
@@ -43,6 +61,34 @@ function GetAudio({ audioBeingGotten, processAudio, setAudioBeingGotten, audioSc
                     console.log('res', res)
                 }}
             />
+            
+            <span>{totalLinesCompleted}</span>
+            /
+            <span>{totalLines}</span>
+            <span>lines</span>
+        </div>
+    )
+  
+    if (status === 'partial' || status === 'failed') return (
+        <div className="flex gap-2 items-center text-sm">
+            <TooltipContainer text="There were some... issues getting your audio. Feel free to try again.">
+                <Button
+                    type="button"
+                    className={cn('flex gap-3', status === 'failed' && "failed")}
+                    onClick={async () => {
+                        setAudioBeingGotten(true)
+                        const res = await processAudio()
+                        setAudioBeingGotten(false)
+                        // if (['inProgress', 'full'].includes(res.status)) {
+                        // }
+                    }}
+                    variant="outline"
+                    size="sm"
+                >
+                    <span className=""> {!audioBeingGotten ? "Finish Audio!" : "in progress" }</span>
+                    { audioBeingGotten ? <Progress hw={20} bw={2} className=""/> : null}
+                </Button>
+            </TooltipContainer>
             
             <span>{totalLinesCompleted}</span>
             /
@@ -92,7 +138,11 @@ export default function ScreenPlayConatiner({
   const [selectedCharacter, setSelectedCharacter] = useState(null)
   const [currentLinePlaying, setCurrentLinePlaying] = useState(null)
   const [audioBeingGotten, setAudioBeingGotten] = useState(false)
+  const [currentlyPlayingLine, setCurrentlyPlayingLine] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
 
+  console.log('currentlyPlayingLine', currentlyPlayingLine)
+  console.log('isPlaying', isPlaying)
   if (isLoading) return <div className="flex justify-center h-screen items-center"><Progress /></div>
 
   return (
@@ -166,6 +216,8 @@ export default function ScreenPlayConatiner({
                     setCharacters={setCharacters}
                     screenplayId={screenplayId}
                     characters={characters}
+                    currentTokenId={currentlyPlayingLine}
+                    highlightToken={isPlaying}
                 />
                 : <div className={'script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-4xl font-courier script-editor'}>
                     <h1 className="text-3xl pb-6 pt-16 tracking-tight text-center ">🎉  Welcome! 🎊</h1>
@@ -186,6 +238,8 @@ export default function ScreenPlayConatiner({
             audioVersions={audioVersions}
             setCurrentLinePlaying={setCurrentLinePlaying}
             getSignedUrl={(url: string) => getSignedUrl({ url })}
+            setCurrentlyPlayingLine={setCurrentlyPlayingLine}
+            setIsPlaying={setIsPlaying}
         />
     </div>
     </>

@@ -61,14 +61,14 @@ export async function GET(req: NextRequest, { params }, res: NextResponse) {
   console.log("audio-req------------------", screenPlayVersionId)
   const audioVersion = await getScreenPlayAudioVersion(screenPlayVersionId)
   const status = audioVersion.status
-  if (audioVersion.status !== 'partial') return new NextResponse(JSON.stringify({ status }));
+  if (!['unstarted', 'partial', 'failed'].includes(audioVersion.status)) return new NextResponse(JSON.stringify({ status }));
 
   await setAudioVersionInProgress(screenPlayVersionId)
 
   const session  = await getUser()
   const userId = session.data.user.id
 
-    const trackHandle = await tasks.trigger<typeof trackAudioRuns>("track-audio-runs-2", {
+    const trackHandle = await tasks.trigger<typeof trackAudioRuns>("track-audio-runs-4", {
       screenPlayVersionId,
       userId,
     })

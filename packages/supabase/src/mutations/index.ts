@@ -235,6 +235,7 @@ export async function createScreenPlay(
         version_number: 1,
         audio_file_url: 'n/a',
         is_final: false,
+        status: 'unstarted'
       })
       .select("id")
       .single(); // Fetch the inserted screenplay's ID

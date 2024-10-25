@@ -53,6 +53,13 @@ import type { getAudioTask } from "./getAudio";
 //   }
 // }
 
+/**
+ * This job is for triggering and tradcking the progress of the getAudio jobs
+ * NB: these supabase functions are here because the credentials are different when running in a different environment.
+ */
+
+const getId = () => (Math.random() + 1).toString(36).substring(7);
+
 export async function getScreenPlayAudioVersion(audioVersionId: string) {
   const supabase = createClient();
   console.log('Checking if audioVersionId is in progress:', audioVersionId);
@@ -278,6 +285,31 @@ export async function incrementTotalLinesCompleted(audioVersionId: string) {
     }
   }
 
+  async function fetchRuns(config) {
+    logger.info('fetchRuns in')
+    const runsData = []
+    let page = await runs.list(config);
+  
+    logger.info('page in', { page })
+    // Process the first page
+    for (const run of page.data) {
+        runsData.push(run);
+    }
+  
+    // Fetch and process subsequent pages
+    logger.info('before while in')
+    while (page.hasNextPage()) {
+      logger.info('while in', { page })
+      page = await page.getNextPage();
+      for (const run of page.data) {
+        runsData.push(run);
+      }
+    }
+
+    logger.info('before end in')
+    return runsData
+  }
+
 /**
  {
    batchId: 'batch_rkyr2it9uknwztb6goqq9',
@@ -289,20 +321,31 @@ export async function incrementTotalLinesCompleted(audioVersionId: string) {
    ]
  }
  */
+const aloudMeta = {
+  batchId: null
+}
 export const trackAudioRuns = task({
-  id: "track-audio-runs-2",
+  id: "track-audio-runs-4",
+  cleanup: async (payload, { ctx }) => {
+    logger.info("cleanup payLoad", aloudMeta)
+    logger.info("cleanup ctx", ctx)
+  },
+  onFailure: async (payload, error, { ctx }) => {
+    logger.info("Task failed", ctx.task.id, error);
+  },
   run: async (payload: unknown, { ctx }) => {
     let batch = null
+    let tag = null
     try {
       const screenPlayVersionId = payload.screenPlayVersionId
-
+      
+      // TODO batch to 50 or 100 at a time
       const audioVersion = await getScreenPlayAudioVersion(screenPlayVersionId)
 
       await setAudioVersionInProgress(screenPlayVersionId)
     
-      const audioVersions = await getAudioVersionsByScreenplayId(screenPlayVersionId)
-    
-      logger.info("audio-versions------------------", audioVersions.length)
+      const audioVersionsUnsorted = await getAudioVersionsByScreenplayId(screenPlayVersionId)
+      const audioVersions = audioVersionsUnsorted.reverse()
     
       if (!audioVersions.length) {
         await updateScreenplayVersion(screenPlayVersionId, { status: 'full' })
@@ -314,30 +357,30 @@ export const trackAudioRuns = task({
       }
     
     
+      tag = "get-audio-4-" + getId()
       
-      
-      batch = await tasks.batchTrigger<typeof getAudioTask>("get-audio-4", audioVersions.map((u) => {
+      batch = await tasks.batchTrigger<typeof getAudioTask>('get-audio-4', audioVersions.map((u) => {
       // const handle = await tasks.batchTrigger<typeof getAudioTask>("get-audio-2", data.slice(0, 1).map((u) => {
         u.userId = payload.userId
-        return { payload: u }
+        const options = { tags: tag }
+        return { payload: u, options }
       }));
-  
-      // const trackHandle = await tasks.trigger<typeof trackAudioRuns>("track-audio-runs-1", {
-      //   batch: handle,
-      //   screenPlayVersionId,
-      // })
-  
+
       console.log("handle------", batch)
+      console.log("tag------", tag)
+
       await updateJobId(screenPlayVersionId, batch?.batchId)
     } catch(e) {
       logger.error('Error--', e)
       return e;
     }
 
+
     try {
 
       
       const numberOfRuns = batch.runs.length
+      const runsSet = new Set(batch.runs)
       let isProcessing = false
       await new Promise((resolve) => {  
         const inter = setInterval(async () => {
@@ -345,19 +388,54 @@ export const trackAudioRuns = task({
           if (isProcessing) return
           isProcessing = true
           
-          let completed = await runs.list({
-            status: ['COMPLETED' ],
-            // status: ['WAITING_FOR_DEPLOY', 'QUEUED', 'EXECUTING', 'REATTEMPTING', 'FROZEN' ],
-            bulkAction: batch?.batchId
+          // const completed = .filter();
+         
+          logger.info('fetchRuns first')
+          let all = await fetchRuns({
+            status: ['FAILED', 'COMPLETED' ],
+            bulkAction: batch?.batchId,
+            tag,
           });
-          const numberCompleted = completed.data && completed.data.length
+          logger.info('fetchRuns end')
+
+          const completed = all.filter(item => item.status === 'COMPLETED')
+          const failed = all.filter(item => item.status === 'FAILED')
+          logger.info('completed', completed)
+          logger.info('failed', failed)
+          
+          const numberCompleted = completed?.length || 0
+          const numberFailed = failed?.length || 0
+          logger.info('runs', {numberOfRuns, numberFailed, numberCompleted})
+          
+          await incrementTotalLinesCompleted(payload.screenPlayVersionId, numberCompleted)
+
           if (numberCompleted != null && numberCompleted === numberOfRuns) {
             // TODO we may need to handle errors
             clearTimeout(inter)
             resolve()
           }
+        
+          if (numberFailed === numberOfRuns) {
+            // TODO we may need to handle errors
+            clearTimeout(inter)
+            await updateScreenplayVersion(payload.screenPlayVersionId, {
+              status: 'failed'
+            })
+            
+            resolve()
+          }
+       
+          if (numberFailed !== 0 && numberCompleted !== 0 && numberFailed + numberCompleted === numberOfRuns) {
+            // TODO we may need to handle errors
+            clearTimeout(inter)
+            await updateScreenplayVersion(payload.screenPlayVersionId, {
+              status: 'partial'
+            })
+
+            resolve()
+          }
           
-          await incrementTotalLinesCompleted(payload.screenPlayVersionId, numberCompleted)
+          
           
           isProcessing = false
         }, 2000)

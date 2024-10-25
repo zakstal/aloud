@@ -78,7 +78,10 @@ export async function getScreenPlay(screenPlayId) {
             id,
             line_id,
             audio_file_url,
-            duration_in_seconds
+            duration_in_seconds,
+            lines (
+              order
+            )
           )
         ),
         characters (

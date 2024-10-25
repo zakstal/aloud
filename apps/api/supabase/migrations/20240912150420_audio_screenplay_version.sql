@@ -7,7 +7,7 @@ create table public.audio_screenplay_versions (
     version_number int not null, -- to track different versions
     audio_file_url text, -- URL to the full/partial assembled audio file
     is_final boolean not null default false, -- flag to indicate if this is the final version
-    status text check (status in ('partial', 'full', 'inProgress')) default 'partial',
+    status text check (status in ('unstarted', 'partial', 'full', 'inProgress', 'failed')) default 'unstarted',
     created_at timestamptz not null default now(),
     constraint fk_audio_screenplay_screenplay foreign key (screenplay_id) references public.screenplays(id) on delete cascade
 );

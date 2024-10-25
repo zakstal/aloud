@@ -71,9 +71,12 @@
 
 .audio-player-container.disabled {
     opacity: 0.3;
+    transform: translateY(100%);
 }
 
 .audio-player-container {
+  transform: translateY(0);
+  transition: all 0.2s;
   background-color: hsl(var(--editor-background));
   border-color: hsl(var(--border));
   z-index: 100;

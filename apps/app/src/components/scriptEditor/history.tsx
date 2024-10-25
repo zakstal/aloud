@@ -21,7 +21,7 @@ function last(arr: any) {
 type commitChangeCallbackType = ((noUpdate: boolean) => void) | null
 
 
-type ChangeType = { 
+export type ChangeType = { 
     type: UpdateType, 
     oldValue?: any | null, 
     newValue?: any | null, 

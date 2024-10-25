@@ -67,3 +67,12 @@
     left: -90px;
    
 }
+
+.script-editor > *.highlight {
+    background: #ffffba;
+}
+
+.script-editor > * {
+    background: transparent;
+    transition: all 0.4s
+}

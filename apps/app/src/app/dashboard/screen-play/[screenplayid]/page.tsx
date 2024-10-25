@@ -8,7 +8,6 @@ import ScreenPlayConatiner from '@/components/screenPlay/screenPlay'
 import voices, { Voice } from '@v1/script-to-audio/voices'
 import { processAudio } from '@/actions/screenPlays/process-audio'
 import { startScreenPlay } from '@/actions/screenPlays/create-screenplay'
-import { getSignedUrl } from '@/actions/screenPlays/get-signed-url'
 import { createClient } from "@v1/supabase/client";
 import { useToast } from '@/components/ui/use-toast';
 const supabase = createClient();
@@ -56,6 +55,15 @@ function updateItemInArray(item, array) {
   }
 }
 
+const statusToastMessage = {
+  failed: 'There was an issue getting your audio and none of your audio was retrieved. This is likely a system problm.',
+  partial: 'There was an issue getting some of your audio. Try again.',
+  full: 'Audio retrived!',
+  inProgress: 'Were getting your audio!',
+}
+
+const statusAudioVersion = {}
+
 export default function Page() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -101,6 +109,23 @@ export default function Page() {
       },
       (payload) => {
         console.log("----------------------audio_screenplay_versions", payload)
+
+        const lastStatus = statusAudioVersion[payload?.new?.id]
+        
+        const message = statusToastMessage[payload?.new?.status]
+        
+        if (message && payload?.new?.status !== lastStatus) {
+          statusAudioVersion[payload?.new?.id] = payload?.new?.status
+          toast({
+            title: 'Process audio info',
+            description: message
+          });
+        }
+
+        if (payload?.new?.id && !lastStatus) {
+          statusAudioVersion[payload?.new?.id] = payload?.new?.status
+        }
+
         setAudioScreenPlayVersion({
           ...audioScreenPlayVersion,
           ...payload.new,
@@ -116,7 +141,7 @@ export default function Page() {
         schema: 'public',
         table: 'audio_version',
         // Uncomment if you want to filter by audio_screenplay_version_id
-        // filter: 'audio_screenplay_version_id=eq.' + audioScreenPlayVersion?.id
+        filter: 'audio_screenplay_version_id=eq.' + audioScreenPlayVersion?.id
       },
       /**
        * 
@@ -151,6 +176,7 @@ export default function Page() {
 
         console.log("----------------------audio_version", payload)
         updateItemInArray(payload.new, audioVersions)
+        setAudioVersions([...audioVersions])
       }
     );
 
@@ -168,8 +194,9 @@ export default function Page() {
         .then((screenPlay) => {
           const data = screenPlay?.data?.data && screenPlay?.data?.data
           const audio_screenplay_version = data?.audio_screenplay_versions && data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1]
-          const audio_version = audio_screenplay_version?.audio_version
+          const audio_version = audio_screenplay_version?.audio_version.sort((a, b) => a.lines.order - b.lines.order) // this should be plural but the db
 
+          console.log('audio_version-----------------', audio_version)
           console.log('data-----------------', data)
           setAudioVersions(audio_version)
           updateLines(data?.lines, setLines)
@@ -183,6 +210,8 @@ export default function Page() {
     }
 
   }, [params])
+
+  console.log("audioVersions=========", audioVersions)
 
   // TODO add type for character
   // TODO add type for audio character version

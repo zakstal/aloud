@@ -6,10 +6,10 @@ import { runs } from "@trigger.dev/sdk/v3";
 import { authActionClient } from "@/actions/safe-action";
 import { getScreenPlayAudioVersion } from "@v1/supabase/queries";
 import { updateScreenplayVersion } from "@v1/supabase/mutations";
-import { createCancelProcessAudio } from "./schema-cancel-process-audio";
+import { checkOnJobSchema } from "./schema-check-on-job";
 
 export const cancelProcessAudio = authActionClient
-  .schema(createCancelProcessAudio)
+  .schema(checkOnJobSchema)
   .metadata({
     name: "cance-process-audio",
   })
@@ -23,7 +23,7 @@ export const cancelProcessAudio = authActionClient
         if (audioVersion?.job_id) {
             
             let page = await runs.list({
-                status: ['WAITING_FOR_DEPLOY', 'QUEUED', 'EXECUTING', 'REATTEMPTING', 'FROZEN' ],
+                status: ['WAITING_FOR_DEPLOY', 'QUEUED', 'EXECUTING', 'REATTEMPTING', 'FROZEN', 'FAILED' ],
                 bulkAction: audioVersion?.job_id
             });
 
@@ -35,9 +35,7 @@ export const cancelProcessAudio = authActionClient
             }
         }
 
-        const status = audioVersion?.total_lines_completed > 0 ? 'partial' : 'unstarted'
-
-        await updateScreenplayVersion(input.audioVersionId, { status })
+        await updateScreenplayVersion(input.audioVersionId, { status: 'unstarted'})
         return null
     } catch (e) {
         console.log('error getting signed url', e)

@@ -16,7 +16,9 @@ export const getAudioTask = task({
     logger.log("payload", { payload })
     const voiceVersion = payload
     const audioCharacter = voiceVersion.audio_character_version
-    const audioProviderName = audioCharacter.voice_data.audioProvider
+    // const audioProviderName = audioCharacter.voice_data.audioProvider
+    const audioProviderName = 'test'
+    // const textToSpeech = textToVoiceProvders['test']
     const textToSpeech = textToVoiceProvders[audioProviderName]
     const orderNumber = voiceVersion.lines.order
     const versionId = voiceVersion.audio_screenplay_version_id
@@ -59,61 +61,65 @@ export const getAudioTask = task({
     // Get audio from text 
     let res = null
     let fullPath = null
-    // try {
-    //   res = await textToSpeech(text, {
-    //     voiceId: audioCharacter.voice_id,
-    //     fileName: outputPath
-    //   })
-    // } catch(e) {
-    //   throw `Error text to speeach ${e}`
-    // }
+    try {
+      res = await textToSpeech(text, {
+        voiceId: audioCharacter.voice_id,
+        fileName: outputPath
+      })
+    } catch(e) {
+      throw `Error text to speeach ${e}`
+    }
     
     logger.log("res", { res })
     
-    // const fileData = fs.readFileSync(outputPath); 
-    
-    // // Store result in supbabase storage
-    // try {
-    //   const { data: dataStorage, error: errorStorage } = await supabase.storage
-    //     .from(BUCKET) // Replace with your bucket name
-    //     .upload(userIdFileName, fileData, {
-    //       contentType: 'mp3',
-    //     });
+    if (audioProviderName !== 'test') {
+      const fileData = fs.readFileSync(outputPath); 
+      
+      // Store result in supbabase storage
+      try {
+        const { data: dataStorage, error: errorStorage } = await supabase.storage
+          .from(BUCKET) // Replace with your bucket name
+          .upload(userIdFileName, fileData, {
+            contentType: 'mp3',
+          });
 
-        
-    //     fullPath = dataStorage?.path
- 
-    //   logger.log('dataStorage', { dataStorage });
+          
+          fullPath = dataStorage?.path
 
-    //   logger.log('DATA FROM UPLOAD', { dataStorage })
-    //   logger.log('voiceVersion.id', { versionId: voiceVersion.id })
-    //   // Duplicate 
-    //   if (errorStorage && errorStorage.statusCode !== '409' ) {
-    //     logger.log('errorStorage', { errorStorage })
-    //     throw errorStorage
-    //   }
-    // } catch(e) {
-    //   throw `Error sending data ${e}`
-    // } finally {
-    //   logger.log('file unlinked');
-    //   fs.unlinkSync(outputPath)
-    // }
+        logger.log('dataStorage', { dataStorage });
+
+        logger.log('DATA FROM UPLOAD', { dataStorage })
+        logger.log('voiceVersion.id', { versionId: voiceVersion.id })
+        // Duplicate 
+        if (errorStorage && errorStorage.statusCode !== '409' ) {
+          logger.log('errorStorage', { errorStorage })
+          throw errorStorage
+        }
+      } catch(e) {
+        throw `Error sending data ${e}`
+      } finally {
+        logger.log('file unlinked');
+        fs.unlinkSync(outputPath)
+      }
 
 
-    // logger.log("befroe update audio version")
-    
-    // if (!fullPath) return {
-    //   message: 'fail',
-    //   error: `fullPath does not exist`
-    // }
+      logger.log("befroe update audio version")
+      
+      if (!fullPath) return {
+        message: 'fail',
+        error: `fullPath does not exist`
+      }
+    } else {
+      fullPath = res
+    }
 
     // Update audio version record with audio url 
     try {
       const { data: dataStorage, error: errorAudio } = await supabase
       .from("audio_version")
       .update({
-        audio_file_url: 'dummypath',
-        // audio_file_url: fullPath,
+        // audio_file_url: 'dummypath',
+        audio_file_url: fullPath,
         duration_in_seconds: res?.audioLengthInSeconds || 0
       })
       .eq("id", voiceVersion.id);

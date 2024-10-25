@@ -22,6 +22,8 @@ interface ScriptEditorInput {
     setCharacters: (characters: string[]) => null,
     screenplayId: string,
     characters: Character[]
+    currentTokenId?: string;
+    highlightToken?: boolean;
 }
 
 function getChanges(oldTokens, updatedTokens, screenplayId, characters) {
@@ -94,6 +96,8 @@ export const ScriptEditor =({
     setCharacters,
     screenplayId,
     characters,
+    currentTokenId,
+    highlightToken,
 }: ScriptEditorInput) => {
 
     const myRef = useRef(null);
@@ -160,7 +164,11 @@ export const ScriptEditor =({
                 
                 {/* <div style={{ position: 'sticky', top: 0 }}>currentOrderId: {currentOrderId}</div>
                 <div>secondaryOrderId: {secondaryOrderId}</div> */}
-            <TokenContent tokens={tokens} />
+            <TokenContent
+                tokens={tokens}
+                currentTokenId={currentTokenId}
+                highlightToken={highlightToken}
+            />
         </div>
         </>
     )

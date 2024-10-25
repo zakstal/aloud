@@ -85,7 +85,7 @@
     vector-effect: non-scaling-stroke;
   }
   .loaderpro__bar {
-    stroke: hsl(val(--loading-color));
+    stroke: hsl(var(--loading-color));
     /* stroke: #010101; */
     stroke-linecap: round;
     stroke-opacity: 0;
