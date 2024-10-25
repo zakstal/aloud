@@ -7,27 +7,27 @@ import { cn } from '@/lib/utils';
 
 'use strict';
 
-const Heading = ({ id, variant = 'h1', text = '', sceneNumber, order, className = '', highlight = false }: { highlight: boolean,variant: string, text?: string, sceneNumber?: number | null, order: number | null, className: string, id: string }) => {
-    if (variant === 'h1') return <h1 key={id} data-order={order} className={cn(className, highlight && 'highlight')} >{text}</h1>
-    if (variant === 'h2') return <h2 key={id} data-order={order} className={cn(className, highlight && 'highlight')} >{text}</h2>
-    if (variant === 'h3') return <h3 key={id} data-order={order} className={cn(className, highlight && 'highlight', ' font-courier font-bold')} id={sceneNumber?.toString()} >{text}</h3>
-    if (variant === 'h4') return <h4 key={id} data-order={order} className={cn(className, highlight && 'highlight')} >{text}</h4>
+const Heading = ({ id, variant = 'h1', text = '', sceneNumber, order, className = '', highlight = false, isDialog = false }: {isDialog: boolean,  highlight: boolean,variant: string, text?: string, sceneNumber?: number | null, order: number | null, className: string, id: string }) => {
+    if (variant === 'h1') return <h1 key={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{text}</h1>
+    if (variant === 'h2') return <h2 key={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{text}</h2>
+    if (variant === 'h3') return <h3 key={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog', ' font-courier font-bold')} id={sceneNumber?.toString()} >{text}</h3>
+    if (variant === 'h4') return <h4 key={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{text}</h4>
 
     // TODO i know
-    if (variant === 'hr') return <hr key={id} data-order={order} className={cn(className, highlight && 'highlight')}/>
+    if (variant === 'hr') return <hr key={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')}/>
     if (variant === 'br') return null
 }
 
-export const Paragraph = ({ id, text = '', type = '', order, dataDepth, className = '', highlight = false }: { highlight: boolean, text: string, type?: string, order: number, dataDepth?: number | null, className: string }) => {
+export const Paragraph = ({ id, text = '', type = '', order, dataDepth, className = '', highlight = false, isDialog = false }: {isDialog: boolean,  highlight: boolean, text: string, type?: string, order: number, dataDepth?: number | null, className: string }) => {
     return (
-        <p key={id} id={id} data-order={order} data-depth={dataDepth} className={cn(type, className, highlight && 'highlight')}>{text}</p>
+        <p key={id} id={id} data-order={order} data-depth={dataDepth} className={cn(type, className, highlight && 'highlight', isDialog && 'dialog')}>{text}</p>
     )
 }
 
 
-const Div = ({ id, className = '', order, children, highlight = false }: {highlight: boolean, className?: string, order: number, children: any }) => {
+const Div = ({ id, className = '', order, children, highlight = false, isDialog = false }: {isDialog: boolean, highlight: boolean, className?: string, order: number, children: any }) => {
     return (
-        <div key={id} data-order={order} className={cn(className, highlight && 'highlight')}>{children}</div>
+        <div key={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')}>{children}</div>
     )
 }
 
@@ -271,7 +271,7 @@ interface TokenContentInput {
     tokens: Tokens[];
 }
 
-export const TokenContent = function ({ tokens, currentTokenId, highlightToken }: TokenContentInput) {
+export const TokenContent = function ({ tokens, currentTokenId, highlightToken, onClick }: TokenContentInput) {
     if (!tokens) return []
 
     const title_page = []
@@ -285,76 +285,76 @@ export const TokenContent = function ({ tokens, currentTokenId, highlightToken }
         if (!token) continue
         token.text = inline.lexer(token.text);
 
-        let highlight = false
+        let highlight = false, isDialog = false
         if (token.id === currentTokenId && highlightToken) {
             highlight = true
         }
 
         switch (token.type) {
             // edit node is not from foutain
-            case 'editNode': html.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} text={token.text} />); break;
-            case 'title': title_page.push(<Heading highlight={highlight} key={token.id} id={token.id} variant="h1" text={token.text} order={i}/>); title = token.text.replace('<br />', ' ').replace(/<(?:.|\n)*?>/g, ''); break;
-            case 'credit': title_page.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} type="credit" text={token.text}/>); break;
-            case 'author': title_page.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} type="authors" text={token.text}/>); break;
-            case 'authors': title_page.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} type="authors" text={token.text}/>); break;
-            case 'source': title_page.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} type="source" text={token.text}/>); break;
-            case 'notes': title_page.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} type="notes" text={token.text}/>); break;
-            case 'draft_date': title_page.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} type="draft-date" text={token.text} />); break;
-            case 'date': title_page.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} type="date" text={token.text}/>); break;
-            case 'contact': title_page.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} type="contact" text={token.text}/>); break;
-            case 'copyright': title_page.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} type="copyright" text={token.text}/>); break;
+            case 'editNode': html.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} text={token.text} />); break;
+            case 'title': title_page.push(<Heading highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} variant="h1" text={token.text} order={i}/>); title = token.text.replace('<br />', ' ').replace(/<(?:.|\n)*?>/g, ''); break;
+            case 'credit': title_page.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="credit" text={token.text}/>); break;
+            case 'author': title_page.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="authors" text={token.text}/>); break;
+            case 'authors': title_page.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="authors" text={token.text}/>); break;
+            case 'source': title_page.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="source" text={token.text}/>); break;
+            case 'notes': title_page.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="notes" text={token.text}/>); break;
+            case 'draft_date': title_page.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="draft-date" text={token.text} />); break;
+            case 'date': title_page.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="date" text={token.text}/>); break;
+            case 'contact': title_page.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="contact" text={token.text}/>); break;
+            case 'copyright': title_page.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="copyright" text={token.text}/>); break;
 
-            case 'scene_heading': html.push(<Heading highlight={highlight} key={token.id} id={token.id} variant="h3"  sceneNumber={token.scene_number} text={token.text} order={i} />); break;
-            case 'transition': html.push(<Heading highlight={highlight} key={token.id} id={token.id} variant="h2" text={token.text} order={i}/>); break;
+            case 'scene_heading': html.push(<Heading highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} variant="h3"  sceneNumber={token.scene_number} text={token.text} order={i} />); break;
+            case 'transition': html.push(<Heading highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} variant="h2" text={token.text} order={i}/>); break;
 
             case 'dual_dialogue_begin': 
-                // html.push(<Div highlight={highlight} key={token.id} id={token.id} className="dual-dialogue" order={i} />); 
+                // html.push(<Div highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} className="dual-dialogue" order={i} />); 
                 html = htmlContent
-                html.push(<Div highlight={highlight} key={token.id} id={token.id} className="dual-dialogue" order={i} >{tempHtml.reverse()}</Div>); 
+                html.push(<Div highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} className="dual-dialogue" order={i} >{tempHtml.reverse()}</Div>); 
                 tempHtml = []
                
                 break;
             case 'dialogue_begin':
                 
                 html = htmlContent
-                html.push(<Div highlight={highlight} key={token.id} id={token.id} className={"dialogue-container" + (token.dual ? ' ' + token.dual : '') } order={i} >{tempHtml.reverse()}</Div>); 
+                html.push(<Div highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} className={"dialogue-container" + (token.dual ? ' ' + token.dual : '') } order={i} >{tempHtml.reverse()}</Div>); 
                 tempHtml = []
-                //  html.push(<Div highlight={highlight} key={token.id} id={token.id} className={"dialogue" + (token.dual ? ' ' + token.dual : '') } order={i} />); 
+                //  html.push(<Div highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} className={"dialogue" + (token.dual ? ' ' + token.dual : '') } order={i} />); 
                 break;
-            case 'character': html.push(<Heading highlight={highlight} key={token.id} id={token.id} variant="h4" text={token.text} order={i} className="character"/>); break;
-            case 'parenthetical': html.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} type="parenthetical" text={token.text}/>); break;
-            case 'dialogue': html.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} text={token.text} className="dialogue"/>); break;
+            case 'character': html.push(<Heading highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} variant="h4" text={token.text} order={i} className="character"/>); break;
+            case 'parenthetical': html.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="parenthetical" text={token.text}/>); break;
+            case 'dialogue': html.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} text={token.text} className="dialogue"/>); break;
             case 'dialogue_end': 
-                // html.push(<Div highlight={highlight} key={token.id} id={token.id} order={i}/>); 
+                // html.push(<Div highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i}/>); 
                 html = tempHtml
                 break;
             case 'dual_dialogue_end':
-                // html.push(<Div highlight={highlight} key={token.id} id={token.id} order={i}/>); 
+                // html.push(<Div highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i}/>); 
                 html = tempHtml
                 break;
 
-            case 'section': html.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} type="section" dataDepth={token.depth} text={token.text}/>); break;
-            case 'synopsis': html.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} type="synopsis" text={token.text}/>); break;
+            case 'section': html.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="section" dataDepth={token.depth} text={token.text}/>); break;
+            case 'synopsis': html.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="synopsis" text={token.text}/>); break;
 
             case 'note': html.push('<!-- ' + token.text + '-->'); break;
             case 'boneyard_begin': html.push('<!-- ');  break;
             case 'boneyard_end': html.push(' -->');  break;
 
-            case 'action': html.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} text={token.text} />); break;
-            case 'centered': html.push(<Paragraph highlight={highlight} key={token.id} id={token.id} order={i} type="centered" text={token.text}/>); break;
+            case 'action': html.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} text={token.text} />); break;
+            case 'centered': html.push(<Paragraph highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="centered" text={token.text}/>); break;
             
-            case 'page_break': html.push(<Heading highlight={highlight} key={token.id} id={token.id} variant="hr" order={i} />); break;
-            case 'line_break': html.push(<Heading highlight={highlight} key={token.id} id={token.id} variant="br" order={i} />); break;
+            case 'page_break': html.push(<Heading highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} variant="hr" order={i} />); break;
+            case 'line_break': html.push(<Heading highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} variant="br" order={i} />); break;
         }
 
        
     }
 
     return (
-        <>
+        <div onClick={onClick}>
             {title_page.reverse()}
             {htmlContent.reverse()}
-        </>
+        </div>
     )
 };
 

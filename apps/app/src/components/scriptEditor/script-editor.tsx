@@ -20,6 +20,7 @@ interface ScriptEditorInput {
     pdfText: string,
     saveLines: () => null,
     setCharacters: (characters: string[]) => null,
+    selectToken: (id: string) => null,
     screenplayId: string,
     characters: Character[]
     currentTokenId?: string;
@@ -98,6 +99,7 @@ export const ScriptEditor =({
     characters,
     currentTokenId,
     highlightToken,
+    selectToken,
 }: ScriptEditorInput) => {
 
     const myRef = useRef(null);
@@ -168,6 +170,13 @@ export const ScriptEditor =({
                 tokens={tokens}
                 currentTokenId={currentTokenId}
                 highlightToken={highlightToken}
+                onClick={(e) => {
+                    const id = e.target.id
+                    const token = scriptTokens.find(token => token.id === id)
+                    if (token && token.isDialog) {
+                        selectToken(id)
+                    }
+                }}
             />
         </div>
         </>

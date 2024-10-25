@@ -54,6 +54,11 @@
     padding-left: 116px;
     padding-bottom: 16px;
     box-sizing: content-box;
+    
+}
+
+.dialog {
+    cursor: pointer;
 }
 
 .script-editor-line-container {
@@ -68,11 +73,11 @@
    
 }
 
-.script-editor > *.highlight {
+.script-editor > div > *.highlight {
     background: #ffffba;
 }
 
-.script-editor > * {
+.script-editor > div > * {
     background: transparent;
     transition: all 0.4s
 }

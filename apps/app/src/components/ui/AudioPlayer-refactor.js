@@ -119,9 +119,11 @@ class AudioPlayer extends React.Component {
 
         // we can pass in several urls representing audio files called audioVersions
         // so we can play them in sequence as if it were a single file. 
-        const currentAudioVersion = this.props.audioVersions && this.props.audioVersions[0]
+        const currentAudioVersion = this.props.currentlyPlayingLineId 
+            ? this.props.audioVersions && this.props.audioVersions.find(version => version.line_id === this.props.currentlyPlayingLineId)
+            : this.props.audioVersions && this.props.audioVersions[0]
 
-        this.setCurrentlyPlayingLine(currentAudioVersion.line_id)
+        !this.props.currentlyPlayingLineId && this.setCurrentlyPlayingLineId(currentAudioVersion.line_id)
 
         // sum up all the durations for the audioversions
         const syntheticDuration = this.props.audioVersions && this.props.audioVersions.reduce((final, version) => {
@@ -209,9 +211,11 @@ class AudioPlayer extends React.Component {
     }
  
     async getSignedUrlNextN(chunkSize, isPlaying) {
+        console.log('getSignedUrlNextN before')
         if (this.getSignedUrlNextNInProgress) return
+        console.log('getSignedUrlNextN after')
         this.getSignedUrlNextNInProgress = true
-        console.log('getSignedUrlNextN-------------------')
+
         // get urls that exist and have not been processed 
         const audioVersions = this.state.audioVersions
             .map(audioVersion => audioVersion.audio_file_url)
@@ -283,13 +287,28 @@ class AudioPlayer extends React.Component {
 
     }
 
+
     componentDidUpdate(prevProps) {
-        const currentAudioVersion = this.props.audioVersions && this.props.audioVersions[0]
-        const disabled = this.checkDisabled(currentAudioVersion)
-        const nextState = {}
+        const currentAudioVersion = this.props.currentlyPlayingLineId 
+            ? this.props.audioVersions && this.props.audioVersions.find(version => version.line_id === this.props.currentlyPlayingLineId)
+            : this.props.audioVersions && this.props.audioVersions[0]
+
+        !this.props.currentlyPlayingLineId && this.setCurrentlyPlayingLineId(currentAudioVersion.line_id)
+
+
         let didUpdate = false
 
-        if (!this.state.currentAudioVersion) {
+        // set the current seek time if a playing line has been set somewhere else
+        if (this.state.currentAudioVersion.line_id !== this.props.currentlyPlayingLineId) {
+            const { startTime = 0 } = this.getDurationByUrl(currentAudioVersion.audio_file_url) || {}
+            this.handleSeekingChange(startTime)
+        }
+
+        const disabled = this.checkDisabled(currentAudioVersion)
+        const nextState = {}
+        
+
+        if (!this.state.currentAudioVersion || currentAudioVersion.id !== this.state.currentAudioVersion.id) {
             didUpdate = true
             nextState.currentAudioVersion = currentAudioVersion
         }
@@ -439,8 +458,8 @@ class AudioPlayer extends React.Component {
         return this.urlToDurationStartnd[url]
     }
 
-    setCurrentlyPlayingLine(lineId) {
-        this.props.setCurrentlyPlayingLine && this.props.setCurrentlyPlayingLine(lineId)
+    setCurrentlyPlayingLineId(lineId) {
+        this.props.setCurrentlyPlayingLineId && this.props.setCurrentlyPlayingLineId(lineId)
     }
 
     // this is mostly to broadcast out which line we are on
@@ -473,7 +492,7 @@ class AudioPlayer extends React.Component {
             })
 
             console.log('set-------------------------')
-            this.setCurrentlyPlayingLine(audioVersion.line_id)
+            this.setCurrentlyPlayingLineId(audioVersion.line_id)
             return
 
         }

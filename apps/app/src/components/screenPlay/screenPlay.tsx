@@ -138,7 +138,7 @@ export default function ScreenPlayConatiner({
   const [selectedCharacter, setSelectedCharacter] = useState(null)
   const [currentLinePlaying, setCurrentLinePlaying] = useState(null)
   const [audioBeingGotten, setAudioBeingGotten] = useState(false)
-  const [currentlyPlayingLine, setCurrentlyPlayingLine] = useState(false)
+  const [currentlyPlayingLineId, setCurrentlyPlayingLineId] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
 
   console.log('currentlyPlayingLine', currentlyPlayingLine)
@@ -216,8 +216,9 @@ export default function ScreenPlayConatiner({
                     setCharacters={setCharacters}
                     screenplayId={screenplayId}
                     characters={characters}
-                    currentTokenId={currentlyPlayingLine}
+                    currentTokenId={currentlyPlayingLineId}
                     highlightToken={isPlaying}
+                    selectToken={setCurrentlyPlayingLineId}
                 />
                 : <div className={'script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-4xl font-courier script-editor'}>
                     <h1 className="text-3xl pb-6 pt-16 tracking-tight text-center ">🎉  Welcome! 🎊</h1>
@@ -238,7 +239,8 @@ export default function ScreenPlayConatiner({
             audioVersions={audioVersions}
             setCurrentLinePlaying={setCurrentLinePlaying}
             getSignedUrl={(url: string) => getSignedUrl({ url })}
-            setCurrentlyPlayingLine={setCurrentlyPlayingLine}
+            setCurrentlyPlayingLineId={setCurrentlyPlayingLineId}
+            currentlyPlayingLineId={currentlyPlayingLineId}
             setIsPlaying={setIsPlaying}
         />
     </div>
