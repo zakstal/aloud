@@ -141,7 +141,7 @@ export default function ScreenPlayConatiner({
   const [currentlyPlayingLineId, setCurrentlyPlayingLineId] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
 
-  console.log('currentlyPlayingLine', currentlyPlayingLine)
+  console.log('currentlyPlayingLineId', currentlyPlayingLineId)
   console.log('isPlaying', isPlaying)
   if (isLoading) return <div className="flex justify-center h-screen items-center"><Progress /></div>
 
@@ -242,6 +242,7 @@ export default function ScreenPlayConatiner({
             setCurrentlyPlayingLineId={setCurrentlyPlayingLineId}
             currentlyPlayingLineId={currentlyPlayingLineId}
             setIsPlaying={setIsPlaying}
+            key={audioScreenPlayVersion.id}
         />
     </div>
     </>

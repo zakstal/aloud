@@ -58,7 +58,7 @@
 }
 
 .dialog {
-    cursor: pointer;
+
 }
 
 .script-editor-line-container {
@@ -73,11 +73,26 @@
    
 }
 
-.script-editor > div > *.highlight {
+/* .script-editor > div > *.highlight {
     background: #ffffba;
-}
+} */
 
 .script-editor > div > * {
     background: transparent;
     transition: all 0.4s
+}
+
+mark {
+    /* background-color:#ffffba; */
+    background-color: var(--highlight-color);
+    animation: 400ms ease-in fadeIn forwards;
+}
+
+@keyframes fadeIn {
+    0% {
+        background-color: transparent;
+    }
+    100% {
+        background-color: var(--highlight-color);
+    }
 }
