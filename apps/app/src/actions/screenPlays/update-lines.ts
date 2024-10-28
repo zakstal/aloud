@@ -11,7 +11,7 @@ export const updateOrCreateLines = authActionClient
     name: "update-or-create-lines",
   })
   .action(async ({ parsedInput: { created, removed, updated, characters, screenplayId } = {}, ctx: { user } }) => {
-    console.log('updateOrCreateLines----------------', characters, screenplayId)
+    console.log('updateOrCreateLines----------------',created, removed, updated, characters, screenplayId)
 
     // Call the function to update or create lines in the DB
     const result = await updateOrCreateLinesInDb(created, removed, updated, characters, screenplayId);

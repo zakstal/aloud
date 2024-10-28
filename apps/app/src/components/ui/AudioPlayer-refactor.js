@@ -40,7 +40,7 @@ async function appendBlob(arrayBuffer, sourceBuffer, mediaSource) {
 
 // TODO audio that is partially gotten still needs to load correclty in sequence.
 // TODO only load the first batch until this starts playing, then load the rest
-async function assembleSource(audioUrls, mediaSrcIn, setSrc) {
+async function assembleSource(audioUrls, mediaSrcIn, setSrc, urlToDurationStartnd, originalUrls) {
     if (!('MediaSource' in window && MediaSource.isTypeSupported('audio/mpeg'))) {
         console.log('MediaSource API is not supported in this browser.');
         return
@@ -71,6 +71,7 @@ async function assembleSource(audioUrls, mediaSrcIn, setSrc) {
             throw e;
         }
     }
+
     const audioUrlLength = audioUrls.length
     const resultBuffers = new Array(audioUrlLength)
     let resolved = 0 
@@ -95,10 +96,33 @@ async function assembleSource(audioUrls, mediaSrcIn, setSrc) {
 
         }
     })
+
+    let onUpdateIdx = 0
+    //https://github.com/joshuatz/mediasource-append-examples/blob/main/multi-file/segments/index.js
+    sourceBuffer.onupdateend = () => {
+        const url = audioUrls[onUpdateIdx]
+        const urlOr = originalUrls[onUpdateIdx]
+        const { startTime, endTime } = urlToDurationStartnd[urlOr]
+        console.log("onupdateend----", sourceBuffer.timestampOffset, endTime, sourceBuffer.timestampOffset - endTime, url, urlToDurationStartnd[urlOr])
+		// if (clipIndex < clipsToAppend.length - 1) {
+		// 	// We have another segment to add
+		// 	// BUT, first we need to offset the time by the duration of
+		// 	// the previously appended clip. Otherwise it will overwrite it
+		// 	sourceBuffer.timestampOffset += clipsToAppend[clipIndex].duration;
+		// 	// Now we can move on to next clip and append it
+		// 	clipIndex++;
+		// 	sourceBuffer.appendBuffer(clipsToAppend[clipIndex].buff);
+		// } else {
+		// 	// Done!
+		// 	mediaSource.endOfStream();
+		// 	videoElement.play();
+		// }
+	};
     
     let appendedDuration = 0
     let durationByUrl = {}
     for (const idx in resultBuffers) {
+        onUpdateIdx = idx
         const buffer = resultBuffers[idx]
         const duration = await appendBlob(buffer, sourceBuffer, mediaSource);
         durationByUrl[audioUrls[idx]] = duration
@@ -113,6 +137,7 @@ class AudioPlayer extends React.Component {
     mediaSrc = null;
     getSignedUrlNextNInProgress = false
     urlsAssembled = new Set()
+
     urlToDurationStartnd = {}
 
     constructor(props) {
@@ -121,14 +146,18 @@ class AudioPlayer extends React.Component {
         // we can pass in several urls representing audio files called audioVersions
         // so we can play them in sequence as if it were a single file. 
         const currentAudioVersion = this.props.currentlyPlayingLineId 
-            ? this.props.audioVersions && this.props.audioVersions.find(version => version.line_id === this.props.currentlyPlayingLineId)
+            ? this.props.audioVersions && this.props.audioVersions.find(version => version?.line_id === this.props.currentlyPlayingLineId)
             : this.props.audioVersions && this.props.audioVersions[0]
 
-        !this.props.currentlyPlayingLineId && this.setCurrentlyPlayingLineId(currentAudioVersion.line_id)
+        !this.props.currentlyPlayingLineId && this.setCurrentlyPlayingLineId(currentAudioVersion?.line_id)
 
         // sum up all the durations for the audioversions
         const syntheticDuration = this.props.audioVersions && this.props.audioVersions.reduce((final, version) => {
-            return final + version.duration_in_seconds
+            const nextDuration =  final + version.duration_in_seconds
+            const startTime = final
+            this.urlToDurationStartnd[version.audio_file_url] = { startTime, endTime: nextDuration}
+
+            return nextDuration
         }, 0)
 
         const disabled = this.checkDisabled(currentAudioVersion)
@@ -215,8 +244,9 @@ class AudioPlayer extends React.Component {
     }
  
     async getSignedUrlNextN(chunkSize, isPlaying, maxLoadingAmt) {
-        console.log('getSignedUrlNextN', this.state.audioVersionsIdx)
+
         if (this.getSignedUrlNextNInProgress) return
+        if (!this?.state?.audioVersions) return
         this.getSignedUrlNextNInProgress = true
 
         // get urls that exist and have not been processed 
@@ -260,7 +290,7 @@ class AudioPlayer extends React.Component {
                 this.setState({
                     objSrc: src
                 })
-            })
+            }, this.urlToDurationStartnd, urls)
 
             let durationCount = this.state.loadedDuration || 0
             urls.forEach((url, idx) => {
@@ -296,20 +326,21 @@ class AudioPlayer extends React.Component {
 
 
     componentDidUpdate(prevProps) {
+        console.log("componentDidUpdate")
         // currentlyPlayingLineId can be set by other components
         // but is also set internally which triggers componentDidUpdate.
         // there could be a more efficeint way of doing this.
         const currentAudioVersion = this.props.currentlyPlayingLineId 
-            ? this.props.audioVersions && this.props.audioVersions.find(version => version.line_id === this.props.currentlyPlayingLineId)
+            ? this.props.audioVersions && this.props.audioVersions.find(version => version?.line_id === this.props.currentlyPlayingLineId)
             : this.props.audioVersions && this.props.audioVersions[0]
 
-        !this.props.currentlyPlayingLineId && this.setCurrentlyPlayingLineId(currentAudioVersion.line_id)
+        !this.props.currentlyPlayingLineId && this.setCurrentlyPlayingLineId(currentAudioVersion?.line_id)
 
 
         let didUpdate = false
 
         // set the current seek time if a playing line has been set somewhere else
-        if (this.state.currentAudioVersion.line_id !== this.props.currentlyPlayingLineId) {
+        if (this.state.currentAudioVersion?.line_id !== this.props.currentlyPlayingLineId) {
             const { startTime = 0 } = this.getDurationByUrl(currentAudioVersion.audio_file_url) || {}
             this.handleSeekingChange(startTime)
         }
@@ -318,18 +349,21 @@ class AudioPlayer extends React.Component {
         const nextState = {}
         
 
-        if (!this.state.currentAudioVersion || currentAudioVersion.id !== this.state.currentAudioVersion.id) {
+        if (currentAudioVersion && (!this.state.currentAudioVersion || currentAudioVersion.id !== this.state.currentAudioVersion.id)) {
+            console.log("set 1", currentAudioVersion)
             didUpdate = true
             nextState.currentAudioVersion = currentAudioVersion
         }
         
         if (this.state.disabled !== disabled) {
+            console.log("set 2")
             didUpdate = true
         }
 
         nextState.disabled = disabled
 
         if (didUpdate) {
+            console.log('did update')
             nextState.isAudioVersions = true
             this.setState(nextState)
         }
@@ -457,9 +491,11 @@ class AudioPlayer extends React.Component {
     }
 
     handleSeekingChange(e) {
+        console.log('seek change')
         const seekChange = parseFloat(e || 0)
      
         this.player.currentTime = seekChange || 0
+        this.setCurrentAudioVersion(this.player.currentTime)
         this.setState({
             isSeeking: true,
             seek: parseFloat(e || 0)
@@ -504,7 +540,7 @@ class AudioPlayer extends React.Component {
                 audioVersionsIdx: i
             })
 
-            this.setCurrentlyPlayingLineId(audioVersion.line_id)
+            this.setCurrentlyPlayingLineId(audioVersion?.line_id)
             return
 
         }
@@ -566,20 +602,17 @@ class AudioPlayer extends React.Component {
         const timeLeftToEnd = (this.state.loadedDuration - (this?.player?.currentTime || 0))
         const shouldLoadMore = timeLeftToEnd < 10
 
-        console.log('shouldLoadMore', shouldLoadMore)
-        console.log('this.state.loadedDuration - (this?.player?.currentTime || 0)', this.state.loadedDuration - (this?.player?.currentTime || 0))
         if (url && shouldLoadMore) {
             if (timeLeftToEnd < 0) {
                 this.setIsLoading()
             }
 
+            console.log("load more")
             this.getSignedUrlNextN(5)
 
             return url
         }
-
         
-        console.log("loading", this.state.loadedDuration, this.state.syntheticDuration)
         if (!url && !this.state.isLoading && this.state.isAudioVersions !== false && !!this.state.currentAudioVersion?.audio_file_url) {
 
             let isPlaying = this.state.playing
@@ -610,7 +643,6 @@ class AudioPlayer extends React.Component {
                         onCanPlayThrough={this.handleOnLoad}
                         onPlay={this.handleOnPlay}
                         onEnded={this.handleOnEnd}
-                        ended={this.handleOnEnd}
                         onError={(e) => {
                             console.log("error with player", e, src, this.state.objSrc)
                         }}

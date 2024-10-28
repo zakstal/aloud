@@ -2,6 +2,16 @@ import { z } from "zod";
 
 // Define the schema for a line object
 const lineSchema = z.object({
+  id: z.string(), 
+  order: z.number(),
+  text: z.string().nullable().optional(),
+  type: z.string(),
+  isDialog: z.boolean().nullable().optional(),
+  characterName: z.string().optional(),
+});
+
+const linCreatedeSchema = z.object({
+  order: z.number().nullable().optional(),
   text: z.string().nullable().optional(),
   type: z.string(),
   isDialog: z.boolean().nullable().optional(),
@@ -15,7 +25,7 @@ const characterSchema = z.object({
 
 // Create a schema for an array of lines
 export const updateOrCreateLinesSchema = z.object({
-  created: z.array(lineSchema),
+  created: z.array(linCreatedeSchema),
   removed: z.array(lineSchema),
   updated: z.array(lineSchema),
   characters: z.array(characterSchema).optional(),

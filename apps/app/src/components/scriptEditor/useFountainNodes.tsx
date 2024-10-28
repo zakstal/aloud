@@ -113,7 +113,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
     }, [pdfText])
 
     useEffect(() => {
-        window.scriptStorage = window.scriptStorage || new ScriptHistory()
+        // window.scriptStorage = window.scriptStorage || new ScriptHistory()
         // NB ScriptHistory has an internal representation of tokens. not sure if we should keep 
         // to sets, hoever we can change the internal as we like and only update it later if needed
         window.scriptStorage.setCallbackValues(

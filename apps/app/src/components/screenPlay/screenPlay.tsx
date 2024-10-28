@@ -56,7 +56,7 @@ function GetAudio({ audioBeingGotten, processAudio, setAudioBeingGotten, audioSc
                 isLoading={audioBeingGotten}
                 onClick={async () => {
                     setAudioBeingGotten(true)
-                    const res = await cancelProcessAudio({ audioVersionId:audioScreenPlayVersion.id })
+                    const res = await cancelProcessAudio({ audioVersionId:audioScreenPlayVersion?.id })
                     setAudioBeingGotten(false)
                     console.log('res', res)
                 }}
@@ -209,7 +209,7 @@ export default function ScreenPlayConatiner({
                 <ScriptEditor
                     className="script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-4xl font-courier"
                     scriptTokens={lines}
-                    audioScreenPlayVersion={audioScreenPlayVersion.id}
+                    audioScreenPlayVersion={audioScreenPlayVersion?.id}
                     currentLinePlaying={currentLinePlaying}
                     pdfText={screenPlayText}
                     saveLines={updateOrCreateLines}
@@ -227,7 +227,7 @@ export default function ScreenPlayConatiner({
                     {/* <PDFLocalUplaod startScreenPlay={startScreenPlay} /> */}
                     <Button
                         variant="outline"
-                        className="text-md h-20 mt-6 w-full"
+                        className="text-md h-20 mt-6 w-full box-border"
                         onClick={() => startScreenPlay()}
                     >
                         Go to a blank document
@@ -242,7 +242,7 @@ export default function ScreenPlayConatiner({
             setCurrentlyPlayingLineId={setCurrentlyPlayingLineId}
             currentlyPlayingLineId={currentlyPlayingLineId}
             setIsPlaying={setIsPlaying}
-            key={audioScreenPlayVersion.id}
+            key={audioScreenPlayVersion?.id}
         />
     </div>
     </>

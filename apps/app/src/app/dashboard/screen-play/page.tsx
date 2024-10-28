@@ -3,8 +3,8 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import PageContainer from '@/components/layout/page-container';
 // import { deleteScreenPlayPermanatlyAction } from '@/actions/screenPlays/delete-screen-pay-permanat'
-import { columns } from '@/components/tables/employee-tables/columns';
-import { EmployeeTable } from '@/components/tables/employee-tables/employee-table';
+import { columns } from '@/components/tables/screenplays-tables/columns';
+import { ScreenplayTable } from '@/components/tables/screenplays-tables/screenplays-table';
 import { buttonVariants } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
@@ -63,7 +63,7 @@ export default async function page({ searchParams }: paramsProps) {
 
         {
           resplay?.data?.data.length 
-          ? <EmployeeTable
+          ? <ScreenplayTable
             searchKey="country"
             pageNo={page}
             columnsFunc={columns}

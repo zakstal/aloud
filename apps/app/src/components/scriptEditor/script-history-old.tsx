@@ -131,10 +131,12 @@ export class ScriptHistory {
     db = null
 
     constructor(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[]) {
+        console.log("script history")
         this.setCallbackValues(dbTokenVersion, db, commitCallback, tokens)
     }
 
     async applyChanges() {
+        console.log('apply changes---------')
         const diffs = await this.diffs();
         const diffsToApply = !this.lastInsertedId ? diffs : diffs.filter((update: Diff) => update.id > this.lastInsertedId)
         if (!diffs || !diffs.length) return
@@ -147,12 +149,14 @@ export class ScriptHistory {
     }
 
     setCallbackValues(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[]) {
+        console.log("script setCallbackValues")
         this.dbTokenVersion = dbTokenVersion
         this.db = db
         this.commitCallback = commitCallback
         this.tokens = tokens
 
         if (commitCallback && tokens) {
+            console.log("script setCallbackValues applyChanges")
             this.applyChanges()
         }
 
@@ -412,6 +416,7 @@ export class ScriptHistory {
     }
 
     applyForward(updates: Diff[]) {
+        console.log('apply forwards')
         for (const update of updates) {
             switch(update.type) {
                 case DELETE:

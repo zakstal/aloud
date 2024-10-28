@@ -133,6 +133,7 @@ export class ScriptHistory extends History {
     tokens: Tokens[] = []
     characters: Character[] =  []
     charactersNameMap: { [key: string]: Character} = {}
+    appliedVersion: string = ''
 
 
     setCharacters: setCharactersType = null
@@ -160,7 +161,10 @@ export class ScriptHistory extends History {
 
         tokens?.forEach(token => idSet.add(token.id))
 
-        if (commitCallback && tokens) {
+        if (commitCallback && tokens && this.appliedVersion !== dbTokenVersion) {
+
+            // this is so that we don't re-apply changes if setCallbackValues is called multiple times
+            this.appliedVersion = dbTokenVersion
             await this.applyChanges()
             this.commitCallback(this.tokens)
         }
@@ -174,6 +178,7 @@ export class ScriptHistory extends History {
     }
 
     async applyChanges() {
+
         if (!this.dbTokenVersion) return
         const diffs = await this.diffs(this.dbTokenVersion);
 
@@ -201,7 +206,6 @@ export class ScriptHistory extends History {
         const tokens = tokensIn ? tokensIn : this.pendingUpdates
         for (const token of tokens) {
             // the token.id less than 6 is to check if the token is newly created. If 
-            console.log("token--------", token)
             const character = this.charactersNameMap[token?.oldValue?.text]
             if (token.type === updateTypes.MODIFY || token.type === updateTypes.ADD) {
                 // oldValue could be null in the case of ADD
@@ -232,7 +236,6 @@ export class ScriptHistory extends History {
     }
 
     combineRange(currentOrderIdIn: number, nextIdIn: number, currentOffsetIn: number, nextOffsetIn: number) {
-        console.log('combine')
         let currentOrderId = currentOrderIdIn
         let nextId = nextIdIn || currentOrderIdIn - 1
         let currentOffset = currentOffsetIn

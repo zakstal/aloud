@@ -54,7 +54,7 @@ async function createLines({
     return obj
   }, {})
 
-  const toInsertLines = dialog.map(({ characterName, text, isDialog, type }: Dialog, index: number) => {
+  const toInsertLines = dialog.map(({ characterName, text, isDialog, type, order }: Dialog, index: number) => {
     const characterId = nameCharacterIdMap && nameCharacterIdMap[characterName]
 
     return {
@@ -63,7 +63,7 @@ async function createLines({
       isDialog,
       type, 
       text,
-      order: index,
+      order: order || index,
     }
   }).filter(Boolean)
 
@@ -545,6 +545,7 @@ export async function processLines({ created, removed, updated, characters = [],
     if (updated.length > 0) {
       const { error: updateError } = await Promise.all(
         updated.map(async (line) => {
+          console.log("line--", line)
           return await supabase
             .from('lines')
             .update({

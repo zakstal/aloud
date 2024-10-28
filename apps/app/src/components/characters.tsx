@@ -49,7 +49,7 @@ export function Characters({
             { characters?.map(data => {
 
               let characterVersion = audioVersionNumber ? data?.audio_character_version?.find(version => version.version_number === audioVersionNumber) : null
-              characterVersion = characterVersion ? characterVersion : data?.audio_character_version[data?.audio_character_version.length - 1]
+              characterVersion = characterVersion ? characterVersion : data?.audio_character_version && data?.audio_character_version[data?.audio_character_version?.length - 1]
               return (
               <Character
                 key={data.id}

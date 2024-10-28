@@ -35,7 +35,7 @@ interface DataTableProps<TData, TValue> {
   };
 }
 
-export function EmployeeTable<TData, TValue>({
+export function ScreenplayTable<TData, TValue>({
   columnsFunc,
   data,
   pageNo,
