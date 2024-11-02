@@ -30,6 +30,7 @@ interface CreateLinesInput {
   insertedAudioCharactersVersions: {id: string; character_id: string}[];
   dialog: Dialog[];
   supabase: any,
+  versionNumber: number;
 }
 
 async function createLines({
@@ -39,9 +40,11 @@ async function createLines({
   screenplayVersionId,
   insertedCharacters,
   insertedAudioCharactersVersions,
+  versionNumber
 }: CreateLinesInput) {
 
-  console.time("lines prepare")
+  // TODO creating is not idempotent atm. This needs to be updated to prevent duplicates
+  console.time("lines prepare", dialog)
   if (!dialog) return null
 
   const nameCharacterIdMap =  insertedCharacters?.reduce((obj: { [key: string]: string }, charObj) => {
@@ -54,17 +57,24 @@ async function createLines({
     return obj
   }, {})
 
-  const toInsertLines = dialog.map(({ characterName, text, isDialog, type, order }: Dialog, index: number) => {
+  const toInsertLines = dialog.map(({ characterName, text, isDialog, type, order, id  }: Dialog, index: number) => {
     const characterId = nameCharacterIdMap && nameCharacterIdMap[characterName]
 
-    return {
+    const obj = {
       screenplay_id: screenplayId,
       character_id: characterId,
       isDialog,
       type, 
       text,
       order: order || index,
+      created_version_number: versionNumber,
     }
+
+    if (id) {
+      obj.id = id
+    }
+    
+    return obj
   }).filter(Boolean)
 
   console.timeEnd("lines prepare")
@@ -179,6 +189,7 @@ type Dialog = { characterName: string; text: string, isDialog: boolean, type: st
 type Fountain = { type: string; text: string, scene_number: number | null }
 // Define the data types for input
 interface CreateScreenplayInput {
+  id: string | null | undefined;
   title: string;
   type: "movie" | "tv_show";
   characters: { name: string; likelyGender: string | null }[];
@@ -271,6 +282,7 @@ export async function createScreenPlay(
       screenplayVersionId: screenplayVersion.id,
       dialog,
       supabase,
+      versionNumber: 1,
     })
 
     console.timeEnd('Create lines insert')
@@ -494,7 +506,7 @@ export async function bumpAudioScreenplayVersion(screenplayId) {
 }
 
 
-export async function processLines({ created, removed, updated, characters = [], screenplayId, screenPlayVersionId }) {
+export async function processLines({ created, removed, updated, characters = [], screenplayId, screenPlayVersionId, versionNumber }) {
   const supabase = createClient();
 
   try {
@@ -513,6 +525,7 @@ export async function processLines({ created, removed, updated, characters = [],
         supabase
       })
       console.log("createLines---")
+      // TODO creating is not idempotent atm. This needs to be updated to prevent duplicates
       await createLines({
         insertedCharacters,
         insertedAudioCharactersVersions,
@@ -520,11 +533,11 @@ export async function processLines({ created, removed, updated, characters = [],
         screenplayVersionId: screenPlayVersionId,
         dialog: created,
         supabase,
+        versionNumber
       })
     }
 
     // 2. Mark lines as deleted (update "deleted" column to true)
-    console.log('removed------')
     if (removed.length > 0) {
       const { error: removeError } = await Promise.all(
         removed.map(async (line) => {
@@ -541,11 +554,9 @@ export async function processLines({ created, removed, updated, characters = [],
     }
 
     // 3. Update existing lines with new values
-    console.log('updated------')
     if (updated.length > 0) {
       const { error: updateError } = await Promise.all(
         updated.map(async (line) => {
-          console.log("line--", line)
           return await supabase
             .from('lines')
             .update({
@@ -573,18 +584,61 @@ export async function processLines({ created, removed, updated, characters = [],
 }
 
 
-export async function updateOrCreateLinesInDb(created: Dialog[], removed: Dialog[], updated: Dialog[], characters: CharacterData[], screenplayId: string) {
+// TODO creating is not idempotent atm. This needs to be updated to prevent duplicates
+export async function updateOrCreateLinesInDb(created: Dialog[], removed: Dialog[], updated: Dialog[], characters: CharacterData[], screenplayId: string, versionNumber: number) {
   console.log('created--------------------', created)
   console.log('removed--------------------', removed)
   console.log('updated--------------------', updated)
   console.log('characters--------------------', characters)
   console.log('screenplayId--------------------', screenplayId)
+  const supabase = createClient();
 
   const screenPlayVersionId = await bumpAudioScreenplayVersion(screenplayId)
+  const { data, error }  = await supabase
+    .from("audio_screenplay_versions")
+    .select(`
+      status,
+      id,
+      total_lines,
+      total_lines_completed,
+      version_number,
+      audio_file_url
+    `)
+    .eq('id', screenPlayVersionId)
+    .single()
 
-  console.log('screenPlayVersionId--------------------', screenPlayVersionId)
+    if (error) {
+      console.log("error updating lines", error)
+      throw error;
+    }
 
-  return processLines({ created, removed, updated, characters, screenplayId, screenPlayVersionId })
+    const versionNumberNew =  Number(data.version_number)
+    versionNumber
+
+    // if changes are made off of an old version, set old version to current 
+    // bumpAudioScreenplayVersion needs to be run first
+    if (versionNumberNew - 1 !== versionNumber && versionNumber !> versionNumberNew) {
+      const { data: dataSet, error: errorSet } = await supabase.rpc('set_version_to_current', {
+        screenplayid: screenplayId,
+        versionnumber: versionNumberNew
+      });
+      
+      if (errorSet) {
+        console.log("error updating lines", errorSet)
+        throw errorSet;
+      }
+    }
+
+  console.log('screenPlayVersionId--------------------', screenPlayVersionId, data)
+
+
+
+  const res = await processLines({ created, removed, updated, characters, screenplayId, screenPlayVersionId, versionNumber: versionNumberNew })
+  if (res.error) {
+    return res
+  }
+
+  return data
 }
 
 export async function setAudioVersionInProgress(audioVersionId: string) {

@@ -340,8 +340,8 @@ class AudioPlayer extends React.Component {
         let didUpdate = false
 
         // set the current seek time if a playing line has been set somewhere else
-        if (this.state.currentAudioVersion?.line_id !== this.props.currentlyPlayingLineId) {
-            const { startTime = 0 } = this.getDurationByUrl(currentAudioVersion.audio_file_url) || {}
+        if (currentAudioVersion && this.state.currentAudioVersion?.line_id !== this.props.currentlyPlayingLineId) {
+            const { startTime = 0 } = this.getDurationByUrl(currentAudioVersion?.audio_file_url) || {}
             this.handleSeekingChange(startTime)
         }
 

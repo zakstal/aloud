@@ -1,6 +1,7 @@
 // import { Fountain } from 'fountain-js';
 import fountain from './fountainParser2.ts'
 import { getGenders } from '../genderapi.ts'
+import { Tokens } from '../types.ts'
 
 
 
@@ -216,6 +217,11 @@ async function handleErrorAsync(func: any, error: string[]) {
   }
 }
 
+const removeTokens = ['dialogue_end', 'dialogue_begin']
+
+const prepareTokensRender = (tokens: Tokens[]) => {
+    return tokens.filter((token: Tokens) => !removeTokens.includes(token.type))
+}
 
 
 export async function parse(scriptText: string) {
@@ -234,9 +240,9 @@ export async function parse(scriptText: string) {
 
     let output = fountain.parse(scriptText, true);
 
-
     const errors: string[] = []
-    const dialog = getDialog(output)    
+
+    const dialog = getDialog(output)
     const characters = getCharacters(dialog)
     let characterGenders = []
     try {
@@ -246,7 +252,8 @@ export async function parse(scriptText: string) {
       characterGenders = characters.map(characterName => ({ name: characterName, likelyGender: null }))
     }
 
-    console.log("output", output)
+    output.tokens = prepareTokensRender(output.tokens)
+
     return {
         dialog,
         output,

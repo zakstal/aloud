@@ -350,11 +350,13 @@ export const TokenContent = function ({ tokens, currentTokenId, highlightToken, 
        
     }
 
+    console.log('title_page', title_page)
+    console.log('htmlContent', htmlContent)
     return (
-        <div onClick={onClick}>
+        <>
             {title_page.reverse()}
             {htmlContent.reverse()}
-        </div>
+        </>
     )
 };
 

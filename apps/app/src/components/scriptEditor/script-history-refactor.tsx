@@ -27,7 +27,7 @@ const tokenize = (text: string, options: any) => {
 
 const idSet = new Set()
 const getId = () => {
-    const id  = 'internal' + uuid()
+    const id  = uuid()
     if (idSet.has(id)) return getId()
     idSet.add(id)
     return id

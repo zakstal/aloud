@@ -58,6 +58,7 @@ export default class History {
 
     // could be run on setData
     async applyChanges() {
+        console.log('applyChanges history')
         if (!this.dbTokenVersion) return
         const diffs = await this.diffs(this.dbTokenVersion);
 

@@ -8,6 +8,7 @@ create table public.lines (
     text text not null,
     "order" int not null,
     -- line_obj: jsonb,
+    created_version_number int not null, -- the version number when the line was crated.
     created_at timestamptz not null default now(),
     constraint fk_line_screenplay foreign key (screenplay_id) references public.screenplays(id) on delete cascade,
     constraint fk_line_character foreign key (character_id) references public.characters(id) on delete cascade

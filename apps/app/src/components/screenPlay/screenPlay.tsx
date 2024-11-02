@@ -14,7 +14,6 @@ import { ScriptEditor } from '@/components/scriptEditor/script-editor'
 import PDFLocalUplaod from '@/components/pdf-upload-local'
 import { ProductForm } from '@/components/forms/product-form';
 import { getSignedUrl } from '@/actions/screenPlays/get-signed-url'
-import { updateOrCreateLines } from '@/actions/screenPlays/update-lines'
 import { cancelProcessAudio } from '@/actions/screenPlays/cancel-process-audio'
 import { ProgressLoader } from '@/components/progressLoader';
 import * as Tooltip from "@radix-ui/react-tooltip";
@@ -133,6 +132,7 @@ export default function ScreenPlayConatiner({
   lines,
   setCharacters,
   screenplayId,
+  updateOrCreateLines,
 }) {
   const [voiceSelectionOpen, setVoiceSelectionOpen] = useState(false)
   const [selectedCharacter, setSelectedCharacter] = useState(null)
@@ -207,7 +207,7 @@ export default function ScreenPlayConatiner({
                 screenPlayText !== undefined 
                 ?
                 <ScriptEditor
-                    className="script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-4xl font-courier"
+                    className="script-text bg-white p-8 pt-0 pb-[70px] outline-none border-slate-400 overflow-scroll max-w-4xl font-courier"
                     scriptTokens={lines}
                     audioScreenPlayVersion={audioScreenPlayVersion?.id}
                     currentLinePlaying={currentLinePlaying}

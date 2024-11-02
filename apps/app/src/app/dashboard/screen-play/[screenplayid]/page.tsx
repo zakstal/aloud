@@ -3,12 +3,13 @@
 import { getScreenPlay } from '@/actions/screenPlays/get-screen-play'
 import { updateAudioCharacterVersionAction } from '@/actions/audioCharacterVersion/update-audio-character-version'
 import React, { useState, useEffect} from 'react';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams, useRouter, usePathname } from 'next/navigation';
 import ScreenPlayConatiner from '@/components/screenPlay/screenPlay'
 import voices, { Voice } from '@v1/script-to-audio/voices'
 import { processAudio } from '@/actions/screenPlays/process-audio'
 import { startScreenPlay } from '@/actions/screenPlays/create-screenplay'
 import { createClient } from "@v1/supabase/client";
+import { updateOrCreateLines } from '@/actions/screenPlays/update-lines'
 import { useToast } from '@/components/ui/use-toast';
 const supabase = createClient();
 type Character = { name: string, gender: string | null }
@@ -65,6 +66,7 @@ const statusToastMessage = {
 const statusAudioVersion = {}
 
 export default function Page() {
+  const pathname = usePathname();
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -190,19 +192,36 @@ export default function Page() {
 
   useEffect(() => {
     if (params?.screenplayid) {
-      getScreenPlay({ screenPlayId: params.screenplayid })
+      const versionNumber = Number(searchParams.get('version')) || null // we don't want NaN
+      getScreenPlay({ screenPlayId: params.screenplayid, versionNumber  })
         .then((screenPlay) => {
-          const data = screenPlay?.data?.data && screenPlay?.data?.data
-          const audio_screenplay_version = data?.audio_screenplay_versions && data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1]
-          const audio_version = audio_screenplay_version?.audio_version.sort((a, b) => a.lines.order - b.lines.order) // this should be plural but the db
 
-          console.log('audio_version-----------------', audio_version)
+          const data = screenPlay?.data?.data && screenPlay?.data?.data
+
+          const audio_screenplay_version = data?.audio_screenplay_versions && 
+            versionNumber && versionNumber <= data?.audio_screenplay_versions.length
+            ? data?.audio_screenplay_versions.find(version => version.version_number === versionNumber) // get version if version number should exist
+            : data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1] // if no version number get the most recent
+
+          // const audio_version = audio_screenplay_version?.audio_version.sort((a, b) => a.lines.order - b.lines.order) // this should be plural but the db
+
+          console.log('audio_screenplay_version-----------------', audio_screenplay_version)
           console.log('data-----------------', data)
+          
+          const audio_version = data?.lines
+          .filter(line => line?.audio_version?.length)
+          .map(line => line.audio_version[line.audio_version.length - 1])
+          
+          console.log('audio_version-----------------', audio_version)
+          
           setAudioVersions(audio_version)
           updateLines(data?.lines, setLines)
           setScreenPlay(screenPlay)
           setCharacters(data?.characters || [])
           setAudioScreenPlayVersion(audio_screenplay_version)
+      })
+      .catch(error => {
+        console.log("error", error)
       })
       .finally(() => {
         setIsLoading(false)
@@ -235,6 +254,28 @@ export default function Page() {
               }
             } catch(e) {
               console.log('error uploading screenplay', e)
+            }
+          }}
+          updateOrCreateLines={async (changes) => {
+            const res = await updateOrCreateLines(changes)
+            console.log("res====  ", res.data)
+            if (res.error) {
+              toast({
+                title: 'Error updating lines',
+                description: res.error
+              })
+              return {
+                success: false
+              }
+            }
+
+            const params = new URLSearchParams(searchParams.toString())
+            params.set('version', res.data.version_number)
+            router.push(`${pathname}?${params.toString()}`, { shallow: true })
+            
+            setAudioScreenPlayVersion(res.data)
+            return {
+              success: true,
             }
           }}
           characters={[...characters, ...charactersTemp]}

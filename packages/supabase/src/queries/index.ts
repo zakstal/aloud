@@ -28,7 +28,7 @@ export async function getPosts() {
   }
 }
 
-export async function getScreenPlays(screenPlayId) {
+export async function getScreenPlays() {
   const supabase = createClient();
 
   try {
@@ -42,12 +42,13 @@ export async function getScreenPlays(screenPlayId) {
     throw error;
   }
 }
+
 export async function getScreenPlay(screenPlayId) {
   const supabase = createClient();
+  console.time('Get screenplay');
 
-  console.time('Get screenpaly')
   try {
-    const result = await supabase
+    let query = await supabase
       .from("screenplays")
       .select(`
         id,
@@ -56,34 +57,6 @@ export async function getScreenPlay(screenPlayId) {
         created_at,
         screen_play_text,
         screen_play_fountain,
-        lines (
-          id,
-          order,
-          type,
-          text,
-          isDialog,
-          characters (
-            id,
-            name
-          )
-        ),
-        audio_screenplay_versions (
-          status,
-          id,
-          total_lines,
-          total_lines_completed,
-          version_number,
-          audio_file_url,
-          audio_version (
-            id,
-            line_id,
-            audio_file_url,
-            duration_in_seconds,
-            lines (
-              order
-            )
-          )
-        ),
         characters (
           id,
           name,
@@ -98,21 +71,213 @@ export async function getScreenPlay(screenPlayId) {
             voice_name,
             created_at
           )
+        ),
+        audio_screenplay_versions (
+          status,
+          id,
+          total_lines,
+          total_lines_completed,
+          version_number,
+          audio_file_url
         )
       `)
       .eq('id', screenPlayId)
       .single();
 
-    
-    return result;
+      return query
   } catch (error) {
     logger.error(error);
-    console.log("error--------", error)
+    console.log("error--------", error);
     throw error;
   } finally {
-    console.timeEnd('Get screenpaly')
+    console.timeEnd('Get screenplay');
   }
 }
+export async function getScreenPlayLines(screenPlayId: string, versionNumber = null, pagination_token = null) {
+  const supabase = createClient();
+  console.time('Get screenplay lines', versionNumber);
+
+  try {
+      const versionedLines = await supabase
+        .rpc('get_screenplay_version', {
+          screenplayid: screenPlayId,
+          versionnumber: versionNumber,
+          result_limit: 100,
+          pagination_token: null,
+        });
+
+      if (versionedLines.error) {
+        throw versionedLines.error;
+      }
+
+      // Append the versioned lines (with audio versions) to the screenplay data
+      const next_token = versionedLines.data[versionedLines.data.length - 1]?.next_token
+
+      return {
+        next_token,
+        data: versionedLines.data?.map(line => {
+          // accidentally named the retun value audio_version_info 
+          // in the get_screenplay_version funciton. Same for text_content
+          return {
+            id: line.line_id,
+            character_id: line.character_id,
+            type: line.type,
+            isDialog: line.is_dialog,
+            text: line.text_content,
+            order: line.line_order,
+            audio_version: line.audio_version_info,
+          }
+        })
+      }
+
+  } catch (error) {
+    logger.error(error);
+    console.log("error--------", error);
+    throw error;
+  } finally {
+    console.timeEnd('Get screenplay');
+  }
+}
+
+// export async function getScreenPlay(screenPlayId) {
+//   const supabase = createClient();
+
+//   console.time('Get screenpaly')
+//   try {
+//     const result = await supabase
+//       .from("screenplays")
+//       .select(`
+//         id,
+//         title,
+//         type,
+//         created_at,
+//         screen_play_text,
+//         screen_play_fountain,
+//         lines (
+//           id,
+//           order,
+//           type,
+//           text,
+//           isDialog,
+//           characters (
+//             id,
+//             name
+//           ),
+//           audio_version (
+//             id,
+//             line_id,
+//             audio_file_url,
+//             duration_in_seconds
+//           )
+//         ),
+//         audio_screenplay_versions (
+//           status,
+//           id,
+//           total_lines,
+//           total_lines_completed,
+//           version_number,
+//           audio_file_url
+//         ),
+//         characters (
+//           id,
+//           name,
+//           gender,
+//           created_at,
+//           audio_character_version (
+//             id,
+//             audio_screenplay_version_id,
+//             version_number,
+//             voice_data,
+//             voice_id,
+//             voice_name,
+//             created_at
+//           )
+//         )
+//       `)
+//       .eq('id', screenPlayId)
+//       .single();
+
+    
+//     return result;
+//   } catch (error) {
+//     logger.error(error);
+//     console.log("error--------", error)
+//     throw error;
+//   } finally {
+//     console.timeEnd('Get screenpaly')
+//   }
+// }
+// export async function getScreenPlay(screenPlayId) {
+//   const supabase = createClient();
+
+//   console.time('Get screenpaly')
+//   try {
+//     const result = await supabase
+//       .from("screenplays")
+//       .select(`
+//         id,
+//         title,
+//         type,
+//         created_at,
+//         screen_play_text,
+//         screen_play_fountain,
+//         lines (
+//           id,
+//           order,
+//           type,
+//           text,
+//           isDialog,
+//           characters (
+//             id,
+//             name
+//           )
+//         ),
+//         audio_screenplay_versions (
+//           status,
+//           id,
+//           total_lines,
+//           total_lines_completed,
+//           version_number,
+//           audio_file_url,
+//           audio_version (
+//             id,
+//             line_id,
+//             audio_file_url,
+//             duration_in_seconds,
+//             lines (
+//               order
+//             )
+//           )
+//         ),
+//         characters (
+//           id,
+//           name,
+//           gender,
+//           created_at,
+//           audio_character_version (
+//             id,
+//             audio_screenplay_version_id,
+//             version_number,
+//             voice_data,
+//             voice_id,
+//             voice_name,
+//             created_at
+//           )
+//         )
+//       `)
+//       .eq('id', screenPlayId)
+//       .single();
+
+    
+//     return result;
+//   } catch (error) {
+//     logger.error(error);
+//     console.log("error--------", error)
+//     throw error;
+//   } finally {
+//     console.timeEnd('Get screenpaly')
+//   }
+// }
 
 export async function getAudioVersionsByScreenplayId(screenplayVersionId: string, minOrderNumber: number = 0) {
   const supabase = createClient();

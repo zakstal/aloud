@@ -6,15 +6,16 @@ const lineSchema = z.object({
   order: z.number(),
   text: z.string().nullable().optional(),
   type: z.string(),
-  isDialog: z.boolean().nullable().optional(),
+  isDialog: z.union([z.boolean().nullable().optional(), z.string().nullable().optional()]),
   characterName: z.string().optional(),
 });
 
 const linCreatedeSchema = z.object({
+  id: z.string().nullable().optional(), 
   order: z.number().nullable().optional(),
   text: z.string().nullable().optional(),
   type: z.string(),
-  isDialog: z.boolean().nullable().optional(),
+  isDialog: z.union([z.boolean().nullable().optional(), z.string().nullable().optional()]),
   characterName: z.string().optional(),
 });
 

@@ -36,7 +36,7 @@ function getChanges(oldTokens, updatedTokens, screenplayId, characters) {
 
     const newIds = {}
 
-    const newTokens = []
+    // const newTokens = []
     const removeTokens = []
     const updateTokens = []
 
@@ -44,14 +44,17 @@ function getChanges(oldTokens, updatedTokens, screenplayId, characters) {
     for (const newToken of updatedTokens) {
         const id = newToken.id
 
-        if (!id || id?.startsWith('internal')) {
-            console.log("newToken", newToken)
-            newTokens.push(newToken)
-            continue
-        }
+        // if (!id || id?.startsWith('internal')) {
+        //     console.log("newToken", newToken)
+        //     newToken.id = newToken.id.replace('internal', '')
+        //     newTokens.push(newToken)
+        //     continue
+        // }
 
         newIds[id] =  newToken
     }
+
+    console.log('newIds', newIds)
     
     // check if tokens have been removed or changed
     for (const oldToken of oldTokens) {
@@ -73,10 +76,18 @@ function getChanges(oldTokens, updatedTokens, screenplayId, characters) {
             newToken.type === oldToken.type
 
         if (!isSame) {
+            if (typeof newToken.isDialog === 'string') {
+                
+            }
             updateTokens.push(newToken)
         }
 
+        delete newIds[id]
     }
+
+
+    console.log('newIds after', newIds)
+    const newTokens = Object.values(newIds)
 
     return {
         created: newTokens,
@@ -120,17 +131,20 @@ export const ScriptEditor =({
         myRef.current && myRef.current.focus()
     }, [myRef])
 
+    console.log("update")
     return (
         <>
-        {/* <button id="savebutton" onClick={async () => {
+        <button id="savebutton" onClick={async () => {
+            console.log("save1-------------", JSON.stringify(tokens, null, 2))
             const changes = getChanges(scriptTokens, tokens, screenplayId, characters)
             console.log("save1-------------", screenplayId, characters)
             console.log("save0-------------", changes)
             const res = await saveLines(changes)
             console.log('res----', res)
 
-        }}>Save----</button> */}
+        }}>Save----</button>
         
+
         <div
             autoFocus
             ref={myRef}
@@ -142,6 +156,14 @@ export const ScriptEditor =({
             onKeyUp={handleKeyUp}
             onPaste={handlePaste}
             onCut={handleCut}
+            onClick={(e) => {
+                const id = e.target.id
+                const token = scriptTokens.find(token => token.id === id)
+                console.log('id', id, 'token', token)
+                if (token && token.isDialog) {
+                    selectToken(id)
+                }}
+            }
             onSelect={function(event) {
                 handleOnSelect(event)
             }}
@@ -166,17 +188,12 @@ export const ScriptEditor =({
                 
                 {/* <div style={{ position: 'sticky', top: 0 }}>currentOrderId: {currentOrderId}</div>
                 <div>secondaryOrderId: {secondaryOrderId}</div> */}
+            
             <TokenContent
                 tokens={tokens}
                 currentTokenId={currentTokenId}
                 highlightToken={highlightToken}
-                onClick={(e) => {
-                    const id = e.target.id
-                    const token = scriptTokens.find(token => token.id === id)
-                    if (token && token.isDialog) {
-                        selectToken(id)
-                    }
-                }}
+              
             />
         </div>
         </>
