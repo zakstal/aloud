@@ -205,14 +205,14 @@ export default function Page() {
 
           // const audio_version = audio_screenplay_version?.audio_version.sort((a, b) => a.lines.order - b.lines.order) // this should be plural but the db
 
-          console.log('audio_screenplay_version-----------------', audio_screenplay_version)
+          // console.log('audio_screenplay_version-----------------', audio_screenplay_version)
           console.log('data-----------------', data)
           
           const audio_version = data?.lines
           .filter(line => line?.audio_version?.length)
           .map(line => line.audio_version[line.audio_version.length - 1])
           
-          console.log('audio_version-----------------', audio_version)
+          // console.log('audio_version-----------------', audio_version)
           
           setAudioVersions(audio_version)
           updateLines(data?.lines, setLines)
@@ -229,8 +229,6 @@ export default function Page() {
     }
 
   }, [params])
-
-  console.log("audioVersions=========", audioVersions)
 
   // TODO add type for character
   // TODO add type for audio character version

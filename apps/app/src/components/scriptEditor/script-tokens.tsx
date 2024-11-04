@@ -8,13 +8,13 @@ import { cn } from '@/lib/utils';
 'use strict';
 
 const Heading = ({ id, variant = 'h1', text = '', sceneNumber, order, className = '', highlight = false, isDialog = false }: {isDialog: boolean,  highlight: boolean,variant: string, text?: string, sceneNumber?: number | null, order: number | null, className: string, id: string }) => {
-    if (variant === 'h1') return <h1 key={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{!highlight ? text : (<mark>{text}</mark>)}</h1>
-    if (variant === 'h2') return <h2 key={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{!highlight ? text : (<mark>{text}</mark>)}</h2>
-    if (variant === 'h3') return <h3 key={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog', ' font-courier font-bold')} id={sceneNumber?.toString()} >{!highlight ? text : (<mark>{text}</mark>)}</h3>
-    if (variant === 'h4') return <h4 key={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{!highlight ? text : (<mark>{text}</mark>)}</h4>
+    if (variant === 'h1') return <h1 key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{!highlight ? text : (<mark>{text}</mark>)}</h1>
+    if (variant === 'h2') return <h2 key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{!highlight ? text : (<mark>{text}</mark>)}</h2>
+    if (variant === 'h3') return <h3 key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog', ' font-courier font-bold')} >{!highlight ? text : (<mark>{text}</mark>)}</h3>
+    if (variant === 'h4') return <h4 key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{!highlight ? text : (<mark>{text}</mark>)}</h4>
 
     // TODO i know
-    if (variant === 'hr') return <hr key={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')}/>
+    if (variant === 'hr') return <hr key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')}/>
     if (variant === 'br') return null
 }
 
@@ -27,7 +27,7 @@ export const Paragraph = ({ id, text = '', type = '', order, dataDepth, classNam
 
 const Div = ({ id, className = '', order, children, highlight = false, isDialog = false }: {isDialog: boolean, highlight: boolean, className?: string, order: number, children: any }) => {
     return (
-        <div key={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')}>{children}</div>
+        <div key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')}>{children}</div>
     )
 }
 
@@ -138,7 +138,7 @@ export const tokenize = function (script, optionsIn = {}) {
     // dialog. 
     // TODO this does not handle dual dialog and parenthenticals. Its temporary
     if (options.isLastCharacter) {
-        tokens.push({ type: 'dialogue', text: line, isDialog: true, characterName: options.characterNameMaybe });
+        tokens.push({ type: 'dialogue', text: line, isDialog: true, characterName: options.characterNameMaybe || "narrator" });
         return tokens
     }
     // dialogue blocks - characters, parentheticals and dialogue
@@ -350,8 +350,6 @@ export const TokenContent = function ({ tokens, currentTokenId, highlightToken, 
        
     }
 
-    console.log('title_page', title_page)
-    console.log('htmlContent', htmlContent)
     return (
         <>
             {title_page.reverse()}

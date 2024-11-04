@@ -131,7 +131,6 @@ export const ScriptEditor =({
         myRef.current && myRef.current.focus()
     }, [myRef])
 
-    console.log("update")
     return (
         <>
         <button id="savebutton" onClick={async () => {
@@ -193,7 +192,6 @@ export const ScriptEditor =({
                 tokens={tokens}
                 currentTokenId={currentTokenId}
                 highlightToken={highlightToken}
-              
             />
         </div>
         </>

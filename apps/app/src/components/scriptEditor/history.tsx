@@ -18,6 +18,8 @@ function last(arr: any) {
     return arr[arr.length - 1]
 }
 
+let wait = (time) => new Promise((resolve) => setTimeout(() => (resolve()), time))
+
 type commitChangeCallbackType = ((noUpdate: boolean) => void) | null
 
 
@@ -56,9 +58,30 @@ export default class History {
         this.commitUndoCallback = commitUndoCallback
     }
 
+    async setVersion(dbTokenVersion, direction: 'start' | 'end' = 'end') {
+        if (this.pendingUpdates) {
+            await this.commitUpdates()
+        }
+        this.flushUpdates()
+        this.flushUndos()
+
+        this.dbTokenVersion = dbTokenVersion
+        if (direction === 'end') {
+            this.applyChanges()
+            return
+        }
+        if (direction === 'start') {
+            const res = await this.diffs(this.dbTokenVersion)
+            this.pendingUndos = res
+            return
+        }
+
+    }
+
+
+
     // could be run on setData
     async applyChanges() {
-        console.log('applyChanges history')
         if (!this.dbTokenVersion) return
         const diffs = await this.diffs(this.dbTokenVersion);
 
@@ -188,14 +211,18 @@ export default class History {
 
         const lastInstertedGroup = await this.db.getByIdGroup(this.lastInsertedId, this.dbTokenVersion)
 
+
         if (!lastInstertedGroup || !lastInstertedGroup.length) return
+        const last = lastInstertedGroup.sort((a: Diff, b: Diff) => Number(a.id) - Number(b.id))[0]
+        const nextLastInsertedId = Number(last.id) - 1
+        if (this.lastInsertedId === nextLastInsertedId)  return // we are at the end
 
         this.pendingUndos = this.pendingUndos.concat(lastInstertedGroup)
 
         // set Id to last undoModification
         // a bit stupid to subtract 1, but the ids are sequential and its easy for now. 
-        const last = lastInstertedGroup.sort((a: Diff, b: Diff) => Number(a.id) - Number(b.id))[0]
-        this.lastInsertedId = Number(last.id) - 1
+        
+        this.lastInsertedId = nextLastInsertedId
 
         this.commitUndos()
 
@@ -208,7 +235,8 @@ export default class History {
         this.applyDo(nextUndoGroup)
         const stagedUndoGroup = this.pendingRedos ? this.pendingRedos[this.pendingRedos.length - 1] : null
 
-        const lastStaged = stagedUndoGroup ? stagedUndoGroup[stagedUndoGroup.length - 1] : null
+        // const lastStaged = stagedUndoGroup ? stagedUndoGroup[stagedUndoGroup.length - 1] : null
+        const lastStaged = nextUndoGroup ? nextUndoGroup[nextUndoGroup.length - 1] : null
         this.lastInsertedId = lastStaged?.id || null
         const lastApplied = last(nextUndoGroup)
         

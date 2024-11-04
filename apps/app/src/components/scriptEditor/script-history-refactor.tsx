@@ -173,8 +173,10 @@ export class ScriptHistory extends History {
             await db?.resetDb()
             window.location.reload()
         }
-        window.undo = db?.undo
+        window.undo = this.undo.bind(this)
+        window.redo = this.redo.bind(this)
         window.diffs = () => db?.diffs(dbTokenVersion)
+        window.setVersion = this.setVersion.bind(this)
     }
 
     async applyChanges() {
@@ -452,7 +454,7 @@ export class ScriptHistory extends History {
                 this.tokens[udpate.idx][key] = value
             }
         } catch (e) {
-            // console.error('Error modifying', e)
+            console.error('Error modifying', e)
         }
 
         this.tokens = [...this.tokens]
@@ -461,7 +463,9 @@ export class ScriptHistory extends History {
 
     addDo(update: Diff) {
         try {
-            this.tokens = this.tokens.toSpliced(update.idx, 0, update.newValue)
+
+            this.tokens = this.tokens.toSpliced(update.idx, 0, ...(Array.isArray(update.newValue) ? update.newValue : [update.newValue]))
+
         } catch (e) {
             // console.error('Error adding', e)
         }
