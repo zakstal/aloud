@@ -16,8 +16,8 @@ export const getAudioTask = task({
     logger.log("payload", { payload })
     const voiceVersion = payload
     const audioCharacter = voiceVersion.audio_character_version
-    // const audioProviderName = audioCharacter.voice_data.audioProvider
-    const audioProviderName = 'test'
+    const audioProviderName = audioCharacter.voice_data.audioProvider
+    // const audioProviderName = 'test'
     // const textToSpeech = textToVoiceProvders['test']
     const textToSpeech = textToVoiceProvders[audioProviderName]
     const orderNumber = voiceVersion.lines.order

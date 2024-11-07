@@ -219,6 +219,7 @@ export default function Page() {
           setScreenPlay(screenPlay)
           setCharacters(data?.characters || [])
           setAudioScreenPlayVersion(audio_screenplay_version)
+          setCharactersTemp([])
       })
       .catch(error => {
         console.log("error", error)
@@ -235,6 +236,7 @@ export default function Page() {
   return (
     <>  
         <ScreenPlayConatiner
+          key={params?.screenplayid}
           title={data?.title}
           screenplayId={params?.screenplayid}
           isLoading={isLoading}
@@ -256,11 +258,28 @@ export default function Page() {
           }}
           updateOrCreateLines={async (changes) => {
             const res = await updateOrCreateLines(changes)
-            console.log("res====  ", res.data)
+            console.log("res====  ", res)
+            if (res.validationErrors) {
+              toast({
+                title: 'Validation errors',
+                // description: res.validationErrors
+              })
+              console.log('validation errors', res.validationErrors)
+              return
+            }
             if (res.error) {
               toast({
                 title: 'Error updating lines',
                 description: res.error
+              })
+              return {
+                success: false
+              }
+            }
+            if (res.data.error) {
+              toast({
+                title: 'Error updating lines',
+                description: res.data.error
               })
               return {
                 success: false

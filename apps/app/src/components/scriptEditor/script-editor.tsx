@@ -27,12 +27,15 @@ interface ScriptEditorInput {
     highlightToken?: boolean;
 }
 
-function getChanges(oldTokens, updatedTokens, screenplayId, characters) {
+function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, characters) {
 
+    const narrator = characters.find(character => character.name.toLowerCase() === 'narrator')
     // update ordering 
     updatedTokens.forEach((token, i) => {
         token.order = i
     })
+
+    console.log("after order update", JSON.stringify(updatedTokens, null, 2))
 
     const newIds = {}
 
@@ -86,15 +89,17 @@ function getChanges(oldTokens, updatedTokens, screenplayId, characters) {
     }
 
 
-    console.log('newIds after', newIds)
+    console.log('newCharacters--', newCharacters)
     const newTokens = Object.values(newIds)
+    const names = new Set(characters.map(obj => obj.name))
 
     return {
         created: newTokens,
         removed: removeTokens,
         updated: updateTokens,
         screenplayId,
-        characters: characters.filter(character => character.id.startsWith('internal'))
+        characters: newCharacters
+        // characters: [ ...newCharacters, ...characters ]
     }
 
 }
@@ -125,18 +130,21 @@ export const ScriptEditor =({
         handleOnSelect,
         handlePaste,
         handleCut,
-    ] = useFountainNodes(scriptTokens, audioScreenPlayVersion, pdfText, setCharacters)
+        getNewCharacters
+    ] = useFountainNodes(scriptTokens, audioScreenPlayVersion, pdfText, setCharacters, characters)
 
     useEffect(() => {
         myRef.current && myRef.current.focus()
     }, [myRef])
 
+    console.log("tokens", tokens)
+
     return (
         <>
         <button id="savebutton" onClick={async () => {
             console.log("save1-------------", JSON.stringify(tokens, null, 2))
-            const changes = getChanges(scriptTokens, tokens, screenplayId, characters)
-            console.log("save1-------------", screenplayId, characters)
+            const changes = getChanges(scriptTokens, tokens, screenplayId, getNewCharacters(), characters)
+
             console.log("save0-------------", changes)
             const res = await saveLines(changes)
             console.log('res----', res)

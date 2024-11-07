@@ -57,8 +57,8 @@ async function createLines({
     return obj
   }, {})
 
-  const toInsertLines = dialog.map(({ characterName, text, isDialog, type, order, id  }: Dialog, index: number) => {
-    const characterId = nameCharacterIdMap && nameCharacterIdMap[characterName]
+  const toInsertLines = dialog.map(({ characterName, text, isDialog, type, order, id, character_id  }: Dialog, index: number) => {
+    const characterId = character_id ? character_id : nameCharacterIdMap && nameCharacterIdMap[characterName]
 
     const obj = {
       screenplay_id: screenplayId,
@@ -98,12 +98,14 @@ async function createLines({
       const toInsertLineVersions = insertedData && insertedData
         .filter((line: { id: string, character_id: string, isDialog: boolean }) => line.isDialog )
         .map((line: { id: string, character_id: string, isDialog: boolean  }) => ({
-        line_id: line.id,
-        version_number: 1,
-        screenplay_id: screenplayId,
-        audio_screenplay_version_id: screenplayVersionId,
-        audio_character_version_id: characterIdToInsertedIdMap[line.character_id],
-      }))
+          line_id: line.id,
+          version_number: 1,
+          screenplay_id: screenplayId,
+          audio_screenplay_version_id: screenplayVersionId,
+          audio_character_version_id: characterIdToInsertedIdMap[line.character_id],
+        }))
+
+        console.log('toInsertLineVersions', toInsertLineVersions)
 
       const { data, error: audioVersionError } = toInsertLineVersions 
       ? await supabase
@@ -113,6 +115,7 @@ async function createLines({
       : {}
 
       if (audioVersionError) {
+        console.log("audioVersionError", audioVersionError)
         throw audioVersionError;
       }
       console.timeEnd("audio_versions insert")
@@ -129,12 +132,21 @@ async function insertCharacters ({
   supabase,
 }: CreateCharacersInput) {
   if (!characters || !characters?.length) return null
-  const charactersInsert = characters && characters.map((obj) => ({
-    screenplay_id: screenplayId,
-    name: obj.name,
-    gender: obj?.likelyGender || obj?.gender,
-  }));
+  const charactersInsert = characters && characters.map((obj) => {
+    const update = {
+      screenplay_id: screenplayId,
+      name: obj.name,
+      gender: obj?.likelyGender || obj?.gender,
+    }
 
+    if (obj.id) {
+      update.id = obj.id
+    }
+
+    return update
+});
+
+  console.log('charactersInsert', charactersInsert)
   
   const { data: insertedCharacters, error: charactersError } = charactersInsert 
   ? await supabase
@@ -144,12 +156,22 @@ async function insertCharacters ({
   : {}
 
 
+    console.log('insertedCharacters', insertedCharacters)
     console.log('charactersError', charactersError)
   if (charactersError) {
     throw charactersError;
   }
 
-  return insertedCharacters
+  const { data: allCharacters, error: allCharactersError } = await supabase
+    .from("characters")
+    .select("id, name")
+    .eq('screenplay_id', screenplayId)
+
+    if (allCharactersError) {
+      throw allCharactersError;
+    }
+
+  return allCharacters
 }
 
 interface CreateCharacersVersionInput {
@@ -170,6 +192,8 @@ async function insertCharacterVersions ({
     character_id: insertedChar.id,
     version_number: 1
   }))
+
+  console.log("characterVersionInsert---", characterVersionInsert)
   
   const { data: insertedAudioCharacters, error: audiocharactersError } = await supabase
   .from("audio_character_version")
@@ -257,6 +281,14 @@ export async function createScreenPlay(
     console.timeEnd('Screen play insert')
  
     console.time('Character insert')
+    const isNarrator = characters?.some(character => character.name === 'Narrator')
+    if (!isNarrator) {
+      characters.push({
+        name: 'Narrator',
+        likelyGender: null
+      })
+    }
+
     const insertedCharacters = await insertCharacters({
       characters,
       screenplayId,

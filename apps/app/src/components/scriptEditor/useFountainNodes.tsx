@@ -85,9 +85,10 @@ function getElementAtCaret() {
 }
 
 
+console.log("start here")
 window.scriptStorage = window.scriptStorage || new ScriptHistory()
 
-export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string, pdfText, setCharacters) {
+export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string, pdfText, setCharacters, characters) {
 
 
     const [tokens, setTokens] = useState(prepareTokensRender(tokensIn?.length ? tokensIn : [{ type: 'editNode', text: ' '}]))
@@ -126,7 +127,12 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             },
             tokens,
             setCharacters,
+            characters,
         )
+
+        // return () => {
+        //     window.scriptStorage = null
+        // }
 
     }, [versionNumber])
 
@@ -174,9 +180,12 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             if (e.key === 'Tab' && orderId) {
                 e.preventDefault()
 
-                window.scriptStorage.modify({
-                    type: 'character',
-                }, orderId, selection?.anchorOffset)
+                // window.scriptStorage.modify({
+                //     type: 'character',
+                // }, orderId, selection?.anchorOffset)
+
+
+                window.scriptStorage.onTab(orderId, selection?.anchorOffset)
 
                 window.scriptStorage.commit()
                 setCurrentOrderId(orderId)
@@ -267,9 +276,11 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
                 let carotPostiion = 0
                 let focusId = currentOrderId
 
+                console.log("onEnter")
                 window.scriptStorage.combineSplitRange(focusId, carotPostiion || selection?.anchorOffset)
-                window.scriptStorage.updateOrCreateCharacters(focusId)
-                window.scriptStorage.commit()
+                window.scriptStorage.commit({
+                    updateCharacters: true
+                })
 
                 setCurrentOrderId(Number(currentOrderId) + 1)
                 setNextCaretPosition(0)
@@ -283,6 +294,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
         },
         function handleOnBackSpace(e) {
             const selection = window.getSelection();
+            console.log("e backsapce-----------", e.target, e.currentTarget)
             
             if (selection.anchorOffset !== 0 && !rangeOffsets) return
             console.log('backaspace----------', rangeOffsets)
@@ -293,7 +305,9 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             try {
                 const res = window.scriptStorage?.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
                 const [carotPostiion, focusId] = res
-                window.scriptStorage.commit()
+                window.scriptStorage.commit({
+                    updateCharacters: true
+                })
                 
                 setCurrentOrderId(focusId)
                 setNextCaretPosition(carotPostiion)
@@ -370,7 +384,8 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             setRangeOffsets(null)
             // setTokens(newTokens)
         },
+        window.scriptStorage.getNewCharacters.bind(window.scriptStorage),
         currentOrderId,
-        secondaryOrderId
+        secondaryOrderId,
     ]
 }

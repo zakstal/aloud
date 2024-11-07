@@ -49,6 +49,8 @@ export default class History {
 
     constructor(dbTokenVersion: string, db, commitUpdateCallback?: commitChangeCallbackType, commitUndoCallback?: commitChangeCallbackType) {
         this.setData(dbTokenVersion, db, commitUpdateCallback, commitUndoCallback)
+        window.calls = []
+        window.appliedIds = []
     }
 
     setData(dbTokenVersion: string, db, commitUpdateCallback?: commitChangeCallbackType, commitUndoCallback?: commitChangeCallbackType) {
@@ -91,6 +93,7 @@ export default class History {
         const last = diffs[diffs.length - 1]
         this.lastInsertedId = last.id
 
+        // console.log("redo applyChanges")
         this.applyDo(diffsToApply)
     }
 

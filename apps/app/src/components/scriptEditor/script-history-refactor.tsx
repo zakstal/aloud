@@ -1,10 +1,12 @@
-import { Tokens, tokenize as tokenizeIn } from './script-tokens'
+import { Tokens, TokenType, tokenize as tokenizeIn } from './script-tokens'
 import { Diff } from './storage'
 import History, { updateTypes, ChangeType } from './history'
 import { getWindow } from '@/getWindow'
 import { v4 as uuid } from 'uuid';
 
 let window = getWindow()
+
+
 
 
 const DELETE = 'delete'
@@ -42,11 +44,188 @@ const transformText = (text: string, type: string) => {
     return [text, false]
 }
 
-type Character = { name: string, gender: string | null }
+type Character = { name: string, gender: string | null, id: string }
+
+type LineId = string;
 
 type commitCallbackType = ((tokens: Tokens[], caretPosition: number | null, currentId: number | null) => void) | null
 type setCharactersType = ((characters: Character[] | []) => void) | null
 
+class Line {
+    line: Tokens = null
+    scriptMeta = null
+    constructor(line, scriptMeta) {
+        this.scriptMeta = scriptMeta
+        this.line = line
+        this.update(line)
+        this.#updateType(line.type)
+    }
+
+    get id() {
+        return this.line.id
+    }
+
+    get type() {
+        return this.line.type
+    }
+
+    get text() {
+        return this.line.text
+    }
+    set character_id(id) {
+        return this.line.character_id = id
+    }
+
+    #updateType(newType) {
+        this.scriptMeta.removeLineFromType(this)
+        this.scriptMeta.addLineToType(newType, this)
+    }
+
+    update(line) {
+        if (line.type !== this.line?.type) this.#updateType(line.type)
+        this.line = line  
+
+        if (this.line.type === "action" && !this.line.character_id) {
+            this.line.character_id = this.scriptMeta.charactersNames?.Narrator?.id
+            this.line.isDialog = true
+        }
+        
+        if (this.line.character_id && !this.line.isDialog) {
+            this.line.isDialog = true
+        }
+
+    }
+}
+
+class ScriptMeta {
+    charactersNames: {[key: string]: Character} = {}
+    characters: Character[] = [] // existing characters from the remote db
+    linesById: {[key: LineId]: Line} = {}
+    linesByType: {[key: TokenType]: {[key: LineId]: Tokens} } = {}
+
+    constructor(characters: Character[] | null, lines: Tokens[] | null) {
+        this.addCharacters(characters)
+        this.addExistingLines(lines)
+        window.scriptMeta = this
+    }
+
+    createNarrator() {
+        const name = 'Narrator'
+        this.charactersNames[name] = {
+            id: getId(),
+            name,
+            gender: null,
+        } 
+    }
+
+    addCharacters(characters: Character[]) {
+        if (!characters) return
+        this.characters = characters
+        for (const character of characters) {
+            this.charactersNames[character.name] = character
+        }
+    }
+
+    addExistingLines(lines) {
+        if (!lines) return;
+
+        this.onLineChage(lines, ADD)
+    }
+
+    getCharacters() {
+        this.updateCharacterNameMap()
+        return Object.values(this.charactersNames)
+    }
+ 
+    getNewCharacters() {
+        // TODO this also needs to handle removing characters
+        const names = new Set(this.characters?.map(character => character.name))
+        return this.getCharacters()?.filter(character => !names.has(character.name))
+    }
+
+
+    updateCharacterNameMap() {
+        const exclude = ['written']
+        try {
+            const names = new Set(Object.keys(this.charactersNames))
+
+            for (const lineId in this.linesByType?.character) {
+
+                const { text } = this.linesById[lineId] || {}
+
+                if (!text) continue
+                const textLower = text.toLocaleLowerCase()
+                if (exclude.some(excludeName => textLower.startsWith(excludeName))) continue
+                // discard paraens
+                const name = text.endsWith(')') ? text.replace(/\(.+\)/g, '')?.trim() : text
+                names.delete(name)
+
+                if (this.charactersNames[name]) {
+                    this.linesById[lineId].character_id = this.charactersNames[name].id
+                    continue
+                }
+                const id = getId()
+                this.charactersNames[name] = {
+                    id,
+                    name,
+                    gender: null,
+                }  
+
+                this.linesById[lineId].character_id = id
+            }
+
+
+            for (const name of names) {
+                if (name.toLocaleLowerCase() === "narrator") continue
+                delete this.charactersNames[name]
+            }
+
+        } catch(e) {
+            console.log("updateCharacterNameMap", e)
+
+        }
+    }
+
+    removeLineFromType(line: Line) {
+        const type = this.linesById[line.id]?.type
+
+        if (!type || !this.linesByType[type]) return
+
+        delete this.linesByType[type][line.id]
+
+    }
+    
+    addLineToType(type, line: Line) {
+
+        if (!this.linesByType[type]) {
+            this.linesByType[type] = {}
+        }
+
+        this.linesByType[type][line.id] = line
+
+    }
+    
+    onLineChage(changes, updateType) {
+        for (const change of changes) {
+            switch(updateType) {
+                case ADD:   
+                    this.linesById[change.id] = new Line(change, this)
+                break;
+                case MODIFY:
+                    const line = this.linesById[change.id]
+                    if (line) {
+                        line.update(change)
+                    }
+                    // this.linesById[change.id] = change
+                break;
+                case DELETE:
+                   delete this.linesById[change.id]
+                break;
+            }
+        }
+
+    }
+}
 
 /**
  * NB:
@@ -131,19 +310,25 @@ type setCharactersType = ((characters: Character[] | []) => void) | null
 export class ScriptHistory extends History {
     commitCallback: commitCallbackType = null
     tokens: Tokens[] = []
-    characters: Character[] =  []
-    charactersNameMap: { [key: string]: Character} = {}
     appliedVersion: string = ''
-
+    charactersNameMap: { [key: string]: Character} = {}
+    characterLines: {[key: string]: Character} = {}
+    scriptMeta = null
 
     setCharacters: setCharactersType = null
 
-    constructor(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[], setCharacters: setCharactersType) {
+    constructor(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[], setCharacters: setCharactersType, characters: Character[]) {
+        
         super(dbTokenVersion, db)
-        this.setCallbackValues(dbTokenVersion, db, commitCallback, tokens, setCharacters)
+        // TODO pass all tokens into script meta at some point
+        this.setCallbackValues(dbTokenVersion, db, commitCallback, tokens, setCharacters, characters)
     }
 
-    async setCallbackValues(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[], setCharacters: setCharactersType) {
+    async setCallbackValues(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[], setCharacters: setCharactersType, characters: Character[]) {
+        this.scriptMeta = this.scriptMeta ? this.scriptMeta : new ScriptMeta()
+        this.scriptMeta.addExistingLines(tokens)
+        this.scriptMeta.addCharacters(characters)
+
         const commitUpdateCallback = (lastToUpdate: Diff) => {
             this.commitCallback && this.commitCallback(this.tokens, lastToUpdate?.caretPosition)
         }
@@ -167,6 +352,7 @@ export class ScriptHistory extends History {
             this.appliedVersion = dbTokenVersion
             await this.applyChanges()
             this.commitCallback(this.tokens)
+            this.commitCharacters()
         }
 
         window.resetDb = async () => {
@@ -177,6 +363,8 @@ export class ScriptHistory extends History {
         window.redo = this.redo.bind(this)
         window.diffs = () => db?.diffs(dbTokenVersion)
         window.setVersion = this.setVersion.bind(this)
+        window.getNewCharacters = this.getNewCharacters.bind(this)
+        window.getCharacters = this.getCharacters.bind(this)
     }
 
     async applyChanges() {
@@ -190,51 +378,7 @@ export class ScriptHistory extends History {
         const last = diffs[diffs.length - 1]
         this.lastInsertedId = last.id
 
-        // const addedModifed = diffs
-        //     .filter(update => update?.newValue?.type === 'character' || update?.oldValue?.type === 'character')
-
-
-        // console.log("addedModifed", addedModifed)
-        // this.updateOrCreateCharacters(addedModifed, this.setCharacters)
-
         super.applyDo(diffs)
-    }
-
-    // updateOrCreateCharacters(idx) {
-    //     console.log('character token', this.tokens[idx])
-    // }
-
-    updateOrCreateCharacters(tokensIn: ChangeType[]) {
-        const tokens = tokensIn ? tokensIn : this.pendingUpdates
-        for (const token of tokens) {
-            // the token.id less than 6 is to check if the token is newly created. If 
-            const character = this.charactersNameMap[token?.oldValue?.text]
-            if (token.type === updateTypes.MODIFY || token.type === updateTypes.ADD) {
-                // oldValue could be null in the case of ADD
-                if (!character && token?.newValue?.text) {
-                    this.charactersNameMap[token?.newValue?.text] = { name: token?.newValue?.text, gender: null, id: getId(), deleted: false }
-                }
-                
-                if (character && token?.newValue?.text !== character.name ) {
-                    delete this.charactersNameMap[token?.oldValue?.text]
-                    character.name = token?.newValue?.text
-                    this.charactersNameMap[token?.newValue?.text] = {...character}
-                    if (!token?.newValue?.text || token?.newValue?.text === '\n') {
-                        delete this.charactersNameMap[token?.newValue?.text]
-                    }
-                }
-            }
-
-            // if (token.type === updateTypes.DELETE) {
-            //     character.deleted = true
-            //     this.charactersNameMap[token?.oldValue?.text] = {...character}
-            // }
-
-            if (this.setCharacters) {
-                this.setCharacters(Object.values(this.charactersNameMap))
-            }
-        }
-    
     }
 
     combineRange(currentOrderIdIn: number, nextIdIn: number, currentOffsetIn: number, nextOffsetIn: number) {
@@ -264,14 +408,19 @@ export class ScriptHistory extends History {
         this.deleteRange(currentOrderId, nextId, currentOffset || carotPostiion)
 
         const textCombined = combineText(currentText, nextText, currentOffset, nextOffset)
-
-        const isLastCharacter =  this.tokens[currentOrderId - 1] ? this.tokens[currentOrderId - 1]?.type === 'character' : false
-        const foundTokens = tokenize(textCombined, { isLastCharacter })
+        const lastToken = this.tokens[currentOrderId - 1]
+        const isLastCharacter =  lastToken ? lastToken?.type === 'character' : false
+        const characterNameMaybe = isLastCharacter ? lastToken?.character_id : this.scriptMeta.charactersNames?.Narrator?.id
+        const foundTokens = tokenize(textCombined, { isLastCharacter, characterNameMaybe })
 
             foundTokens.forEach((token, foundIdx) => {
                 const toAdd = {
                     ...token,
                     id: getId()
+                }
+
+                if (toAdd.type === 'action' && !toAdd.character_id) {
+                    toAdd.character_id = characterNameMaybe
                 }
 
                 // the line has been removed
@@ -282,7 +431,7 @@ export class ScriptHistory extends History {
                 this.add(toAdd, currentOrderId + foundIdx, currentOffset || carotPostiion)
             })
     
-        console.log('this.pendingUpdates', this.pendingUpdates)
+        // console.log('this.pendingUpdates', this.pendingUpdates)
         return [currentOffset || carotPostiion, currentOrderId]
     }
 
@@ -303,12 +452,20 @@ export class ScriptHistory extends History {
         
         const offset = anchorOffset === 0 ? 0 : 1
     
-        this.add({
+        const update = {
             text,
             caretPosition: anchorOffset,
             type: 'editNode',
+            character_id: null,
             id: getId()
-        }, Number(currentOrderId) + offset)
+        }
+
+        if (update.type === "action" && !update.character_id) {
+            update.character_id = this.scriptMeta.charactersNames?.Narrator?.id
+            update.isDialog = true
+        }
+
+        this.add(update, Number(currentOrderId) + offset)
     
     }
 
@@ -332,10 +489,10 @@ export class ScriptHistory extends History {
         const token = this.tokens[idx]
         if (!token) return
 
-        console.log('lastToken', lastToken)
-        console.log('token', token)
+        // console.log('lastToken', lastToken)
+        // console.log('token', token)
         const isLastCharacter = lastToken?.type === 'character'
-        const characterNameMaybe = lastToken?.characterName
+        const characterNameMaybe = isLastCharacter ? lastToken?.character_id : this.scriptMeta.charactersNames?.Narrator?.id
 
         let nextText = null
         // combine text if text was pasted into the middle of text
@@ -351,7 +508,7 @@ export class ScriptHistory extends History {
 
         const foundTokens = tokenize(nextText, { isLastCharacter, characterNameMaybe }, this.setCharacters)
         const [newText, didUpdate] = transformText(tokenPartialMaybe.text, token.type)
-
+        
         if (!didUpdate) {
             this.tokens[idx].text = newText
         }
@@ -368,10 +525,20 @@ export class ScriptHistory extends History {
             if (foundType !== token.type) {
                 textTransformed = true
             }
-            this.modify({
+            console.log('modify--')
+            const update = {
                 type: foundTokens[0]?.type,
+                character_id: foundTokens[0]?.character_id,
+                isDialog: foundTokens[0]?.isDialog,
                 text: newText
-            }, idx, caretPosition)
+            }
+
+            if (update.type === "action" && !update.character_id) {
+                update.character_id = characterNameMaybe
+                update.isDialog = true
+            }
+
+            this.modify(update, idx, caretPosition)
 
         } else {
             // Remove current and add new items 
@@ -381,12 +548,43 @@ export class ScriptHistory extends History {
                 // not effeicient to reassing on each, but easy .
                 focusId = Number(idx) + Number(foundIdx)
                 nextCaretPostion = foundToken?.text?.length
+                if (!foundToken.id) {
+                    foundToken.id = getId()
+                }
+
                 this.add(foundToken, focusId, caretPosition)
             })
         }
 
         const updated = tokensUpdated || textTransformed
         return [updated, focusId, nextCaretPostion]
+    }
+
+    onTab(orderId, offset) {
+        const token = this.tokens[orderId]
+        const lastToken = this.tokens[orderId - 1]
+
+        if (!token.text && lastToken.type !== 'character') {
+            this.modify({
+                type: 'character',
+            }, orderId, offset)
+            return
+        }
+
+        if (lastToken.type === 'character') {
+            this.modify({
+                type: 'dialogue',
+                character_id: lastToken.character_id,
+                isDialog: true,
+            }, orderId, offset)
+        }
+    }
+
+
+    onTokenChange(changesIn, type) {
+        const changes = Array.isArray(changesIn) ? changesIn : [changesIn]
+
+        this.scriptMeta.onLineChage(changes, type)
     }
 
     /**
@@ -433,11 +631,15 @@ export class ScriptHistory extends History {
     }
 
     deleteInternal({ idx, idxRange }: Diff) {
+        // console.log('deleteInternal', idx, idxRange)
         try {
             // deleteInternal is used for deleting and addUndo.  (idxRange - idx) + 1) is for the initial delete,
             // but for addUndo we only need to delete one item and it and an ADD update does not have an idxRange
             // TODO add testing for this
             const forHowMany = idxRange ? ((idxRange - idx) + 1) : 1 
+
+            
+            this.onTokenChange(this.tokens.slice(idx, idx + forHowMany + 1), DELETE)
             this.tokens = this.tokens.toSpliced(idx, forHowMany)
         } catch (e) {
             // console.error('Error deleting', e)
@@ -445,8 +647,12 @@ export class ScriptHistory extends History {
     }
 
     modifyInternal(udpate: Diff, isForward: boolean = true) {
+        // console.log('isForward', isForward, udpate, this.tokens)
         const updateValue = isForward ? udpate.newValue : udpate.oldValue
+        // console.log("tbefore his.tokens[udpate.idx]", this.tokens[udpate.idx])
         this.tokens[udpate.idx] = {...this.tokens[udpate.idx]}
+        // console.log("after this.tokens[udpate.idx]", this.tokens[udpate.idx])
+
 
         try {
             for (const [key, value] of Object.entries(updateValue)) {
@@ -457,14 +663,21 @@ export class ScriptHistory extends History {
             console.error('Error modifying', e)
         }
 
+        this.onTokenChange(this.tokens[udpate.idx], MODIFY)
+
         this.tokens = [...this.tokens]
+
+        // console.log("this.tokens", this.tokens)
     }
 
 
     addDo(update: Diff) {
+        // console.log("addDo", update)
         try {
 
-            this.tokens = this.tokens.toSpliced(update.idx, 0, ...(Array.isArray(update.newValue) ? update.newValue : [update.newValue]))
+            const changes = (Array.isArray(update.newValue) ? update.newValue : [update.newValue])
+            this.onTokenChange(changes, ADD)
+            this.tokens = this.tokens.toSpliced(update.idx, 0, ...changes)
 
         } catch (e) {
             // console.error('Error adding', e)
@@ -473,6 +686,7 @@ export class ScriptHistory extends History {
 
 
     deleteRangeDo(update: Diff) {
+        // console.log("deleteRangeDo", this.tokens)
         return this.deleteInternal(update)
     }
     
@@ -482,6 +696,7 @@ export class ScriptHistory extends History {
     }
 
     addUndo(update: Diff) {
+        // console.log("addUndo", update, this.tokens)
         return this.deleteInternal(update)
     }
     
@@ -504,19 +719,35 @@ export class ScriptHistory extends History {
         this.commitCallback && this.commitCallback(this.tokens, lastApplied?.caretPosition, lastApplied.idx)
     }
 
-    commit(options) {
+    commitCharacters() {
+        this.scriptMeta.updateCharacterNameMap()
+
+        if (this.setCharacters) {
+            this.setCharacters(this.scriptMeta.getNewCharacters())
+        }
+    }
+
+    commit(options = {}) {
         const addedModifed = this.pendingUpdates
             .filter(update => update?.newValue?.type === 'character' || update?.oldValue?.type === 'character')
-
-        // console.log("addedModifed", addedModifed)
         
-        this.updateOrCreateCharacters(addedModifed)
+        if (options?.updateCharacters) {
+         this.commitCharacters()
+        }
         super.commit(options)
     }
 
     async diffs() {
         const res = await this.db.diffs(this.dbTokenVersion)
         return res
+    }
+
+    getNewCharacters() {
+        return this.scriptMeta.getNewCharacters()
+    }
+    
+    getCharacters() {
+        return this.scriptMeta.getCharacters()
     }
 
 }

@@ -163,7 +163,8 @@ export default function ScreenPlayConatiner({
                                 voiceSelectionOpen ? 'w-75' : 'w-[75px]',
                                 )}
                             >
-                                <VoiceActors
+                            <VoiceActors
+                                key={audioScreenPlayVersion?.id}
                                 character={selectedCharacter}
                                 onClose={() => {
                                     setSelectedCharacter(null)
@@ -181,6 +182,7 @@ export default function ScreenPlayConatiner({
                             <div className="pl-8" >
                                 <div className="h-14 flex items-center" >
                                     <GetAudio
+                                        key={audioScreenPlayVersion?.id}
                                         audioBeingGotten={audioBeingGotten}
                                         processAudio={processAudio}
                                         setAudioBeingGotten={setAudioBeingGotten}
@@ -188,6 +190,7 @@ export default function ScreenPlayConatiner({
                                     />
                                 </div>
                                 <Characters
+                                    key={audioScreenPlayVersion?.id}
                                     characters={characters}
                                     audioVersionNumber={audioVersionNumber}
                                     onCharacterClick={(character) => {
@@ -207,6 +210,7 @@ export default function ScreenPlayConatiner({
                 screenPlayText !== undefined 
                 ?
                 <ScriptEditor
+                    key={audioScreenPlayVersion?.id}
                     className="script-text bg-white p-8 pt-0 pb-[70px] outline-none border-slate-400 overflow-scroll max-w-4xl font-courier"
                     scriptTokens={lines}
                     audioScreenPlayVersion={audioScreenPlayVersion?.id}

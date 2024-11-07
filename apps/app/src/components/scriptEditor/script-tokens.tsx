@@ -138,11 +138,12 @@ export const tokenize = function (script, optionsIn = {}) {
     // dialog. 
     // TODO this does not handle dual dialog and parenthenticals. Its temporary
     if (options.isLastCharacter) {
-        tokens.push({ type: 'dialogue', text: line, isDialog: true, characterName: options.characterNameMaybe || "narrator" });
+        tokens.push({ type: 'dialogue', text: line, isDialog: true, character_id: options.characterNameMaybe });
         return tokens
     }
     // dialogue blocks - characters, parentheticals and dialogue
     if (match = line.match(regex.dialogue)) {
+        console.log("match dialog----")
     // if (match = line.match(regex.dialogue)) {
         if (match[1].indexOf('  ') !== match[1].length - 2) {
         // we're iterating from the bottom up, so we need to push these backwards
@@ -158,7 +159,8 @@ export const tokenize = function (script, optionsIn = {}) {
             text = parts[x];
 
             if (text.length > 0) {
-            tokens.push({ type: regex.parenthetical.test(text) ? 'parenthetical' : 'dialogue', text: text });
+                const isParen = regex.parenthetical.test(text)
+            tokens.push({ type: isParen ? 'parenthetical' : 'dialogue', text: text, isDialog: !isParen, character_id: options.characterNameMaybe });
             }
         }
 
@@ -213,6 +215,7 @@ export const tokenize = function (script, optionsIn = {}) {
     tokens.push({ type: 'action', text: line });
     }
 
+    console.log("tokens to return", tokens)
     return tokens;
 };
 
@@ -258,14 +261,18 @@ inline.lexer = function (s) {
 };
 
 
+export type TokenType = 'action' | 'scene_heading' | 'dialogue_begin' | 'dialogue_end' | 'dialogue' | 'character' | 'transition'
+
 export type Tokens = {
     id?: stirng | null;
     text: string;
-    type: 'action' | 'scene_heading' | 'dialogue_begin' | 'dialogue_end' | 'dialogue' | 'character' | 'transition';
+    type: TokenType;
     scene_number: number;
     dual: string;
     depth: string;
 }
+
+
 
 interface TokenContentInput {
     tokens: Tokens[];

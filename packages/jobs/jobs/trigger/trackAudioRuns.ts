@@ -325,7 +325,7 @@ const aloudMeta = {
   batchId: null
 }
 export const trackAudioRuns = task({
-  id: "track-audio-runs-4",
+  id: "track-audio-runs-8",
   cleanup: async (payload, { ctx }) => {
     logger.info("cleanup payLoad", aloudMeta)
     logger.info("cleanup ctx", ctx)
@@ -357,6 +357,7 @@ export const trackAudioRuns = task({
       }
     
     
+      logger.log('audioVersions', audioVersions)
       tag = "get-audio-4-" + getId()
       
       batch = await tasks.batchTrigger<typeof getAudioTask>('get-audio-4', audioVersions.map((u) => {

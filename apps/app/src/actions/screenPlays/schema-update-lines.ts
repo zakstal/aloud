@@ -7,7 +7,7 @@ const lineSchema = z.object({
   text: z.string().nullable().optional(),
   type: z.string(),
   isDialog: z.union([z.boolean().nullable().optional(), z.string().nullable().optional()]),
-  characterName: z.string().optional(),
+  character_id: z.string().nullable().optional(),
 });
 
 const linCreatedeSchema = z.object({
@@ -16,10 +16,11 @@ const linCreatedeSchema = z.object({
   text: z.string().nullable().optional(),
   type: z.string(),
   isDialog: z.union([z.boolean().nullable().optional(), z.string().nullable().optional()]),
-  characterName: z.string().optional(),
+  character_id: z.string().nullable().optional(),
 });
 
 const characterSchema = z.object({
+  id: z.string().nullable().optional(), 
   name: z.string(),
   gender: z.string().nullable().optional(),
 });

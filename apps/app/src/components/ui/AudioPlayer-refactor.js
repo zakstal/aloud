@@ -208,6 +208,7 @@ class AudioPlayer extends React.Component {
         this.handleRate = this.handleRate.bind(this)
 
         // load some limited amount of audio
+        console.log("pre load")
         this.getSignedUrlNextN(3, false, 3)
     }
 
