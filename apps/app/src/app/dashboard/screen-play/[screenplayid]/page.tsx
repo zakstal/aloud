@@ -93,6 +93,8 @@ export default function Page() {
   const audioVersionNumber = audioScreenPlayVersion?.version_number
 
 
+  console.log("charactersTemp", charactersTemp)
+  console.log("characters", characters)
   useEffect(() => {
     if (!audioScreenPlayVersion) {
       return
@@ -227,6 +229,9 @@ export default function Page() {
       .finally(() => {
         setIsLoading(false)
       })
+      return () => {
+        console.log('unmounted')
+      }
     }
 
   }, [params])

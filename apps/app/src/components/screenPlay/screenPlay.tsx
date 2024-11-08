@@ -142,6 +142,7 @@ export default function ScreenPlayConatiner({
   const [isPlaying, setIsPlaying] = useState(false)
 
   console.log('currentlyPlayingLineId', currentlyPlayingLineId)
+  console.log('characters screenPlay', characters)
   console.log('isPlaying', isPlaying)
   if (isLoading) return <div className="flex justify-center h-screen items-center"><Progress /></div>
 

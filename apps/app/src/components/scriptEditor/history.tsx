@@ -84,6 +84,7 @@ export default class History {
 
     // could be run on setData
     async applyChanges() {
+        // console.log('applyChanges history')
         if (!this.dbTokenVersion) return
         const diffs = await this.diffs(this.dbTokenVersion);
 
@@ -124,15 +125,23 @@ export default class History {
     deleteRangeUndo(updates: Diff) {}
 
     applyDo(updates: Diff[]) {
+        // console.log('apply do--', this.lastInsertedId , updates)
         for (const update of updates) {
+            // window.appliedIds.push([update.id, "REDO", update])
+
+
+            // await wait(1000)
             switch(update.type) {
                 case DELETE:
+                    // console.log('DELETE')
                     this.deleteRangeDo(update)
                 break;
                 case ADD:
+                    // console.log('ADD')
                     this.addDo(update)
                 break;
                 case MODIFY:
+                    // console.log('MODIFY')
                     this.modifyDo(update)
                 break;
 
@@ -141,11 +150,13 @@ export default class History {
     }
     
     applyUndo(update: Diff[] | Diff) {
+        // console.log("apply do UNDO--", this.lastInsertedId , update)
         let updates: Diff[] = !Array.isArray(update) ? [update] : update
         // its important that these run in reverse order becuase, as we delcare deletions, additions and modifications
         // in the code, we want those to be applied in the order we delcare them.
         for (let i = updates.length - 1; i >= 0; i--) {
             const update = updates[i]
+            // window.appliedIds.push([update.id, 'UDNO', update])
             if (!update) continue
             switch(update.type) {
                 case DELETE:
@@ -199,6 +210,7 @@ export default class History {
     }
 
     async undo() {
+        // window.calls.push('undo')
         if (this.pendingUpdates) {
             await this.commitUpdates()
         }
@@ -214,6 +226,9 @@ export default class History {
 
         const lastInstertedGroup = await this.db.getByIdGroup(this.lastInsertedId, this.dbTokenVersion)
 
+        // console.log("undoinfo this.lastInsertedId", this.lastInsertedId)
+        // console.log("undoinfo lastInstertedGroup", lastInstertedGroup)
+        // console.log("undoinfo this.pendingUndos", this.pendingUndos)
 
         if (!lastInstertedGroup || !lastInstertedGroup.length) return
         const last = lastInstertedGroup.sort((a: Diff, b: Diff) => Number(a.id) - Number(b.id))[0]
@@ -225,6 +240,7 @@ export default class History {
         // set Id to last undoModification
         // a bit stupid to subtract 1, but the ids are sequential and its easy for now. 
         
+        // console.log("undoinfo last", last)
         this.lastInsertedId = nextLastInsertedId
 
         this.commitUndos()
@@ -232,15 +248,18 @@ export default class History {
     }
 
     redo() {
+        // window.calls.push('redo')
         const nextUndoGroup = this.pendingRedos.pop()
         if (!nextUndoGroup) return;
 
+        // console.log("redo applyDo", nextUndoGroup, this.tokens)
         this.applyDo(nextUndoGroup)
         const stagedUndoGroup = this.pendingRedos ? this.pendingRedos[this.pendingRedos.length - 1] : null
 
         // const lastStaged = stagedUndoGroup ? stagedUndoGroup[stagedUndoGroup.length - 1] : null
         const lastStaged = nextUndoGroup ? nextUndoGroup[nextUndoGroup.length - 1] : null
         this.lastInsertedId = lastStaged?.id || null
+        // console.log('redo lastStaged', lastStaged)
         const lastApplied = last(nextUndoGroup)
         
         return lastApplied
@@ -260,6 +279,7 @@ export default class History {
 
         const lastToUpdate = last(this.pendingUpdates)
 
+        // console.log("redo commitUpdates")
         this.applyDo(this.pendingUpdates)
         this.flushUpdates()
 

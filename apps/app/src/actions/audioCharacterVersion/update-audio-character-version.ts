@@ -16,6 +16,11 @@ export const updateAudioCharacterVersionAction = authActionClient
     voice_data,
     voice_name,
   }}) => {
+    console.log('update audio character-------',     audioCharacterVersionId,
+      voice_id,
+      voice_data,
+      voice_name)
+      
     const result = await updateAudioCharacterVersion(audioCharacterVersionId, {
         voice_id,
         voice_data,

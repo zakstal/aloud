@@ -2,10 +2,14 @@
 
 import './script-editor.css';
 
-import { TokenContent, Tokens } from './script-tokens'
-import { useRef, useEffect } from 'react';
+import { TokenContent, Tokens, GetElement, isTokenType, tokenTypes } from './script-tokens'
+import { useRef, useEffect, useCallback, useMemo } from 'react';
 import { useFountainNodes } from './useFountainNodes'
+import { createEditor, Transforms, Editor, Element, Path } from 'slate'
+import { Slate, Editable, withReact } from 'slate-react'
+import { withHistory } from 'slate-history'
 import { max } from 'date-fns';
+import { v4 as uuid } from 'uuid';
 
 type Character = {
     name: string,
@@ -27,6 +31,15 @@ interface ScriptEditorInput {
     highlightToken?: boolean;
 }
 
+
+const idSet = new Set()
+const getId = () => {
+    const id  = uuid()
+    if (idSet.has(id)) return getId()
+    idSet.add(id)
+    return id
+};
+
 function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, characters) {
 
     const narrator = characters.find(character => character.name.toLowerCase() === 'narrator')
@@ -46,6 +59,7 @@ function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, chara
     // check if new tokens have been created
     for (const newToken of updatedTokens) {
         const id = newToken.id
+
 
         // if (!id || id?.startsWith('internal')) {
         //     console.log("newToken", newToken)
@@ -104,6 +118,24 @@ function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, chara
 
 }
 
+function createChangeType (type) {
+    return (node, editor) => { 
+        if (node.type === type ) return
+        if (!isTokenType(type, node.text)) return
+
+        Transforms.setNodes(
+            editor,
+            { type },
+            { match: n => Element.isElement(n) && Editor.isBlock(editor, n) }
+        )
+    }
+}
+
+const maybeChangeNodeTypeTo = Object.fromEntries(
+    Object.values(tokenTypes).map(type => [type, createChangeType(type)])
+)
+
+
 export const ScriptEditor =({
     scriptTokens,
     className,
@@ -119,25 +151,42 @@ export const ScriptEditor =({
 }: ScriptEditorInput) => {
 
     const myRef = useRef(null);
-    const [
-        tokens, 
-        handleKeyDown, 
-        handleKeyUp, 
-        handleEnter, 
-        handleOnBackSpace,
-        clearCurrrentNode, 
-        setCurrentNode, 
-        handleOnSelect,
-        handlePaste,
-        handleCut,
-        getNewCharacters
-    ] = useFountainNodes(scriptTokens, audioScreenPlayVersion, pdfText, setCharacters, characters)
+    // const [
+    //     tokens, 
+    //     handleKeyDown, 
+    //     handleKeyUp, 
+    //     handleEnter, 
+    //     handleOnBackSpace,
+    //     clearCurrrentNode, 
+    //     setCurrentNode, 
+    //     handleOnSelect,
+    //     handlePaste,
+    //     handleCut,
+    //     getNewCharacters
+    // ] = useFountainNodes(scriptTokens, audioScreenPlayVersion, pdfText, setCharacters, characters)
 
-    useEffect(() => {
-        myRef.current && myRef.current.focus()
-    }, [myRef])
+    // useEffect(() => {
+    //     myRef.current && myRef.current.focus()
+    // }, [myRef])
 
-    console.log("tokens", tokens)
+    const renderElement = useCallback(props => <GetElement {...props} />, [])
+    const editor = useMemo(() => withReact(withHistory(createEditor())), [])
+
+    // console.log("scriptTokens", scriptTokens)
+
+    const slateTokens = scriptTokens.map(obj => {
+        return {
+            type: obj.type,
+            id: obj.id,
+            isDialog: obj.id,
+            character_id: obj.character_id,
+            order: obj.order,
+            children: [{ 
+                text: obj.text,
+                id: obj.id,
+            }],
+          }
+    })
 
     return (
         <>
@@ -150,8 +199,78 @@ export const ScriptEditor =({
             console.log('res----', res)
 
         }}>Save----</button>
-        
 
+
+        <div className={className + ' script-editor'}>
+            <Slate
+                editor={editor}
+                initialValue={slateTokens}
+                onChange={(value) => {
+                    console.log('value update', value)
+                }}
+            >
+                <Editable
+                    renderElement={renderElement}
+                    spellCheck
+                    autoFocus
+                    onChange={(value) => {
+                        console.log('onChange', value)
+                    }}
+                    onKeyUp={event => {
+                        // event.preventDefault()
+                        const [node, path] = Editor.node(editor, editor.selection);
+                        if (event.key === 'Enter') {
+                            const [lastNode, lastPath] = Editor.last(editor, path);
+                            const isLastCharacter = isTokenType(tokenTypes.character, lastNode.text)
+                            
+                            const nextType = isLastCharacter ? tokenTypes.dialogue : tokenTypes.action
+                            
+                            Transforms.setNodes(
+                                editor,
+                                { 
+                                    type: nextType,
+                                    id: getId() 
+                                },
+                                { match: n => Element.isElement(n) && Editor.isBlock(editor, n) }
+                            )
+
+                            return
+                        }
+                    }}
+                    onKeyDown={event => {
+
+                        // Get the currently selected node
+                        const [node, path] = Editor.node(editor, editor.selection);
+                        const [lastNode, lastPath] = Editor.last(editor, path);
+
+                        if (event.key === 'Tab') {
+                            event.preventDefault()
+                            const isCharacter = isTokenType(tokenTypes.character, lastNode.text)
+                            const isText = lastNode.text !== ''
+                            
+                            const nextType = isText ? tokenTypes.dialogue : tokenTypes.character
+                            Transforms.setNodes(
+                                editor,
+                                { type: nextType },
+                                { match: n => Element.isElement(n) && Editor.isBlock(editor, n) }
+                                
+                            )
+                        }
+
+                        if (node.type === tokenTypes.character) {
+                            maybeChangeNodeTypeTo.dialogue(node, editor)
+                        }
+
+                        maybeChangeNodeTypeTo.character(node, editor)
+                        maybeChangeNodeTypeTo.scene_heading(node, editor)
+                        maybeChangeNodeTypeTo.transition(node, editor)
+
+                      }}
+                />
+            </Slate>
+        </div>
+    
+{/* 
         <div
             autoFocus
             ref={myRef}
@@ -196,12 +315,12 @@ export const ScriptEditor =({
                 {/* <div style={{ position: 'sticky', top: 0 }}>currentOrderId: {currentOrderId}</div>
                 <div>secondaryOrderId: {secondaryOrderId}</div> */}
             
-            <TokenContent
+            {/* <TokenContent
                 tokens={tokens}
                 currentTokenId={currentTokenId}
                 highlightToken={highlightToken}
-            />
-        </div>
+            /> */}
+        {/* </div> */}
         </>
     )
 }

@@ -1,10 +1,14 @@
 /* depreicated */
-.script-editor { 
+.script-editor > div { 
     background-color: hsl(var(--editor-background));  
     /* background-color: var(--editor-background);   */
     color: hsl(var(--editor-text));
     box-shadow: 0 2px 5px color(display-p3 0 0 0/0.1);
     padding-bottom: 90px;
+    width: 100%;
+    height: 100%;
+    padding: 45px 147px;
+    outline: none;
 }
 
 .script-editor .dialogue-container { 
@@ -78,10 +82,10 @@
     background: #ffffba;
 } */
 
-.script-editor > div > * {
+/* .script-editor > div > * {
     background: transparent;
     transition: all 0.4s
-}
+} */
 
 mark {
     /* background-color:#ffffba; */

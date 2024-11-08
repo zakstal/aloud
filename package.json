@@ -43,6 +43,9 @@
     "pdfjs-dist": "^4.6.82",
     "raf": "^3.4.1",
     "react-filepond": "^7.1.2",
-    "react-howler": "^5.2.0"
+    "react-howler": "^5.2.0",
+    "slate": "^0.110.2",
+    "slate-history": "^0.110.3",
+    "slate-react": "^0.111.0"
   }
 }

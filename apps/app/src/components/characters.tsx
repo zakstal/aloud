@@ -20,6 +20,7 @@ export function Characters({
   onCharacterClick,
   audioVersionNumber,
 }: CharactersInput) {
+  console.log('characters in characters', characters)
   return (
     <div>
       <div className="sticky top-0 z-50 header header-in" >

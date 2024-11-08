@@ -4,7 +4,8 @@
 } */
 
 .script-text {
-    padding: 45px 147px;
+    /* padding: 45px 147px; */
+	padding: 0;
     flex: 1;
 }
 .script-characters {

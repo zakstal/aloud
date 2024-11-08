@@ -7,31 +7,31 @@ import { cn } from '@/lib/utils';
 
 'use strict';
 
-const Heading = ({ id, variant = 'h1', text = '', sceneNumber, order, className = '', highlight = false, isDialog = false }: {isDialog: boolean,  highlight: boolean,variant: string, text?: string, sceneNumber?: number | null, order: number | null, className: string, id: string }) => {
-    if (variant === 'h1') return <h1 key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{!highlight ? text : (<mark>{text}</mark>)}</h1>
-    if (variant === 'h2') return <h2 key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{!highlight ? text : (<mark>{text}</mark>)}</h2>
-    if (variant === 'h3') return <h3 key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog', ' font-courier font-bold')} >{!highlight ? text : (<mark>{text}</mark>)}</h3>
-    if (variant === 'h4') return <h4 key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{!highlight ? text : (<mark>{text}</mark>)}</h4>
+const Heading = ({ id, variant = 'h1', text = '', sceneNumber, order, className = '', highlight = false, isDialog = false, children, attributes }: {attributes: any, children: any, isDialog: boolean,  highlight: boolean,variant: string, text?: string, sceneNumber?: number | null, order: number | null, className: string, id: string }) => {
+    if (variant === 'h1') return <h1 {...attributes} key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{children}</h1>
+    if (variant === 'h2') return <h2 {...attributes} key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{children}</h2>
+    if (variant === 'h3') return <h3 {...attributes} key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog', ' font-courier font-bold')} >{children}</h3>
+    if (variant === 'h4') return <h4 {...attributes} key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')} >{children}</h4>
 
     // TODO i know
-    if (variant === 'hr') return <hr key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')}/>
+    if (variant === 'hr') return <hr {...attributes} key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')}/>
     if (variant === 'br') return null
 }
 
-export const Paragraph = ({ id, text = '', type = '', order, dataDepth, className = '', highlight = false, isDialog = false }: {isDialog: boolean,  highlight: boolean, text: string, type?: string, order: number, dataDepth?: number | null, className: string }) => {
+export const Paragraph = ({ id, text = '', type = '', order, dataDepth, className = '', highlight = false, isDialog = false, children, attributes }: {attributes: any, children: any, isDialog: boolean,  highlight: boolean, text: string, type?: string, order: number, dataDepth?: number | null, className: string }) => {
     return (
-        <p key={id} id={id} data-order={order} data-depth={dataDepth} className={cn(type, className, highlight && 'highlight', isDialog && 'dialog')}>{!highlight ? text : (<mark>{text}</mark>)}</p>
+        <p {...attributes} key={id} id={id} data-order={order} data-depth={dataDepth} className={cn(type, className, highlight && 'highlight', isDialog && 'dialog')}>{children}</p>
     )
 }
 
 
-const Div = ({ id, className = '', order, children, highlight = false, isDialog = false }: {isDialog: boolean, highlight: boolean, className?: string, order: number, children: any }) => {
+const Div = ({ id, className = '', order, children, highlight = false, isDialog = false, attributes}: {attributes: any, isDialog: boolean, highlight: boolean, className?: string, order: number, children: any }) => {
     return (
-        <div key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')}>{children}</div>
+        <div {...attributes} key={id} id={id} data-order={order} className={cn(className, highlight && 'highlight', isDialog && 'dialog')}>{children}</div>
     )
 }
 
-var regex = {
+const regex = {
     title_page: /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/gim,
 
     scene_heading: /^((?:\*{0,3}_?)?(?:(?:int|ext|est|i\/e)[. ]).*)|^(?:\.(?!\.+))(.+)/i,
@@ -70,6 +70,12 @@ var regex = {
     standardizer: /\r\n|\r/g,
     whitespacer: /^\t+|^ {3,}/gm
 };
+
+export const isTokenType = (type, text) => {
+    return regex[type].test(text)
+}
+
+export const tokenTypes = Object.fromEntries(Object.keys(regex).map(type => [type, type.toString()]))
 
 var lexer = function (script) {
     return script.replace(regex.boneyard, '\n$1\n')
@@ -276,6 +282,75 @@ export type Tokens = {
 
 interface TokenContentInput {
     tokens: Tokens[];
+}
+
+export const GetElement = ({ attributes, children, element }) => {
+    const token = element
+    if (!token) return
+    // token.text = inline.lexer(token.text);
+
+    let highlight = false, isDialog = false
+    // if (token.id === currentTokenId && highlightToken) {
+    //     highlight = true
+    // }
+    
+    switch (token.type) {
+        // edit node is not from foutain
+        case 'editNode': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} text={token.text} />); break;
+        case 'title': return (<Heading children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} variant="h1" text={token.text} />); title = token.text.replace('<br />', ' ').replace(/<(?:.|\n)*?>/g, ''); break;
+        case 'credit': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="credit" text={token.text}/>); break;
+        case 'author': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="authors" text={token.text}/>); break;
+        case 'authors': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="authors" text={token.text}/>); break;
+        case 'source': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="source" text={token.text}/>); break;
+        case 'notes': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="notes" text={token.text}/>); break;
+        case 'draft_date': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="draft-date" text={token.text} />); break;
+        case 'date': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="date" text={token.text}/>); break;
+        case 'contact': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="contact" text={token.text}/>); break;
+        case 'copyright': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i} type="copyright" text={token.text}/>); break;
+        case 'character': return (<Heading children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} variant="h4" text={token.text}  className="character"/>); break;
+        case 'scene_heading': return (<Heading children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} variant="h3"  sceneNumber={token.scene_number} text={token.text}  />); break;
+        case 'transition': return (<Heading children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} variant="h2" text={token.text} />); break;
+
+        case 'dual_dialogue_begin': 
+            // return (<Div highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} className="dual-dialogue" order={i} />); 
+
+            return (<Div children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} className="dual-dialogue" order={i} >{tempHtml.reverse()}</Div>); 
+
+           
+            break;
+        case 'dialogue_begin':
+            
+
+            return (<Div children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} className={"dialogue-container" + (token.dual ? ' ' + token.dual : '') } >{children}</Div>); 
+
+            //  return (<Div highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} className={"dialogue" + (token.dual ? ' ' + token.dual : '') } order={i} />); 
+            break;
+        
+        case 'parenthetical': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id}  type="parenthetical" text={token.text}/>); break;
+        case 'dialogue': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id}  text={token.text} className="dialogue"/>); break;
+        case 'dialogue_end': 
+            // return (<Div highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i}/>); 
+
+            break;
+        case 'dual_dialogue_end':
+            // return (<Div highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} order={i}/>); 
+
+            break;
+
+        case 'section': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id}  type="section" dataDepth={token.depth} text={token.text}/>); break;
+        case 'synopsis': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id}  type="synopsis" text={token.text}/>); break;
+
+        case 'note': return ('<!-- ' + token.text + '-->'); break;
+        case 'boneyard_begin': return ('<!-- ');  break;
+        case 'boneyard_end': return (' -->');  break;
+
+        case 'action': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} text={token.text} />); break;
+        case 'centered': return (<Paragraph children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} type="centered" text={token.text}/>); break;
+        
+        case 'page_break': return (<Heading children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} variant="hr" />); break;
+        case 'line_break': return (<Heading children={children} attributes={attributes} highlight={highlight} isDialog={token.isDialog} key={token.id} id={token.id} variant="br" />); break;
+    }
+
 }
 
 export const TokenContent = function ({ tokens, currentTokenId, highlightToken, onClick }: TokenContentInput) {
