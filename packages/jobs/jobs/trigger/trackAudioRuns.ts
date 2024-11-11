@@ -101,14 +101,16 @@ export async function getAudioVersionsByScreenplayId(screenplayId: string, minOr
           id,
           text,
           order,
-          deleted
-        ),
-        audio_character_version (
-          id,
-          version_number,
-          voice_data,
-          voice_id,
-          voice_name
+          deleted,
+          characters (
+            audio_character_version!fk_audio_character_version (
+              id,
+              version_number,
+              voice_data,
+              voice_id,
+              voice_name
+            )
+          )
         )
       `)
       .eq("screenplay_id", screenplayId) // Filter by screenplay_id
@@ -326,7 +328,7 @@ const aloudMeta = {
   batchId: null
 }
 export const trackAudioRuns = task({
-  id: "track-audio-runs-11",
+  id: "track-audio-runs-12",
   cleanup: async (payload, { ctx }) => {
     logger.info("cleanup payLoad", aloudMeta)
     logger.info("cleanup ctx", ctx)

@@ -5,7 +5,6 @@ import './script-editor.css';
 import { TokenContent, Tokens } from './script-tokens'
 import { useRef, useEffect, useCallback, useMemo } from 'react';
 import { useFountainNodes } from './useFountainNodes'
-import { max } from 'date-fns';
 
 type Character = {
     name: string,
@@ -27,15 +26,12 @@ interface ScriptEditorInput {
     highlightToken?: boolean;
 }
 
-function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, characters) {
-
-    const narrator = characters.find(character => character.name.toLowerCase() === 'narrator')
+function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters) {
     // update ordering 
     updatedTokens.forEach((token, i) => {
+        if (!token) return
         token.order = i
     })
-
-    console.log("after order update", JSON.stringify(updatedTokens, null, 2))
 
     const newIds = {}
 
@@ -45,12 +41,11 @@ function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, chara
 
     // check if new tokens have been created
     for (const newToken of updatedTokens) {
-        const id = newToken.id
+        const id = newToken?.id
+        if (!id) continue
 
         newIds[id] =  newToken
     }
-
-    console.log('newIds', newIds)
     
     // check if tokens have been removed or changed
     for (const oldToken of oldTokens) {
@@ -81,15 +76,7 @@ function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, chara
         delete newIds[id]
     }
 
-
-    console.log('newCharacters--', newCharacters)
     const newTokens = Object.values(newIds)
-    const names = new Set(characters.map(obj => obj.name))
-
-    console.log('newTokens', Boolean(newTokens?.length))
-    console.log('removeTokens', Boolean(removeTokens?.length))
-    console.log('updateTokens', Boolean(updateTokens?.length))
-    console.log('newCharacters', Boolean(newCharacters?.length))
 
     const shoudlUpdate = 
         Boolean(newTokens?.length) || 
@@ -97,7 +84,7 @@ function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, chara
         Boolean(updateTokens?.length) || 
         Boolean(newCharacters?.length)
 
-        console.log('shoudlUpdate----------', shoudlUpdate)
+
     if (!shoudlUpdate) return null
 
     return {
@@ -106,7 +93,6 @@ function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, chara
         updated: updateTokens,
         screenplayId,
         characters: newCharacters
-        // characters: [ ...newCharacters, ...characters ]
     }
 
 }
@@ -125,7 +111,6 @@ function createDebounce() {
     }
 }
 
-
 export const ScriptEditor =({
     scriptTokens,
     className,
@@ -139,7 +124,6 @@ export const ScriptEditor =({
     highlightToken,
     selectToken,
 }: ScriptEditorInput) => {
-
     const myRef = useRef(null);
 
     const [
@@ -157,6 +141,16 @@ export const ScriptEditor =({
     ] = useFountainNodes(scriptTokens, audioScreenPlayVersion, pdfText, setCharacters, characters, screenplayId)
 
     const debounce = useCallback(createDebounce(), [])
+    const save = useCallback(async () => {
+        const newCharacters = getNewCharacters && getNewCharacters()
+        const changes = getChanges(scriptTokens, tokens, screenplayId, newCharacters)
+    
+        if (!changes) return
+        console.log("save0-------------", changes)
+        const res = await saveLines(changes)
+        console.log('res----', res)
+    
+    }, [scriptTokens, tokens, screenplayId, getNewCharacters])
 
 
     useEffect(() => {
@@ -165,19 +159,12 @@ export const ScriptEditor =({
     
     // Save loop
     useEffect(() => {
-        debounce(async () => {
-            console.log("save1-------------", JSON.stringify(tokens, null, 2))
-            const newCharacters = getNewCharacters && getNewCharacters()
-            const changes = getChanges(scriptTokens, tokens, screenplayId, newCharacters, characters)
-        
-            if (!changes) return
-            console.log("save0-------------", changes)
-            const res = await saveLines(changes)
-            console.log('res----', res)
-        
-        })
+        debounce(save)
     }, [tokens])
 
+    // this is necessary because if you are typing in the editor
+    // and an update happens becuase of say, a save event, and the component is not memoed 
+    // then you will loose your cursor position.
     const tokenContent = useMemo(() =>   
         <TokenContent
             tokens={tokens}
@@ -187,60 +174,51 @@ export const ScriptEditor =({
             currentTokenId,
             highlightToken])
 
-    console.log("scriptTokens", scriptTokens)
-    console.log("tokens", tokens)
 
     return (
         <>
-        {/* <button id="savebutton" onClick={}>Save----</button> */}
-        
-
-        <div
-            autoFocus
-            ref={myRef}
-            contentEditable={true}
-            suppressContentEditableWarning={true} 
-            className={className + ' script-editor'}
-            onBlur={clearCurrrentNode}
-            onMouseDown={setCurrentNode}
-            onKeyUp={handleKeyUp}
-            onPaste={handlePaste}
-            onCut={handleCut}
-            onClick={(e) => {
-                const id = e.target.id
-                const token = scriptTokens.find(token => token.id === id)
-                console.log('id', id, 'token', token)
-                if (token && token.isDialog) {
-                    selectToken(id)
+            {/* <button id="savebutton" onClick={}>Save----</button> */}
+            <div
+                autoFocus
+                ref={myRef}
+                contentEditable={true}
+                suppressContentEditableWarning={true} 
+                className={className + ' script-editor'}
+                onBlur={() => {
+                    // save()
+                    clearCurrrentNode()
                 }}
-            }
-            onSelect={function(event) {
-                handleOnSelect(event)
-            }}
-            // onSelectChange={function(event) {
-            //     console.log('Selection change');
-            //     console.log('Element:', event.target);
-            // }}
-            onKeyDown={(e) => {
+                onMouseDown={setCurrentNode}
+                onKeyUp={handleKeyUp}
+                onPaste={handlePaste}
+                onCut={handleCut}
+                onClick={(e) => {
+                    const id = e.target.id
+                    const token = scriptTokens.find(token => token.id === id)
 
-                if (e.key === 'Backspace') {
-                   return  handleOnBackSpace(e)
+                    if (token && token.isDialog) {
+                        selectToken(id)
+                    }}
                 }
-                if (e.key === 'Enter') {
-                    return handleEnter(e)
-                }
+                onSelect={function(event) {
+                    handleOnSelect(event)
+                }}
+                onKeyDown={(e) => {
 
-                handleKeyDown(e)
-            }}
+                    if (e.key === 'Backspace') {
+                    return  handleOnBackSpace(e)
+                    }
+                    if (e.key === 'Enter') {
+                        return handleEnter(e)
+                    }
 
-                
-            >
-                
-                {/* <div style={{ position: 'sticky', top: 0 }}>currentOrderId: {currentOrderId}</div>
-                <div>secondaryOrderId: {secondaryOrderId}</div> */}
-            {tokenContent}
-          
-        </div>
+                    handleKeyDown(e)
+                }}
+
+                    
+                >
+                {tokenContent}        
+            </div>
         </>
     )
 }

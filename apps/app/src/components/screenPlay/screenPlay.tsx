@@ -140,10 +140,9 @@ export default function ScreenPlayConatiner({
   const [audioBeingGotten, setAudioBeingGotten] = useState(false)
   const [currentlyPlayingLineId, setCurrentlyPlayingLineId] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [startScreenPlayButtonPressed, setStartScreenPlayButtonPressed] = useState(false)
 
-  console.log('currentlyPlayingLineId', currentlyPlayingLineId)
-  console.log('isPlaying', isPlaying)
-  console.log('screenplay lines', lines)
+  
   if (isLoading) return <div className="flex justify-center h-screen items-center"><Progress /></div>
 
   return (
@@ -233,9 +232,14 @@ export default function ScreenPlayConatiner({
                     <Button
                         variant="outline"
                         className="text-md h-20 mt-6 w-full box-border"
-                        onClick={() => startScreenPlay()}
+                        onClick={() => {
+                            if (startScreenPlayButtonPressed) return
+                            setStartScreenPlayButtonPressed(true)
+                            startScreenPlay()
+                        }}
                     >
                         Go to a blank document
+                        { startScreenPlayButtonPressed ? <Progress hw={20} bw={2} className="ml-3"/> : null}
                     </Button>
                 </div>
             }

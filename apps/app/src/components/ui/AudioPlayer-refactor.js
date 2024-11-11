@@ -205,6 +205,7 @@ class AudioPlayer extends React.Component {
         this.handleMouseDownSeek = this.handleMouseDownSeek.bind(this)
         this.handleMouseUpSeek = this.handleMouseUpSeek.bind(this)
         this.handleSeekingChange = this.handleSeekingChange.bind(this)
+        this.handleSeekingChangeExternal = this.handleSeekingChangeExternal.bind(this)
         this.handleRate = this.handleRate.bind(this)
 
         // load some limited amount of audio
@@ -343,7 +344,7 @@ class AudioPlayer extends React.Component {
         // set the current seek time if a playing line has been set somewhere else
         if (currentAudioVersion && this.state.currentAudioVersion?.line_id !== this.props.currentlyPlayingLineId) {
             const { startTime = 0 } = this.getDurationByUrl(currentAudioVersion?.audio_file_url) || {}
-            this.handleSeekingChange(startTime)
+            this.handleSeekingChangeExternal(startTime)
         }
 
         const disabled = this.checkDisabled(currentAudioVersion)
@@ -394,7 +395,6 @@ class AudioPlayer extends React.Component {
             this.player.currentTime = this.state.seekedTo
         }
 
-        console.log('handleOnLoad---------------')
         if (this.state.playing) {
             this.player.play()
         } else {
@@ -502,6 +502,17 @@ class AudioPlayer extends React.Component {
             seek: parseFloat(e || 0)
         })
     }
+    
+    handleSeekingChangeExternal(e) {
+        console.log('seek change')
+        const seekChange = parseFloat(e || 0)
+     
+        this.player.currentTime = seekChange || 0
+        this.setCurrentAudioVersion(this.player.currentTime)
+        this.setState({
+            seek: parseFloat(e || 0)
+        })
+    }
 
     getDurationByUrl(url) {
         if (!url) return
@@ -509,7 +520,6 @@ class AudioPlayer extends React.Component {
     }
 
     setCurrentlyPlayingLineId(lineId) {
-        console.log('setCurrentlyPlayingLineId--')
         this.props.setCurrentlyPlayingLineId && this.props.setCurrentlyPlayingLineId(lineId)
     }
 
@@ -636,7 +646,7 @@ class AudioPlayer extends React.Component {
         const finaLength = this.state.syntheticDuration ? new Date(this.state.syntheticDuration * 1000).toISOString().substring(14, 19) : '00'
         const currentLength = this.state.seek ? new Date(this.state.seek * 1000).toISOString().substring(14, 19) : '00'
         return (
-            <div className={'max-w-[600px] audio-player-container py-3 px-6 z-50 border-t' + ' ' + disabledClass}>
+            <div className={'max-w-[600px] audio-player-container py-3 px-6 z-50 border-t' + ' ' + disabledClass} tabindex={this.state.disabled ? -1 : 0}>
         
                     <audio
                         id="player-aloud"

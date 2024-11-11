@@ -73,16 +73,26 @@ async function createLines({
   console.timeEnd("lines prepare")
   try {
     console.time("lines insert")
-    const { data: insertedData, error } = toInsertLines 
+    const { data, errorInsert } = toInsertLines 
       ? await supabase
         .from("lines")
-        .insert(toInsertLines)
-        .select("id, character_id, isDialog")
+        .upsert(toInsertLines, { onConflict: 'id'})
       : {} // Optionally, return the inserted data
       
-      if (error) {
-        console.log("error lines", error)
-        throw error;
+      if (errorInsert) {
+        console.log("error lines", errorInsert)
+        throw errorInsert;
+      }
+
+      const { data: insertedData, errorGetLines } = toInsertLines 
+      ? await supabase
+        .from("lines")
+        .select("id, character_id, isDialog")
+      : {} // Optionally, return the inserted
+
+      if (errorGetLines) {
+        console.log("error lines", errorGetLines)
+        throw errorGetLines;
       }
 
     return insertedData;
@@ -117,7 +127,7 @@ async function insertCharacters ({
   const { data: insertedCharacters, error: charactersError } = charactersInsert 
   ? await supabase
     .from("characters")
-    .insert(charactersInsert)
+    .upsert(charactersInsert, { onConflict: 'id'})
     .select("id, name, audio_character_version_id")
   : {}
 

@@ -15,7 +15,7 @@ export const getAudioTask = task({
   run: async (payload: unknown, { ctx }) => {
     logger.log("payload", { payload })
     const voiceVersion = payload
-    const audioCharacter = voiceVersion.audio_character_version
+    const audioCharacter = voiceVersion.lines.characters.audio_character_version
     const audioProviderName = audioCharacter.voice_data.audioProvider
     // const audioProviderName = 'test'
     // const textToSpeech = textToVoiceProvders['test']

@@ -68,7 +68,7 @@ export async function GET(req: NextRequest, { params }, res: NextResponse) {
   const session  = await getUser()
   const userId = session.data.user.id
 
-    const trackHandle = await tasks.trigger<typeof trackAudioRuns>("track-audio-runs-11", {
+    const trackHandle = await tasks.trigger<typeof trackAudioRuns>("track-audio-runs-12", {
       screenPlayVersionId,
       userId,
     })

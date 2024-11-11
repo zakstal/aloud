@@ -1,5 +1,5 @@
 import { Tokens } from './script-tokens'
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { ScriptHistory } from './script-history-refactor'
 // import { ScriptHistory } from './script-history'
 import * as db from './storage'
@@ -86,19 +86,38 @@ function getElementAtCaret() {
 }
 
 
-console.log("start here")
 // window.scriptStorage = window.scriptStorage || new ScriptHistory()
 
 export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string, pdfText, setCharacters, characters, screenplayId) {
 
 
     const [tokens, setTokens] = useState([])
-    // const [tokens, setTokens] = useState(prepareTokensRender(tokensIn?.length ? tokensIn : [{ type: 'editNode', text: ' '}]))
+
     const tokensChanged = useMemo(() => tokens, [tokens])
-    const [nextCaretPosition, setNextCaretPosition] = useState([])
-    const [currentOrderId, setCurrentOrderId] = useState(null)
-    const [secondaryOrderId, setSecondaryOrderId] = useState(null) // for ranges
-    const [rangeOffsets, setRangeOffsets] = useState(null) // for ranges
+
+    // const [nextCaretPosition, setNextCaretPosition] = useState([])
+    const nextCaretPosition = useRef(null)
+    const setNextCaretPosition = useCallback((position) => {
+        nextCaretPosition.current = position
+    }, [])
+
+    // const [currentOrderId, setCurrentOrderId] = useState(null)
+    const currentOrderId = useRef(null)
+    const setCurrentOrderId = useCallback((position) => {
+        currentOrderId.current = position
+    }, [])
+
+    // const [secondaryOrderId, setSecondaryOrderId] = useState(null) // for ranges
+    const secondaryOrderId = useRef(null)
+    const setSecondaryOrderId = useCallback((position) => {
+        secondaryOrderId.current = position
+    }, [])
+
+    // const [rangeOffsets, setRangeOffsets] = useState(null) // for ranges
+    const rangeOffsets = useRef(null)
+    const setRangeOffsets = useCallback((arr) => {
+        rangeOffsets.current = arr
+    }, [])
 
     useEffect(() => {
         if (!pdfText || tokensIn.length) return
@@ -115,10 +134,8 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
         }
     }, [pdfText])
 
-
-    console.log('screenplayId---------', screenplayId)
     useEffect(() => {
-        console.log('script storage start', tokensIn)
+        console.log('set script storage start')
         window.scriptStorage = window.scriptStorage || new ScriptHistory()
         // NB ScriptHistory has an internal representation of tokens. not sure if we should keep 
         // to sets, hoever we can change the internal as we like and only update it later if needed
@@ -136,7 +153,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
         )
 
         return () => {
-            console.log('script storage  end')
+            console.log('set script storage end')
             window.scriptStorage = null
         }
 
@@ -150,10 +167,10 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
 
 
     useEffect(() => {
-        if (!currentOrderId) return
+        if (!currentOrderId.current) return
 
-        const element = document.querySelector(`[data-order="${Number(currentOrderId)}"]`)
-        if (!element && nextCaretPosition) return
+        const element = document.querySelector(`[data-order="${Number(currentOrderId.current)}"]`)
+        if (!element && nextCaretPosition.current) return
 
         const range = document.createRange();
         const sel = window.getSelection();
@@ -165,7 +182,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
 
         // caret can fail if there is a space character in the text. 
         // This is to handle situations where the nextCaretPosition is off for some reason.
-        const caret = textLength < nextCaretPosition ? textLength : nextCaretPosition
+        const caret = textLength < nextCaretPosition.current ? textLength : nextCaretPosition.current
 
         try {
             if (el) {
@@ -230,14 +247,14 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
                 return
             }
    
-            if (!rangeOffsets) return
+            if (!rangeOffsets.current) return
             if (e.shiftKey) return
             if (noUpdateKeySet.has(e.key)) return
             e.preventDefault()
 
             // hande range and key press
-            const [currentOffset, secondOffset] = rangeOffsets || []
-            const [carotPostiion, focusId   ] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            const [currentOffset, secondOffset] = rangeOffsets.current || []
+            const [carotPostiion, focusId   ] = window.scriptStorage.combineRange(Number(currentOrderId.current), Number(secondaryOrderId.current), currentOffset, secondOffset)
 
             setNextCaretPosition(selection?.anchorOffset)
             window.scriptStorage.commit()
@@ -286,7 +303,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
                 const selection = window.getSelection();
 
                 let carotPostiion = 0
-                let focusId = currentOrderId
+                let focusId = currentOrderId.current
 
                 console.log("onEnter")
                 window.scriptStorage.combineSplitRange(focusId, carotPostiion || selection?.anchorOffset)
@@ -294,7 +311,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
                     updateCharacters: true
                 })
 
-                setCurrentOrderId(Number(currentOrderId) + 1)
+                setCurrentOrderId(Number(currentOrderId.current) + 1)
                 setNextCaretPosition(0)
                 setSecondaryOrderId(null)
                 setRangeOffsets(null)
@@ -306,16 +323,16 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
         },
         function handleOnBackSpace(e) {
             const selection = window.getSelection();
-            console.log("e backsapce-----------", e.target, e.currentTarget)
+            console.log("e backsapce-----------", rangeOffsets.current, selection)
             
-            if (selection.anchorOffset !== 0 && !rangeOffsets) return
-            console.log('backaspace----------', rangeOffsets)
+            if (selection.anchorOffset !== 0 && !rangeOffsets.current) return
+            console.log('backaspace----------', rangeOffsets.current)
             e.preventDefault()
             
-            const [currentOffset, secondOffset] = rangeOffsets || []
-            // if (!currentOffset) return
+            const [currentOffset, secondOffset] = rangeOffsets.current || []
+
             try {
-                const res = window.scriptStorage?.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+                const res = window.scriptStorage?.combineRange(Number(currentOrderId.current), Number(secondaryOrderId.current), currentOffset, secondOffset)
                 const [carotPostiion, focusId] = res
                 window.scriptStorage.commit({
                     updateCharacters: true
@@ -325,7 +342,6 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
                 setNextCaretPosition(carotPostiion)
                 setSecondaryOrderId(null)
                 setRangeOffsets(null)
-                // setTokens(newTokens)
             } catch(e) {
                 console.log("error", e)
             }
@@ -342,11 +358,6 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
         },
         function handleOnSelect(e) {
             const selection = window.getSelection();
-
-            // selection.anchorNode // start node
-            // selection.anchorOffset // start node cursor start
-            // selection.extentNode // end node offset
-            // selection.extentOffset // end node offset
 
             const acnchorNode = selection.anchorNode?.parentNode
             const extentNode = selection.extentNode?.parentNode
@@ -367,6 +378,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             const currentElement = getElementAtCaret()
             const orderId = currentElement?.dataset?.order
 
+            console.log('window.scriptStorage', window.scriptStorage)
             const [didUpdate, focusId, nextCaretPostion] = window.scriptStorage.updateText({
                 text: e.clipboardData.getData('text/plain')
             }, orderId, selection?.anchorOffset)
@@ -384,11 +396,11 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
         function handleCut(e) {
             const selection = window.getSelection();
             
-            if (!rangeOffsets) return
+            if (!rangeOffsets.current) return
             e.preventDefault()
 
-            const [currentOffset, secondOffset] = rangeOffsets || []
-            const [carotPostiion, focusId] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            const [currentOffset, secondOffset] = rangeOffsets.current || []
+            const [carotPostiion, focusId] = window.scriptStorage.combineRange(Number(currentOrderId.current), Number(secondaryOrderId.current), currentOffset, secondOffset)
             window.scriptStorage.commit()
 
             setCurrentOrderId(focusId)
@@ -398,7 +410,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             // setTokens(newTokens)
         },
         window?.scriptStorage?.getNewCharacters?.bind(window?.scriptStorage),
-        currentOrderId,
-        secondaryOrderId,
+        currentOrderId.current,
+        secondaryOrderId.current,
     ]
 }

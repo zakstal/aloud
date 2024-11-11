@@ -90,7 +90,7 @@ class Line {
             this.line.isDialog = true
         }
         
-        if (this.line.character_id && !this.line.isDialog) {
+        if (this.line.character_id && !this.line.isDialog && this.line.type !== 'character') {
             this.line.isDialog = true
         }
 
@@ -341,14 +341,15 @@ export class ScriptHistory extends History {
         this.dbTokenVersion = dbTokenVersion
         this.db = db
         this.commitCallback = commitCallback
-        this.tokens = tokens ? tokens : [this.getEditNode()]
+        this.tokens = tokens && tokens.length ? tokens : [this.getEditNode()]
 
       
         this.setCharacters = setCharacters
 
         tokens?.forEach(token => idSet.add(token.id))
 
-        console.log("commitCallback", commitCallback)
+        console.log("commitCallback--", commitCallback)
+        console.log("this.tokens--", this.tokens)
         if (commitCallback && tokens && this.appliedVersion !== dbTokenVersion) {
 
             // this is so that we don't re-apply changes if setCallbackValues is called multiple times
@@ -492,11 +493,11 @@ export class ScriptHistory extends History {
 
     updateText(tokenPartialMaybe, idxIn: number, caretPosition: number) {
         const idx = Number(idxIn)
-        if (!this.tokens) return
+        if (!this.tokens) []
 
         const lastToken = this.tokens[Math.max(idx - 1, 0)]
         const token = this.tokens[idx]
-        if (!token) return
+        if (!token) []
 
         // console.log('lastToken', lastToken)
         // console.log('token', token)
@@ -505,7 +506,7 @@ export class ScriptHistory extends History {
 
         let nextText = null
         // combine text if text was pasted into the middle of text
-        if (!token.text) {
+        if (!token?.text) {
             nextText = tokenPartialMaybe.text
         } else {
             if (tokenPartialMaybe.text) {
@@ -516,9 +517,9 @@ export class ScriptHistory extends History {
         }
 
         const foundTokens = tokenize(nextText, { isLastCharacter, characterNameMaybe }, this.setCharacters)
-        const [newText, didUpdate] = transformText(tokenPartialMaybe.text, token.type)
+        const [newText, didUpdate] = transformText(tokenPartialMaybe.text, token?.type)
         
-        if (!didUpdate) {
+        if (!didUpdate && this.tokens[idx]) {
             this.tokens[idx].text = newText
         }
 

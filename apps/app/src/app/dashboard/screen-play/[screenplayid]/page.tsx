@@ -71,7 +71,6 @@ export default function Page() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  console.log('searchParams', searchParams.get('version'))
   const [isLoading, setIsLoading ] = useState(true)
   const [screenPlay, setScreenPlay ] = useState({})
   const [characters, setCharacters ] = useState([])
@@ -193,7 +192,7 @@ export default function Page() {
   useEffect(() => {
     if (params?.screenplayid) {
       const versionNumber = Number(searchParams.get('version')) || null // we don't want NaN
-      console.log('arams.screenplayid', params.screenplayid)
+
       getScreenPlay({ screenPlayId: params.screenplayid, versionNumber  })
         .then((screenPlay) => {
 
@@ -204,9 +203,6 @@ export default function Page() {
             ? data?.audio_screenplay_versions.find(version => version.version_number === versionNumber) // get version if version number should exist
             : data?.audio_screenplay_versions[data?.audio_screenplay_versions.length - 1] // if no version number get the most recent
 
-          // const audio_version = audio_screenplay_version?.audio_version.sort((a, b) => a.lines.order - b.lines.order) // this should be plural but the db
-
-          // console.log('audio_screenplay_version-----------------', audio_screenplay_version)
           console.log('data-----------------', data)
           
           const audio_version = data?.lines
@@ -214,10 +210,7 @@ export default function Page() {
           .filter(line => Boolean(line?.text))
           .map(line => line.audio_version[line.audio_version.length - 1])
           
-          // console.log('audio_version-----------------', audio_version)
-          
           setAudioVersions(audio_version)
-          // updateLines(data?.lines, setLines)
           setLines(data?.lines)
           setScreenPlay(screenPlay)
           setCharacters(data?.characters || [])
@@ -281,7 +274,7 @@ export default function Page() {
                 success: false
               }
             }
-            if (res.data.error) {
+            if (res?.data?.error) {
               toast({
                 title: 'Error updating lines',
                 description: res.data.error
@@ -308,6 +301,15 @@ export default function Page() {
           lines={lines}
           scriptTokens={data?.screen_play_fountain}
           processAudio={async () => {
+
+            if (characters.some(character => !Boolean(character?.audio_character_version?.voice_id))) {
+              toast({
+                  title: 'Characters need voices assigned',
+                  description: 'Characters need voice actors assigned to them. Choose a voice for your character by clicking on a character.'
+                  });
+  
+              return
+          }
             const res = await processAudio({ screenPlayVersionId: audioScreenPlayVersion.id })
 
             let data = null
@@ -364,7 +366,7 @@ export default function Page() {
               })
 
               console.log("res", res)
-              if (res.data.error) {
+              if (res?.data?.error) {
                 throw 'Error updating voice'
               }
 
