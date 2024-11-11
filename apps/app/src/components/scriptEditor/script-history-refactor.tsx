@@ -317,19 +317,19 @@ export class ScriptHistory extends History {
 
     setCharacters: setCharactersType = null
 
-    constructor(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[], setCharacters: setCharactersType, characters: Character[]) {
+    constructor(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[] | null, setCharacters: setCharactersType, characters: Character[]) {
         
         super(dbTokenVersion, db)
         // TODO pass all tokens into script meta at some point
         this.setCallbackValues(dbTokenVersion, db, commitCallback, tokens, setCharacters, characters)
     }
 
-    async setCallbackValues(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[], setCharacters: setCharactersType, characters: Character[]) {
+    async setCallbackValues(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[] | null, setCharacters: setCharactersType, characters: Character[]) {
         this.scriptMeta = this.scriptMeta ? this.scriptMeta : new ScriptMeta()
         this.scriptMeta.addExistingLines(tokens)
         this.scriptMeta.addCharacters(characters)
 
-        const commitUpdateCallback = (lastToUpdate: Diff) => {
+        const commitUpdateCallback = (lastToUpdate: Diff | undefined) => {
             this.commitCallback && this.commitCallback(this.tokens, lastToUpdate?.caretPosition)
         }
         
@@ -341,11 +341,14 @@ export class ScriptHistory extends History {
         this.dbTokenVersion = dbTokenVersion
         this.db = db
         this.commitCallback = commitCallback
-        this.tokens = tokens
+        this.tokens = tokens ? tokens : [this.getEditNode()]
+
+      
         this.setCharacters = setCharacters
 
         tokens?.forEach(token => idSet.add(token.id))
 
+        console.log("commitCallback", commitCallback)
         if (commitCallback && tokens && this.appliedVersion !== dbTokenVersion) {
 
             // this is so that we don't re-apply changes if setCallbackValues is called multiple times
@@ -353,6 +356,8 @@ export class ScriptHistory extends History {
             await this.applyChanges()
             this.commitCallback(this.tokens)
             this.commitCharacters()
+        } else if (commitCallback) {
+            commitCallback && commitCallback(this.tokens)
         }
 
         window.resetDb = async () => {
@@ -435,6 +440,16 @@ export class ScriptHistory extends History {
         return [currentOffset || carotPostiion, currentOrderId]
     }
 
+    getEditNode(text = '', anchorOffset = 0) {
+        return {
+            text,
+            caretPosition: anchorOffset,
+            type: 'editNode',
+            character_id: null,
+            id: getId()
+        }
+    }
+
     splitRange(currentOrderId: number, anchorOffset: number) {
 
         const currentToken = this.tokens[Number(currentOrderId)]
@@ -452,13 +467,7 @@ export class ScriptHistory extends History {
         
         const offset = anchorOffset === 0 ? 0 : 1
     
-        const update = {
-            text,
-            caretPosition: anchorOffset,
-            type: 'editNode',
-            character_id: null,
-            id: getId()
-        }
+        const update = this.getEditNode(text, anchorOffset)
 
         if (update.type === "action" && !update.character_id) {
             update.character_id = this.scriptMeta.charactersNames?.Narrator?.id
@@ -564,14 +573,14 @@ export class ScriptHistory extends History {
         const token = this.tokens[orderId]
         const lastToken = this.tokens[orderId - 1]
 
-        if (!token.text && lastToken.type !== 'character') {
+        if (!token.text && lastToken?.type !== 'character') {
             this.modify({
                 type: 'character',
             }, orderId, offset)
             return
         }
 
-        if (lastToken.type === 'character') {
+        if (lastToken?.type === 'character') {
             this.modify({
                 type: 'dialogue',
                 character_id: lastToken.character_id,

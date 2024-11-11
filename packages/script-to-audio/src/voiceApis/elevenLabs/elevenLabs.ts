@@ -39,7 +39,9 @@ export async function textToSpeech(text, options = {}) {
                 const lengthInSeconds = await ffprobe(url);
                 resolve({ audioLengthInSeconds: lengthInSeconds })
             }); // Resolve with the fileName
-            fileStream.on("error", reject);
+            fileStream.on("error", error => {
+              reject(`Streaming to audio error ${error}`)
+            });
 
             // return audio
         } catch (e) {

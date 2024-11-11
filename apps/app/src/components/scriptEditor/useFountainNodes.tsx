@@ -60,6 +60,7 @@ const noUpdateKyes = [
 const removeTokens = ['dialogue_end', 'dialogue_begin']
 
 const prepareTokensRender = (tokens: Tokens[]) => {
+    if (!tokens) return tokens
     return tokens.filter((token: Tokens) => !removeTokens.includes(token.type))
 }
 
@@ -86,12 +87,13 @@ function getElementAtCaret() {
 
 
 console.log("start here")
-window.scriptStorage = window.scriptStorage || new ScriptHistory()
+// window.scriptStorage = window.scriptStorage || new ScriptHistory()
 
-export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string, pdfText, setCharacters, characters) {
+export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string, pdfText, setCharacters, characters, screenplayId) {
 
 
-    const [tokens, setTokens] = useState(prepareTokensRender(tokensIn?.length ? tokensIn : [{ type: 'editNode', text: ' '}]))
+    const [tokens, setTokens] = useState([])
+    // const [tokens, setTokens] = useState(prepareTokensRender(tokensIn?.length ? tokensIn : [{ type: 'editNode', text: ' '}]))
     const tokensChanged = useMemo(() => tokens, [tokens])
     const [nextCaretPosition, setNextCaretPosition] = useState([])
     const [currentOrderId, setCurrentOrderId] = useState(null)
@@ -113,8 +115,11 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
         }
     }, [pdfText])
 
+
+    console.log('screenplayId---------', screenplayId)
     useEffect(() => {
-        // window.scriptStorage = window.scriptStorage || new ScriptHistory()
+        console.log('script storage start', tokensIn)
+        window.scriptStorage = window.scriptStorage || new ScriptHistory()
         // NB ScriptHistory has an internal representation of tokens. not sure if we should keep 
         // to sets, hoever we can change the internal as we like and only update it later if needed
         window.scriptStorage.setCallbackValues(
@@ -125,15 +130,22 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
                 caretPosition && setNextCaretPosition(caretPosition)
                 currentOrderId && setCurrentOrderId(currentOrderId)
             },
-            tokens,
+            prepareTokensRender(tokensIn),
             setCharacters,
             characters,
         )
 
-        // return () => {
-        //     window.scriptStorage = null
-        // }
+        return () => {
+            console.log('script storage  end')
+            window.scriptStorage = null
+        }
 
+    }, [screenplayId])
+
+    useEffect(() => {
+        if (window?.scriptStorage) {
+            window.scriptStorage.dbTokenVersion = versionNumber
+        }
     }, [versionNumber])
 
 
@@ -362,6 +374,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             // This is to save updating. if we are not changing the type or the tranformation of the text,
             // we can just register the changeand if we rerender later, all the text will be updated.
             if (didUpdate) {
+                window.scriptStorage.commitCharacters()
                 window.scriptStorage.commit()
                 setCurrentOrderId(focusId)
                 setNextCaretPosition(nextCaretPostion)
@@ -384,7 +397,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             setRangeOffsets(null)
             // setTokens(newTokens)
         },
-        window.scriptStorage.getNewCharacters.bind(window.scriptStorage),
+        window?.scriptStorage?.getNewCharacters?.bind(window?.scriptStorage),
         currentOrderId,
         secondaryOrderId,
     ]

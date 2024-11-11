@@ -3,7 +3,7 @@
 import './script-editor.css';
 
 import { TokenContent, Tokens } from './script-tokens'
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback, useMemo } from 'react';
 import { useFountainNodes } from './useFountainNodes'
 import { max } from 'date-fns';
 
@@ -47,13 +47,6 @@ function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, chara
     for (const newToken of updatedTokens) {
         const id = newToken.id
 
-        // if (!id || id?.startsWith('internal')) {
-        //     console.log("newToken", newToken)
-        //     newToken.id = newToken.id.replace('internal', '')
-        //     newTokens.push(newToken)
-        //     continue
-        // }
-
         newIds[id] =  newToken
     }
 
@@ -93,6 +86,20 @@ function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, chara
     const newTokens = Object.values(newIds)
     const names = new Set(characters.map(obj => obj.name))
 
+    console.log('newTokens', Boolean(newTokens?.length))
+    console.log('removeTokens', Boolean(removeTokens?.length))
+    console.log('updateTokens', Boolean(updateTokens?.length))
+    console.log('newCharacters', Boolean(newCharacters?.length))
+
+    const shoudlUpdate = 
+        Boolean(newTokens?.length) || 
+        Boolean(removeTokens?.length) ||
+        Boolean(updateTokens?.length) || 
+        Boolean(newCharacters?.length)
+
+        console.log('shoudlUpdate----------', shoudlUpdate)
+    if (!shoudlUpdate) return null
+
     return {
         created: newTokens,
         removed: removeTokens,
@@ -103,6 +110,21 @@ function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, chara
     }
 
 }
+
+function createDebounce() {
+    let id = null
+    let callback = null
+    return (callbackIn) => {
+        callback = callbackIn
+        if (id) return
+        id = setTimeout(() => {
+            callback()
+            id = null
+        }, 5000)
+
+    }
+}
+
 
 export const ScriptEditor =({
     scriptTokens,
@@ -119,6 +141,7 @@ export const ScriptEditor =({
 }: ScriptEditorInput) => {
 
     const myRef = useRef(null);
+
     const [
         tokens, 
         handleKeyDown, 
@@ -131,25 +154,45 @@ export const ScriptEditor =({
         handlePaste,
         handleCut,
         getNewCharacters
-    ] = useFountainNodes(scriptTokens, audioScreenPlayVersion, pdfText, setCharacters, characters)
+    ] = useFountainNodes(scriptTokens, audioScreenPlayVersion, pdfText, setCharacters, characters, screenplayId)
+
+    const debounce = useCallback(createDebounce(), [])
+
 
     useEffect(() => {
         myRef.current && myRef.current.focus()
     }, [myRef])
+    
+    // Save loop
+    useEffect(() => {
+        debounce(async () => {
+            console.log("save1-------------", JSON.stringify(tokens, null, 2))
+            const newCharacters = getNewCharacters && getNewCharacters()
+            const changes = getChanges(scriptTokens, tokens, screenplayId, newCharacters, characters)
+        
+            if (!changes) return
+            console.log("save0-------------", changes)
+            const res = await saveLines(changes)
+            console.log('res----', res)
+        
+        })
+    }, [tokens])
 
+    const tokenContent = useMemo(() =>   
+        <TokenContent
+            tokens={tokens}
+            currentTokenId={currentTokenId}
+            highlightToken={highlightToken}
+        />, [tokens,
+            currentTokenId,
+            highlightToken])
+
+    console.log("scriptTokens", scriptTokens)
     console.log("tokens", tokens)
 
     return (
         <>
-        <button id="savebutton" onClick={async () => {
-            console.log("save1-------------", JSON.stringify(tokens, null, 2))
-            const changes = getChanges(scriptTokens, tokens, screenplayId, getNewCharacters(), characters)
-
-            console.log("save0-------------", changes)
-            const res = await saveLines(changes)
-            console.log('res----', res)
-
-        }}>Save----</button>
+        {/* <button id="savebutton" onClick={}>Save----</button> */}
         
 
         <div
@@ -195,12 +238,8 @@ export const ScriptEditor =({
                 
                 {/* <div style={{ position: 'sticky', top: 0 }}>currentOrderId: {currentOrderId}</div>
                 <div>secondaryOrderId: {secondaryOrderId}</div> */}
-            
-            <TokenContent
-                tokens={tokens}
-                currentTokenId={currentTokenId}
-                highlightToken={highlightToken}
-            />
+            {tokenContent}
+          
         </div>
         </>
     )

@@ -58,6 +58,7 @@ export const getAudioTask = task({
     }
 
 
+    logger.info('Before textToSpeech')
     // Get audio from text 
     let res = null
     let fullPath = null

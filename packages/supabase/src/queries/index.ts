@@ -45,7 +45,7 @@ export async function getScreenPlays() {
 
 export async function getScreenPlay(screenPlayId) {
   const supabase = createClient();
-  console.time('Get screenplay');
+  console.time('Get screenplay=');
 
   try {
     let query = await supabase
@@ -62,7 +62,7 @@ export async function getScreenPlay(screenPlayId) {
           name,
           gender,
           created_at,
-          audio_character_version (
+          audio_character_version!fk_audio_character_version (
             id,
             audio_screenplay_version_id,
             version_number,
@@ -84,6 +84,7 @@ export async function getScreenPlay(screenPlayId) {
       .eq('id', screenPlayId)
       .single();
 
+      console.log('query----', query)
       return query
   } catch (error) {
     logger.error(error);

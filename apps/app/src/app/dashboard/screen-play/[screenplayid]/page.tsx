@@ -193,6 +193,7 @@ export default function Page() {
   useEffect(() => {
     if (params?.screenplayid) {
       const versionNumber = Number(searchParams.get('version')) || null // we don't want NaN
+      console.log('arams.screenplayid', params.screenplayid)
       getScreenPlay({ screenPlayId: params.screenplayid, versionNumber  })
         .then((screenPlay) => {
 
@@ -210,12 +211,14 @@ export default function Page() {
           
           const audio_version = data?.lines
           .filter(line => line?.audio_version?.length)
+          .filter(line => Boolean(line?.text))
           .map(line => line.audio_version[line.audio_version.length - 1])
           
           // console.log('audio_version-----------------', audio_version)
           
           setAudioVersions(audio_version)
-          updateLines(data?.lines, setLines)
+          // updateLines(data?.lines, setLines)
+          setLines(data?.lines)
           setScreenPlay(screenPlay)
           setCharacters(data?.characters || [])
           setAudioScreenPlayVersion(audio_screenplay_version)
@@ -259,6 +262,8 @@ export default function Page() {
           updateOrCreateLines={async (changes) => {
             const res = await updateOrCreateLines(changes)
             console.log("res====  ", res)
+
+            //TODO clean this up a little more
             if (res.validationErrors) {
               toast({
                 title: 'Validation errors',
@@ -346,8 +351,8 @@ export default function Page() {
           }}
           onSelectVoice={async (voice: Voice, character) => {
             // get the version or the latest
-            let audioCharacterVersion = character.audio_character_version.find(version => version.version_number === audioVersionNumber)
-            audioCharacterVersion = audioCharacterVersion ? audioCharacterVersion : character.audio_character_version[character.audio_character_version.length - 1]
+            let audioCharacterVersion = character.audio_character_version
+            // audioCharacterVersion = audioCharacterVersion ? audioCharacterVersion : character.audio_character_version[character.audio_character_version.length - 1]
             const audioCharacterVersionId = audioCharacterVersion?.id
             // TODO add some error handling
             try {

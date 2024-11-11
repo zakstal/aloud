@@ -67,7 +67,7 @@ export async function getScreenPlayAudioVersion(audioVersionId: string) {
   try {
     const { data, error } = await supabase
       .from("audio_screenplay_versions")
-      .select("status, job_id, id, total_lines")
+      .select("status, job_id, id, total_lines, screenplay_id")
       .eq("id", audioVersionId)
       .single(); // Ensure only one row is returned
 
@@ -83,7 +83,7 @@ export async function getScreenPlayAudioVersion(audioVersionId: string) {
   }
 }
 
-export async function getAudioVersionsByScreenplayId(screenplayVersionId: string, minOrderNumber: number = 0) {
+export async function getAudioVersionsByScreenplayId(screenplayId: string, minOrderNumber: number = 0) {
   const supabase = createClient();
   try {
     const { data, error } = await supabase
@@ -111,8 +111,9 @@ export async function getAudioVersionsByScreenplayId(screenplayVersionId: string
           voice_name
         )
       `)
-      .eq("audio_screenplay_version_id", screenplayVersionId) // Filter by screenplay_id
+      .eq("screenplay_id", screenplayId) // Filter by screenplay_id
       .eq('lines.deleted', false) 
+      .not("lines.text", "is", null)
       .is("audio_file_url", null)
       .order("lines(order)", { ascending: false });
 
@@ -120,7 +121,7 @@ export async function getAudioVersionsByScreenplayId(screenplayVersionId: string
       throw error;
     }
 
-    return data;  // Return the fetched audio versions
+    return data.filter(audioVersion => Boolean(audioVersion?.lines?.text));  // Return the fetched audio versions
   } catch (error) {
     console.error("Error fetching audio versions:", error);
     throw error;
@@ -325,7 +326,7 @@ const aloudMeta = {
   batchId: null
 }
 export const trackAudioRuns = task({
-  id: "track-audio-runs-8",
+  id: "track-audio-runs-11",
   cleanup: async (payload, { ctx }) => {
     logger.info("cleanup payLoad", aloudMeta)
     logger.info("cleanup ctx", ctx)
@@ -342,9 +343,10 @@ export const trackAudioRuns = task({
       // TODO batch to 50 or 100 at a time
       const audioVersion = await getScreenPlayAudioVersion(screenPlayVersionId)
 
+      logger.info('audioVersion---', { audioVersion })
       await setAudioVersionInProgress(screenPlayVersionId)
     
-      const audioVersionsUnsorted = await getAudioVersionsByScreenplayId(screenPlayVersionId)
+      const audioVersionsUnsorted = await getAudioVersionsByScreenplayId(audioVersion.screenplay_id)
       const audioVersions = audioVersionsUnsorted.reverse()
     
       if (!audioVersions.length) {

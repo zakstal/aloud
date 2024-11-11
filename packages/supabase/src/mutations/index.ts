@@ -25,9 +25,7 @@ interface CreateCharacersInput {
 
 interface CreateLinesInput {
   screenplayId: string;
-  screenplayVersionId: string;
   insertedCharacters: {id: string; name: string}[];
-  insertedAudioCharactersVersions: {id: string; character_id: string}[];
   dialog: Dialog[];
   supabase: any,
   versionNumber: number;
@@ -37,9 +35,7 @@ async function createLines({
   dialog,
   supabase,
   screenplayId,
-  screenplayVersionId,
   insertedCharacters,
-  insertedAudioCharactersVersions,
   versionNumber
 }: CreateLinesInput) {
 
@@ -49,11 +45,6 @@ async function createLines({
 
   const nameCharacterIdMap =  insertedCharacters?.reduce((obj: { [key: string]: string }, charObj) => {
     obj[charObj.name] = charObj.id
-    return obj
-  }, {})
-
-  const characterIdToInsertedIdMap = insertedAudioCharactersVersions?.reduce((obj: { [key: string]: string }, charObj) => {
-    obj[charObj.character_id] = charObj.id
     return obj
   }, {})
 
@@ -77,6 +68,8 @@ async function createLines({
     return obj
   }).filter(Boolean)
 
+  console.log('toInsertLines', toInsertLines)
+
   console.timeEnd("lines prepare")
   try {
     console.time("lines insert")
@@ -92,33 +85,6 @@ async function createLines({
         throw error;
       }
 
-      console.timeEnd("lines insert")
-      console.time("audio_versions insert")
-      
-      const toInsertLineVersions = insertedData && insertedData
-        .filter((line: { id: string, character_id: string, isDialog: boolean }) => line.isDialog )
-        .map((line: { id: string, character_id: string, isDialog: boolean  }) => ({
-          line_id: line.id,
-          version_number: 1,
-          screenplay_id: screenplayId,
-          audio_screenplay_version_id: screenplayVersionId,
-          audio_character_version_id: characterIdToInsertedIdMap[line.character_id],
-        }))
-
-        console.log('toInsertLineVersions', toInsertLineVersions)
-
-      const { data, error: audioVersionError } = toInsertLineVersions 
-      ? await supabase
-        .from("audio_version")
-        .insert(toInsertLineVersions)
-        .select("id") // Optionally, return the inserted data
-      : {}
-
-      if (audioVersionError) {
-        console.log("audioVersionError", audioVersionError)
-        throw audioVersionError;
-      }
-      console.timeEnd("audio_versions insert")
     return insertedData;
   } catch (error) {
     console.error("Error inserting line:", error);
@@ -152,7 +118,7 @@ async function insertCharacters ({
   ? await supabase
     .from("characters")
     .insert(charactersInsert)
-    .select("id, name")
+    .select("id, name, audio_character_version_id")
   : {}
 
 
@@ -162,16 +128,9 @@ async function insertCharacters ({
     throw charactersError;
   }
 
-  const { data: allCharacters, error: allCharactersError } = await supabase
-    .from("characters")
-    .select("id, name")
-    .eq('screenplay_id', screenplayId)
 
-    if (allCharactersError) {
-      throw allCharactersError;
-    }
 
-  return allCharacters
+  return insertedCharacters
 }
 
 interface CreateCharacersVersionInput {
@@ -187,18 +146,26 @@ async function insertCharacterVersions ({
 }: CreateCharacersVersionInput) {
   if (!insertedCharacters || !insertedCharacters?.length) return null
 
+  console.log("insertedCharacters===", insertedCharacters)
   const characterVersionInsert = insertedCharacters?.map(insertedChar => ({
     audio_screenplay_version_id: screenplayVersionId,
     character_id: insertedChar.id,
-    version_number: 1
+    version_number: 1,
+    voice_data: null,
+    voice_id: null,
+    voice_name: null
   }))
 
   console.log("characterVersionInsert---", characterVersionInsert)
   
-  const { data: insertedAudioCharacters, error: audiocharactersError } = await supabase
-  .from("audio_character_version")
-  .insert(characterVersionInsert)
-  .select("id, character_id")
+  // const { data: insertedAudioCharacters, error: audiocharactersError } = await supabase
+  // .from("audio_character_version")
+  // .insert(characterVersionInsert)
+  // .select("id, character_id")
+
+  const { data: insertedAudioCharacters, error: audiocharactersError } = await supabase.rpc('insert_audio_character_versions_if_not_exists', {
+    versions: characterVersionInsert
+  });
 
   if (audiocharactersError) {
     console.log('audiocharactersError', audiocharactersError)
@@ -232,7 +199,7 @@ export async function createScreenPlay(
   console.log('here 2 supabase')
   const { title, type, characters, total_lines, screen_play_text, dialog, screen_play_fountain } = data;
   
-  console.log('here 3 supabase')
+  console.log('here 3 supabase', characters)
   const screenplayInsert = {
     user_id: userId,
     title: title || 'New script',
@@ -295,6 +262,8 @@ export async function createScreenPlay(
       supabase
     })
 
+    console.log('insertedCharacters', insertedCharacters)
+
     console.timeEnd('Character insert')
 
     console.time('Character version insert')
@@ -304,14 +273,20 @@ export async function createScreenPlay(
       supabase
     })
 
+    const { data: datachar, error: errorChar} = await supabase
+    .from('characters')
+    .select('id, audio_character_version_id')
+    .eq("screenplay_id", screenplayId)
+
+    console.log('datachar--', datachar)
+    console.log('errorChar--', errorChar )
+
     console.timeEnd('Character version insert')
     console.time('Create lines insert')
     
     await createLines({
       insertedCharacters,
-      insertedAudioCharactersVersions,
       screenplayId: screenplayId,
-      screenplayVersionId: screenplayVersion.id,
       dialog,
       supabase,
       versionNumber: 1,
@@ -374,7 +349,7 @@ export async function updateAudioCharacterVersion(
           name,
           gender,
           created_at,
-          audio_character_version (
+          audio_character_version!fk_audio_character_version (
             id,
             audio_screenplay_version_id,
             version_number,
@@ -550,19 +525,20 @@ export async function processLines({ created, removed, updated, characters = [],
         screenplayId,
         supabase
       })
+
       console.log("insertCharacterVersions---")
       const insertedAudioCharactersVersions = await insertCharacterVersions({
         insertedCharacters,
         screenplayVersionId: screenPlayVersionId,
         supabase
       })
-      console.log("createLines---")
+
+      console.log('insertedAudioCharactersVersions--', insertedAudioCharactersVersions)
+
       // TODO creating is not idempotent atm. This needs to be updated to prevent duplicates
       await createLines({
         insertedCharacters,
-        insertedAudioCharactersVersions,
         screenplayId: screenplayId,
-        screenplayVersionId: screenPlayVersionId,
         dialog: created,
         supabase,
         versionNumber

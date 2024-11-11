@@ -103,7 +103,7 @@ async function assembleSource(audioUrls, mediaSrcIn, setSrc, urlToDurationStartn
         const url = audioUrls[onUpdateIdx]
         const urlOr = originalUrls[onUpdateIdx]
         const { startTime, endTime } = urlToDurationStartnd[urlOr]
-        console.log("onupdateend----", sourceBuffer.timestampOffset, endTime, sourceBuffer.timestampOffset - endTime, url, urlToDurationStartnd[urlOr])
+        // console.log("onupdateend----", sourceBuffer.timestampOffset, endTime, sourceBuffer.timestampOffset - endTime, url, urlToDurationStartnd[urlOr])
 		// if (clipIndex < clipsToAppend.length - 1) {
 		// 	// We have another segment to add
 		// 	// BUT, first we need to offset the time by the duration of
@@ -509,13 +509,14 @@ class AudioPlayer extends React.Component {
     }
 
     setCurrentlyPlayingLineId(lineId) {
+        console.log('setCurrentlyPlayingLineId--')
         this.props.setCurrentlyPlayingLineId && this.props.setCurrentlyPlayingLineId(lineId)
     }
 
     // this is mostly to broadcast out which line we are on
     setCurrentAudioVersion(currentTime) {
         const currentAudioVersion = this.state.currentAudioVersion
-        const durations = this.getDurationByUrl(currentAudioVersion.audio_file_url) || {}
+        const durations = this.getDurationByUrl(currentAudioVersion?.audio_file_url) || {}
         if (!durations) return
 
         const { startTime, endTime } = durations;
@@ -530,11 +531,14 @@ class AudioPlayer extends React.Component {
 
         for (let i = idx; i < this.state.audioVersions.length; i++) {
             const audioVersion = this.state.audioVersions[i]
-            const durations= this.getDurationByUrl(audioVersion.audio_file_url)
-            if (!durations) break // we've likely run to the end of the loaded data ready to be played
+
+            const durations = this.getDurationByUrl(audioVersion.audio_file_url)
+            if (!durations) continue 
+            
 
             const { startTime, endTime } = durations
             const isBetween = currentTime > startTime && currentTime < endTime
+
             if (!isBetween) continue
             this.setState({
                 currentAudioVersion: audioVersion,
@@ -608,7 +612,6 @@ class AudioPlayer extends React.Component {
                 this.setIsLoading()
             }
 
-            console.log("load more")
             this.getSignedUrlNextN(5)
 
             return url

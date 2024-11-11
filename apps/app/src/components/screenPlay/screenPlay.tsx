@@ -143,6 +143,7 @@ export default function ScreenPlayConatiner({
 
   console.log('currentlyPlayingLineId', currentlyPlayingLineId)
   console.log('isPlaying', isPlaying)
+  console.log('screenplay lines', lines)
   if (isLoading) return <div className="flex justify-center h-screen items-center"><Progress /></div>
 
   return (
@@ -164,7 +165,7 @@ export default function ScreenPlayConatiner({
                                 )}
                             >
                             <VoiceActors
-                                key={audioScreenPlayVersion?.id}
+                                key={screenplayId}
                                 character={selectedCharacter}
                                 onClose={() => {
                                     setSelectedCharacter(null)
@@ -182,7 +183,7 @@ export default function ScreenPlayConatiner({
                             <div className="pl-8" >
                                 <div className="h-14 flex items-center" >
                                     <GetAudio
-                                        key={audioScreenPlayVersion?.id}
+                                        key={screenplayId}
                                         audioBeingGotten={audioBeingGotten}
                                         processAudio={processAudio}
                                         setAudioBeingGotten={setAudioBeingGotten}
@@ -190,7 +191,7 @@ export default function ScreenPlayConatiner({
                                     />
                                 </div>
                                 <Characters
-                                    key={audioScreenPlayVersion?.id}
+                                    key={screenplayId}
                                     characters={characters}
                                     audioVersionNumber={audioVersionNumber}
                                     onCharacterClick={(character) => {
@@ -210,7 +211,7 @@ export default function ScreenPlayConatiner({
                 screenPlayText !== undefined 
                 ?
                 <ScriptEditor
-                    key={audioScreenPlayVersion?.id}
+                    key={screenplayId}
                     className="script-text bg-white p-8 pt-0 pb-[70px] outline-none border-slate-400 overflow-scroll max-w-4xl font-courier"
                     scriptTokens={lines}
                     audioScreenPlayVersion={audioScreenPlayVersion?.id}
