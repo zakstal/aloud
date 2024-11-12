@@ -27,7 +27,7 @@ export const ProgressLoader = ({ progress = 90, className, onClick, isLoading = 
                     cy="50%"
                     style={{
                         strokeOpacity: 1,
-                        strokeDasharray: 23 + 'px',
+                        strokeDasharray: 4 + 'px',
                         strokeDashoffset: 12 + 'px',
                     }}
                 ></circle>

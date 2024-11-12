@@ -1,3 +1,124 @@
+## Getting started
+
+
+```sh
+bun i
+```
+
+2. Copy `.env.example` to `.env` and update the variables.
+
+```sh
+# Copy .env.example to .env for each app
+cp apps/api/.env.example apps/api/.env
+cp apps/app/.env.example apps/app/.env
+cp apps/web/.env.example apps/web/.env
+```
+
+4. Start the development server from either bun or turbo:
+
+```ts
+bun dev // starts everything in development mode (web, app, api, email)
+bun dev:app // starts the app in development mode
+bun dev:api // starts the api in development mode
+//bun dev:web // starts the web app in development mode
+// bun dev:email // starts the email app in development mode
+```
+
+5. navigate to packages/jobs
+
+`npx trigger.dev@latest dev`
+
+
+
+## Jobs trigger.deb
+
+Deployment
+
+`npx trigger.dev@latest deploy`
+
+
+
+## How tos
+- (supabase google Oath set up)[https://supabase.com/docs/guides/auth/social-login/auth-google?queryGroups=environment&environment=client]
+
+
+## Issues
+- get real images for the in the public space for voice actors
+- character column on the scren play detail page goes to low on the page
+
+
+## TODO
+- [ ] terms and conditions
+- [ ] privacy policy
+- [ ] offline maybe
+- [ ] better login page
+- [ ] account limits
+- [ ] skip forward and back on the player
+- [ ] Merge packages/script-to-audio/src/parsers/fountainParser2 and apps/app/src/components/scriptEditor/script-tokens.tsx
+- [ ] When creating text, make sure characters are assigned
+    - [ ] This is not the case at the moment as we look if the last text was from a character. However  type “action” should be assigned to narrator
+- [ ] When a new version is created, the UI needs to be updated with the correct ids for lines
+- [ ] Ids created from new lines in the UI are prepended with “internal” this is being stripped out, but we don’t want it all together. Its also being used to determine newly created lines
+- [ ] Going back and forth with ctrl+z and shift+ctrl+z between major server versions and how it interacts with the indexedDb version
+    - [ ] How do we go to a previous version, then redo forwards 
+    - [ ] What if we go back to a previous version and start editing how do we then undo?
+- [ ] Versioning for character versions. 
+    - [ ] Tie it to the version_number? Can the sql functions work properly to get a version?
+    - [ ] 
+- [ ] Removing characters from the script
+- [ ] There is an issue using backspace delete on the script editor
+- [ ] When deleting lines that were assigned to a character the lines need to be reassigned to narrator
+- [ ] Sup abase transactions when updating lines
+- [ ] Add check for assignment to audio character version before trying to get audio on the client
+- [ ] Tracking of audio provider in DB
+    - [ ] Check concurrency rate
+    - [ ] Elegant failure when credits are out
+- [ ] Very large documents take a while to load when from a pdf. Chunk it out
+- [ ] Create new audio version when switching characters versions when audio is completed
+- [ ] Character lines are being set to IsDialog true. This should not happen
+- [ ] Add ability to add title of script 
+- [ ] Initial item on blank doc needs an id
+- [ ] Change color for loading progress indicator on the get audio button
+- [ ] Reload audio if lines have changed and new audio gotten
+- [ ] On get audio save
+- [ ] Save every few seconds, if offline put in a queue
+- [ ] Add the ability on save to delete characters
+- [ ] Get save data from scriptMeta instead of looping through all items
+- [ ] In the editor if you tab it will go down to the player
+- [ ] Add aria labels
+
+UPDATES
+- add config
+	- highlight lines on play
+	- save rate
+
+### Potential problems
+- Indexed db gets too big
+    - Modifies for the same element can be batched
+
+## Supabase DB
+
+### create a new migration
+navigate to app/api
+`npm run migrate:new <name_of_migration>`
+
+
+### Reset db
+reset db and re-run migtion
+`npm run reset`
+
+
+### CLI Login
+`npm run login`
+
+
+### Push schema changes to remote db
+You must be logged in.
+`npm run push`
+
+
+## ORIGINAL README
+
 ![hero](image.png)
 
 
@@ -151,49 +272,3 @@ Vercel deployment will guide you through creating a Supabase account and project
 - Google cloud - Oauth (https://console.cloud.google.com/apis/credentials?project=aloud-435319&inv=1&invt=AbeZrA)[https://console.cloud.google.com/apis/credentials?project=aloud-435319&inv=1&invt=AbeZrA]
 - Digital ocean - pdf-to-text internal api (https://cloud.digitalocean.com/apps/c3521227-e88d-4d93-aac9-b7dad804ec7b?source_ref=projects&i=5e4c8d)[https://cloud.digitalocean.com/apps/c3521227-e88d-4d93-aac9-b7dad804ec7b?source_ref=projects&i=5e4c8d]
 - aloud-api - repo for the pdf-to-text api ( https://github.com/zakstal/aloud-api)[https://github.com/zakstal/aloud-api]
-
-
-
-## How tos
-- (supabase google Oath set up)[https://supabase.com/docs/guides/auth/social-login/auth-google?queryGroups=environment&environment=client]
-
-
-## Issues
-- get real images for the in the public space for voice actors
-- character column on the scren play detail page goes to low on the page
-
-
-## TODO
-- terms and conditions
-- privacy policy
-- saving of different versions
-- saving script changes to db
-- offline maybe
-- better login page
-- account limits
-- skip forward and back on the player
-- disable editing
-- fix how characters and dialog is parsed
-- Merge packages/script-to-audio/src/parsers/fountainParser2 and apps/app/src/components/scriptEditor/script-tokens.tsx
-
-
-
-## Supabase DB
-
-### create a new migration
-navigate to app/api
-`npm run migrate:new <name_of_migration>`
-
-
-### Reset db
-reset db and re-run migtion
-`npm run reset`
-
-
-### CLI Login
-`npm run login`
-
-
-### Push schema changes to remote db
-You must be logged in.
-`npm run push`

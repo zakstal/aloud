@@ -104,7 +104,7 @@
   }
 
   .loaderpro__animated-circle {
-    stroke: #ff6347; /* The color of the animated circle */
+    stroke: hsl(var(--loading-color)); /* The color of the animated circle */
     stroke-dasharray: 251px; /* Circumference of the circle */
     stroke-opacity: 0.5;
     animation: none;

@@ -84,7 +84,6 @@ export async function getScreenPlay(screenPlayId) {
       .eq('id', screenPlayId)
       .single();
 
-      console.log('query----', query)
       return query
   } catch (error) {
     logger.error(error);

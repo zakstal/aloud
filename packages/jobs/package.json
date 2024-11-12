@@ -16,9 +16,9 @@
   "dependencies": {
     "@v1/supabase": "workspace:*",
     "@v1/script-to-audio": "workspace:*",
-    "@trigger.dev/sdk": "3.0.13"
+    "@trigger.dev/sdk": "3.1.2"
   },
   "devDependencies": {
-    "@trigger.dev/build": "3.0.13"
+    "@trigger.dev/build": "3.1.2"
   }
 }

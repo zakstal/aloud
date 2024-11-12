@@ -39,16 +39,18 @@ const TooltipContainer = ({ children, text, sideOffset = 1 }) => {
 
 function GetAudio({ audioBeingGotten, processAudio, setAudioBeingGotten, audioScreenPlayVersion }) {
     const status = audioScreenPlayVersion.status
-    const totalLines  = audioScreenPlayVersion.total_lines
-    const totalLinesCompleted  = audioScreenPlayVersion.total_lines_completed
+    const totalLines  = audioScreenPlayVersion?.total_lines || 0
+    const totalLinesCompleted  = audioScreenPlayVersion?.total_lines_completed || 0
     const progress = totalLinesCompleted != null && totalLines != null ? (totalLinesCompleted / totalLines) * 100 : 0
-    if (status === 'full') return (
-        <div className="text-sm px-4 completed py-2 border-1 rounded-2xl">Completed</div>
-    )
-    
+    let element = null
 
-    if (status === 'inProgress' ) return (
-        <div className="flex gap-2 items-center text-sm">
+    switch(status) {
+        case 'full':
+            element = <div className="text-sm px-4 completed py-2 border-1 rounded-2xl">Completed</div>
+            break;
+        case 'inProgress':
+            console.log('going in progressssss')
+            element =
             <ProgressLoader
                 className="progress-loading "
                 progress={Number(progress.toFixed())}
@@ -60,16 +62,10 @@ function GetAudio({ audioBeingGotten, processAudio, setAudioBeingGotten, audioSc
                     console.log('res', res)
                 }}
             />
-            
-            <span>{totalLinesCompleted}</span>
-            /
-            <span>{totalLines}</span>
-            <span>lines</span>
-        </div>
-    )
-  
-    if (status === 'partial' || status === 'failed') return (
-        <div className="flex gap-2 items-center text-sm">
+            break;
+        case 'partial':
+        case 'failed':
+            element =
             <TooltipContainer text="There were some... issues getting your audio. Feel free to try again.">
                 <Button
                     type="button"
@@ -88,32 +84,41 @@ function GetAudio({ audioBeingGotten, processAudio, setAudioBeingGotten, audioSc
                     { audioBeingGotten ? <Progress hw={20} bw={2} className=""/> : null}
                 </Button>
             </TooltipContainer>
-            
-            <span>{totalLinesCompleted}</span>
+            break;
+        default:
+            console.log('default------------')
+            element = (
+                <Button
+                    type="button"
+                    className='flex gap-3'
+                    onClick={async () => {
+                        setAudioBeingGotten(true)
+                        const res = await processAudio()
+                        setAudioBeingGotten(false)
+                        // if (['inProgress', 'full'].includes(res.status)) {
+                            // }
+                        }}
+                        variant="outline"
+                        size="sm"
+                        >
+                    <span className=""> {!audioBeingGotten ? "Get Audio!" : "in progress" }</span>
+                    { audioBeingGotten ? <Progress hw={20} bw={2} className=""/> : null}
+                </Button>
+            )
+        }
+
+    return (
+        <div className="flex gap-2 items-center text-sm">
+        {element}
+        <span>{totalLinesCompleted}</span>
             /
             <span>{totalLines}</span>
             <span>lines</span>
+            <span>-</span>
+            <TooltipContainer text="Updates you make are automatically saved and versioned. This is the current version.">
+                <span className="font-bold">v{audioScreenPlayVersion.version_number}</span>
+            </TooltipContainer>
         </div>
-    )
-
-    return (
-        
-        <Button
-            type="button"
-            className='flex gap-3'
-            onClick={async () => {
-                setAudioBeingGotten(true)
-                const res = await processAudio()
-                setAudioBeingGotten(false)
-                // if (['inProgress', 'full'].includes(res.status)) {
-                // }
-            }}
-            variant="outline"
-            size="sm"
-        >
-            <span className=""> {!audioBeingGotten ? "Get Audio!" : "in progress" }</span>
-            { audioBeingGotten ? <Progress hw={20} bw={2} className=""/> : null}
-        </Button>
     )
 }
 
@@ -245,13 +250,13 @@ export default function ScreenPlayConatiner({
             }
         </div>
         <AudioPlayer
+            key={audioScreenPlayVersion?.id}
             audioVersions={audioVersions}
             setCurrentLinePlaying={setCurrentLinePlaying}
             getSignedUrl={(url: string) => getSignedUrl({ url })}
             setCurrentlyPlayingLineId={setCurrentlyPlayingLineId}
             currentlyPlayingLineId={currentlyPlayingLineId}
             setIsPlaying={setIsPlaying}
-            key={audioScreenPlayVersion?.id}
         />
     </div>
     </>

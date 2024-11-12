@@ -185,6 +185,33 @@ async function insertCharacterVersions ({
   return insertedAudioCharacters
 }
 
+async function updateAudioScreenplayVersionTotalLines(screenplayId: string, audioScreenplayVersionId: string) {
+  try {
+    const supabase = createClient();
+    // Step 2: Count lines that are not deleted and have isDialog set to true for this screenplay_id
+    const { count, error: countError } = await supabase
+      .from('lines')
+      .select('*', { count: 'exact', head: true }) // Get only the count
+      .eq('screenplay_id', screenplayId)
+      .eq('deleted', false)
+      .eq('isDialog', true);
+
+    if (countError) throw countError;
+
+    // Step 3: Update the total_lines in the audio_screenplay_versions table
+    const { data: updateData, error: updateError } = await supabase
+      .from('audio_screenplay_versions')
+      .update({ total_lines: count })
+      .eq('id', audioScreenplayVersionId);
+
+    if (updateError) throw updateError;
+
+    return updateData;
+  } catch (error) {
+    console.error('Error updating total_lines:', error);
+  }
+}
+
 
 type Dialog = { characterName: string; text: string, isDialog: boolean, type: string }
 type Fountain = { type: string; text: string, scene_number: number | null }
@@ -304,28 +331,10 @@ export async function createScreenPlay(
 
     console.timeEnd('Create lines insert')
 
+    await updateAudioScreenplayVersionTotalLines(screenplayId, screenplayVersion.id)
+
     return screenplay
-    // // Insert lines for each character
-    // const linesInsert = [];
-    // insertedCharacters.forEach((character, index) => {
-    //   const characterLines = characters[index].lines.map((line) => ({
-    //     screenplay_id: screenplayId,
-    //     character_id: character.id,
-    //     text: line.text,
-    //     order: line.order,
-    //   }));
-    //   linesInsert.push(...characterLines);
-    // });
-
-    // const { error: linesError } = await supabase.from("lines").insert(linesInsert);
-
-    // if (linesError) {
-    //   throw linesError;
-    // }
-
-    // logger.info("Screenplay, characters, and lines inserted successfully");
-
-    // return { success: true, screenplayId };
+    
   } catch (error) {
     logger.error(error);
     console.log('error', error);
@@ -652,6 +661,9 @@ export async function updateOrCreateLinesInDb(created: Dialog[], removed: Dialog
 
 
   const res = await processLines({ created, removed, updated, characters, screenplayId, screenPlayVersionId, versionNumber: versionNumberNew })
+
+  await updateAudioScreenplayVersionTotalLines(screenplayId, screenPlayVersionId)
+  
   if (res.error) {
     return res
   }

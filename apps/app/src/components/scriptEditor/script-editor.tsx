@@ -148,6 +148,7 @@ export const ScriptEditor =({
         if (!changes) return
         console.log("save0-------------", changes)
         const res = await saveLines(changes)
+        
         console.log('res----', res)
     
     }, [scriptTokens, tokens, screenplayId, getNewCharacters])
