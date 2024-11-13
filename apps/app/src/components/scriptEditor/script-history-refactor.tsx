@@ -555,7 +555,7 @@ export class ScriptHistory extends History {
         if (foundTokens.length === 1) {
             // Modify if needed
             const foundType = foundTokens[0]?.type
-            if (foundType !== token.type) {
+            if (foundType !== token?.type) {
                 textTransformed = true
             }
             console.log('modify--')

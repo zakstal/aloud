@@ -4,7 +4,7 @@ import './screenplay.css'
 
 import { Characters } from '@/components/characters';
 import { VoiceActors } from '@/components/voice-actors';
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { cn } from '@/lib/utils';
 import { Voice } from '@v1/script-to-audio/voices'
 import AudioPlayer from '@/components/ui/AudioPlayer-refactor'
@@ -38,14 +38,26 @@ const TooltipContainer = ({ children, text, sideOffset = 1 }) => {
 	);
 };
 
-function GetAudio({ audioBeingGotten, processAudio, cancelProcessAudio, audioScreenPlayVersion }) {
+function GetAudio({ audioBeingGotten, processAudio, cancelProcessAudio, audioScreenPlayVersion, isEditorDirty }) {
+    console.log('audioScreenPlayVersion', audioScreenPlayVersion)
     const status = audioScreenPlayVersion.status
-    const totalLines  = audioScreenPlayVersion?.total_lines || 0
-    const totalLinesCompleted  = audioScreenPlayVersion?.total_lines_completed || 0
+    const [totalLines, setTotalLines]  = useState(0)
+    const [totalLinesCompleted, setTotalLinesCompleted]  = useState(0)
+    useEffect(() => {
+        console.log("use effect changed")
+        if (audioScreenPlayVersion?.total_lines) {
+            setTotalLines(audioScreenPlayVersion?.total_lines)
+        }
+        
+        if (audioScreenPlayVersion?.total_lines_completed) {
+            setTotalLinesCompleted(audioScreenPlayVersion?.total_lines_completed)
+        }
+        
+    }, [audioScreenPlayVersion?.total_lines_completed, audioScreenPlayVersion?.total_lines])
     const progress = totalLinesCompleted != null && totalLines != null ? (totalLinesCompleted / totalLines) * 100 : 0
     let element = null
 
-    switch(status) {
+    switch(isEditorDirty && status === 'full' ? '' : status) {
         case 'full':
             element = <div className="text-sm px-4 completed py-2 border-1 rounded-2xl">Completed</div>
             break;
@@ -126,6 +138,7 @@ export default function ScreenPlayConatiner({
   const [currentLinePlaying, setCurrentLinePlaying] = useState(null)
   const [audioBeingGotten, setAudioBeingGotten] = useState(false)
   const [currentlyPlayingLineId, setCurrentlyPlayingLineId] = useState(false)
+  const [isEditorDirty, setIsEditorDirty] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [startScreenPlayButtonPressed, setStartScreenPlayButtonPressed] = useState(false)
 
@@ -176,6 +189,7 @@ export default function ScreenPlayConatiner({
                                 <div className="h-14 flex items-center" >
                                     <GetAudio
                                         key={screenplayId}
+                                        isEditorDirty={isEditorDirty}
                                         audioBeingGotten={audioBeingGotten}
                                         processAudio={async () => {
                                             setAudioBeingGotten(true)
@@ -230,6 +244,7 @@ export default function ScreenPlayConatiner({
                     highlightToken={isPlaying}
                     selectToken={setCurrentlyPlayingLineId}
                     setSaveFunc={setSaveFunc}
+                    setIsEditorDirty={setIsEditorDirty}
                 />
                 : <div className={'script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-4xl font-courier script-editor'}>
                     <h1 className="text-3xl pb-6 pt-16 tracking-tight text-center ">🎉  Welcome! 🎊</h1>

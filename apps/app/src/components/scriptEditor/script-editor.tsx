@@ -21,6 +21,7 @@ interface ScriptEditorInput {
     saveLines: () => null,
     setCharacters: (characters: string[]) => null,
     setSaveFunc: () => null,
+    setIsEditorDirty: () => null,
     selectToken: (id: string) => null,
     screenplayId: string,
     characters: Character[]
@@ -132,6 +133,7 @@ export const ScriptEditor =({
     highlightToken,
     selectToken,
     setSaveFunc,
+    setIsEditorDirty,
 }: ScriptEditorInput) => {
     const myRef = useRef(null);
     const [
@@ -162,6 +164,7 @@ export const ScriptEditor =({
             const res = await saveLines(changes, toastAlert)
             
             console.log('res----', res)
+            setIsEditorDirty(false)
 
             return res // only returned when immediate is true
         }, immediate)
@@ -181,6 +184,7 @@ export const ScriptEditor =({
     useEffect(() => {
         // Don't allow autosaving because autosaving creates a new auidioScreenplayVersion
         if (statues.isClean()) return
+        setIsEditorDirty(true)
         if (audioScreenPlayVersionStatus == 'inProgress') return
         save(scriptTokens, tokens, screenplayId, getNewCharacters)
     }, [tokens, audioScreenPlayVersionStatus])

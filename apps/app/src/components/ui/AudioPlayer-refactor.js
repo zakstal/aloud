@@ -327,7 +327,10 @@ class AudioPlayer extends React.Component {
     }
 
     componentDidUpdate(prevProps) {
-        console.log("componentDidUpdate")
+        // console.log("componentDidUpdate", this.props.audioVersions.length, prevProps.audioVersions.length)
+        // if (this.props.audioVersions !== this.state.audioVersions) {
+        //     console.log('Previous state is not the same for audio versions')
+        // }
         // currentlyPlayingLineId can be set by other components
         // but is also set internally which triggers componentDidUpdate.
         // there could be a more efficeint way of doing this.
@@ -375,13 +378,14 @@ class AudioPlayer extends React.Component {
     }
 
     handleToggle() {
-        console.log('handleToggle----------')
+        console.log('handleToggle----------', this.state.playing)
         if (!this.state.playing) {
-            this.props.setIsPlaying && this.props.setIsPlaying(true)
             this.player.play()
+            this.props.setIsPlaying && this.props.setIsPlaying(true)
         } else {
-            this.props.setIsPlaying && this.props.setIsPlaying(false)
+            console.log("pause")
             this.player.pause()
+            this.props.setIsPlaying && this.props.setIsPlaying(false)
         }
         this.setState({
             playing: !this.state.playing
@@ -562,7 +566,14 @@ class AudioPlayer extends React.Component {
 
     renderSeekPos() {
         if (this.player.currentTime >= this.state.duration) {
-            this.handleToggle()
+            this.player.pause()
+            this.props.setIsPlaying && this.props.setIsPlaying(false)
+            this.player.currentTime = 0
+            this.setState({
+                seek: 0,
+                playing: false // Need to update our local state so we don't immediately invoke autoplay
+            })
+            return
         }
 
         if (!this.state.isSeeking) {

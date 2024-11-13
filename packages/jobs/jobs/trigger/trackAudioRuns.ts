@@ -2,57 +2,6 @@ import { logger, task, tasks, runs } from "@trigger.dev/sdk/v3";
 import { createClient } from '@v1/supabase/serviceClient'
 import type { getAudioTask } from "./getAudio";
 
-// export async function incrementTotalLinesCompleted(audioVersionId: string, numberCompleted: number) {
-//   if (!numberCompleted) return
-//   const supabase = createClient();
-//   console.log('Incrementing total_lines_completed for audioVersionId:', audioVersionId);
-
-//   try {
-//     // Fetch the current values of total_lines and total_lines_completed
-//     const { data: currentData, error: fetchError } = await supabase
-//       .from("audio_screenplay_versions")
-//       .select("total_lines, total_lines_completed")
-//       .eq("id", audioVersionId)
-//       .single();
-
-//     if (fetchError) {
-//       console.error("Error fetching current line counts:", fetchError);
-//       throw fetchError;
-//     }
-
-//     const { total_lines } = currentData;
-
-//     // Increment total_lines_completed by 1
-//     const newTotalLinesCompleted = numberCompleted;
-
-//     // Prepare the update payload
-//     let updatePayload = {
-//       total_lines_completed: newTotalLinesCompleted,
-//     };
-
-//     // If the new total lines completed equals total lines, set status to 'full'
-//     if (newTotalLinesCompleted >= total_lines) {
-//       updatePayload.status = 'full';
-//     }
-
-//     // Update the record with the new total_lines_completed (and status if needed)
-//     const { data, error: updateError } = await supabase
-//       .from("audio_screenplay_versions")
-//       .update({updatePayload})
-//       .eq("id", audioVersionId);
-
-//     if (updateError) {
-//       console.error("Error updating total_lines_completed:", updateError);
-//       throw updateError;
-//     }
-
-//     return data;  // Return the updated record
-//   } catch (error) {
-//     console.error("Error incrementing total_lines_completed:", error);
-//     throw error;
-//   }
-// }
-
 /**
  * This job is for triggering and tradcking the progress of the getAudio jobs
  * NB: these supabase functions are here because the credentials are different when running in a different environment.
