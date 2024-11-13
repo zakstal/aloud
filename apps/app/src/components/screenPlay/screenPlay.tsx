@@ -103,10 +103,14 @@ function GetAudio({ audioBeingGotten, processAudio, cancelProcessAudio, audioScr
 
     return (
         <div className="flex gap-2 items-center text-sm">
-        {element}
-        <span>{totalLinesCompleted}</span>
+            {element}
+            <TooltipContainer text="Lines where audio has been completed">
+                <span>{totalLinesCompleted}</span>
+            </TooltipContainer>
             /
-            <span>{totalLines}</span>
+            <TooltipContainer text="Total lines that need audio">
+                <span>{totalLines}</span>
+            </TooltipContainer>
             <span>lines</span>
             <span>-</span>
             <TooltipContainer text="Updates you make are automatically saved and versioned. This is the current version.">
