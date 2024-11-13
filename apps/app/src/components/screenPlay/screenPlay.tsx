@@ -101,20 +101,24 @@ function GetAudio({ audioBeingGotten, processAudio, cancelProcessAudio, audioScr
         }
 
     return (
-        <div className="flex gap-2 items-center text-sm">
-            {element}
-            <TooltipContainer text="Lines where audio has been completed">
-                <span>{totalLinesCompleted}</span>
-            </TooltipContainer>
-            /
-            <TooltipContainer text="Total lines that need audio">
-                <span>{totalLines}</span>
-            </TooltipContainer>
-            <span>lines</span>
-            <span>-</span>
-            <TooltipContainer text="Updates you make are automatically saved and versioned. This is the current version.">
-                <span className="font-bold">v{audioScreenPlayVersion.version_number}</span>
-            </TooltipContainer>
+        <div>
+            <div className="flex gap-2 items-center text-sm">
+                {element}
+            </div>
+            <div className="flex gap-2 items-center text-sm pt-3 pl-2">
+                <TooltipContainer text="Lines with completed audio.">
+                    <span>{totalLinesCompleted}</span>
+                </TooltipContainer>
+                /
+                <TooltipContainer text="Total audio lines.">
+                    <span>{totalLines}</span>
+                </TooltipContainer>
+                <span>lines</span>
+                <span>-</span>
+                <TooltipContainer text="Updates you make are automatically saved and versioned. This is the current version.">
+                    <span className="font-bold">v{audioScreenPlayVersion.version_number}</span>
+                </TooltipContainer>
+            </div>
         </div>
     )
 }
@@ -158,7 +162,7 @@ export default function ScreenPlayConatiner({
     <>
     <div>
         <div className="flex flex-row gap-4 text-lg script-parent items-streatch">
-            <aside className="script-characters flex-1 pt-20 max-w-72">
+            <aside className="script-characters flex-1 pt-16 max-w-72">
                 { screenPlayText !== undefined
                 ?
                 <>
@@ -189,7 +193,7 @@ export default function ScreenPlayConatiner({
                             </div>
                         : (
                             <div className="pl-8" >
-                                <div className="h-14 flex items-center" >
+                                <div className="h-16 flex items-center" >
                                     <GetAudio
                                         key={screenplayId}
                                         isEditorDirty={isEditorDirty}
