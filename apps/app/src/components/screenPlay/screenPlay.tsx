@@ -180,7 +180,7 @@ export default function ScreenPlayConatiner({
                                         processAudio={async () => {
                                             setAudioBeingGotten(true)
                                             if (!saveFunc.current) return
-                                            const res = await saveFunc.current(true)
+                                            const res = await saveFunc.current()
 
                                             await processAudio(res.audioScreenPlayVersionId)
                                             setAudioBeingGotten(false)

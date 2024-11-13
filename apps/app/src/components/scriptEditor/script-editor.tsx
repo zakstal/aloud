@@ -150,7 +150,7 @@ export const ScriptEditor =({
     ] = useFountainNodes(scriptTokens, audioScreenPlayVersion, pdfText, setCharacters, characters, screenplayId)
 
     const debounce = useCallback(createDebounce(), [])
-    const save = useCallback((scriptTokens, tokens, screenplayId, getNewCharacters, immediate = false) => {
+    const save = useCallback((scriptTokens, tokens, screenplayId, getNewCharacters, immediate = false, toastAlert = false) => {
         return debounce(async () => {
             if (!statues?.setClean) return
             statues.setClean()
@@ -159,7 +159,7 @@ export const ScriptEditor =({
         
             if (!changes) return
             console.log("save0-------------", changes)
-            const res = await saveLines(changes)
+            const res = await saveLines(changes, toastAlert)
             
             console.log('res----', res)
 
@@ -174,7 +174,7 @@ export const ScriptEditor =({
     }, [myRef])
     
     useEffect(() => {
-        setSaveFunc(() => save(scriptTokens, tokens, screenplayId, getNewCharacters, true))
+        setSaveFunc(() => save(scriptTokens, tokens, screenplayId, getNewCharacters, true, true))
     }, [scriptTokens, tokens, screenplayId, getNewCharacters, true])
     
     // Save loop

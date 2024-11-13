@@ -373,8 +373,6 @@ export class ScriptHistory extends History {
 
         tokens?.forEach(token => idSet.add(token.id))
 
-        console.log("commitCallback--", commitCallback)
-        console.log("this.tokens--", this.tokens)
         if (commitCallback && tokens && this.appliedVersion !== dbTokenVersion) {
 
             // this is so that we don't re-apply changes if setCallbackValues is called multiple times

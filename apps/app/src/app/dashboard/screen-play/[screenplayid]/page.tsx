@@ -252,8 +252,21 @@ export default function Page() {
               console.log('error uploading screenplay', e)
             }
           }}
-          updateOrCreateLines={async (changes) => {
+          updateOrCreateLines={async (changes, toastAlert) => {
+            if (toastAlert) {
+              toast({
+                title: 'Saving changes',
+                description: 'Saving your script updates'
+              })
+            }
             const res = await updateOrCreateLines(changes)
+
+            if (toastAlert) {
+              toast({
+                title: 'Changes saved',
+                description: 'Your changes have been saved!'
+              })
+            }
 
             //TODO clean this up a little more
             if (res.validationErrors) {
@@ -285,7 +298,7 @@ export default function Page() {
 
             const params = new URLSearchParams(searchParams.toString())
             params.set('version', res.data.version_number)
-            // router.push(`${pathname}?${params.toString()}`, { shallow: true })
+            router.push(`${pathname}?${params.toString()}`, { shallow: true })
             
             setAudioScreenPlayVersion(res.data)
             return {
@@ -310,6 +323,10 @@ export default function Page() {
   
               return
           }
+            toast({
+              title: 'Getting audio',
+              description: 'We are getting your audio.'
+            });
             const res = await processAudio({ screenPlayVersionId: screenPlayVersionId || audioScreenPlayVersion.id })
 
             let data = null
