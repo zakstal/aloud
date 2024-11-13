@@ -640,7 +640,7 @@ class AudioPlayer extends React.Component {
         if (!url && !this.state.isLoading && this.state.isAudioVersions !== false && !!this.state.currentAudioVersion?.audio_file_url) {
 
             let isPlaying = this.state.playing
-            console.log("is loading urls---------")
+
             this.setIsLoading()
             this.getSignedUrlNextN(5, isPlaying)
         }

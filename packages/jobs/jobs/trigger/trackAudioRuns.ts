@@ -264,97 +264,102 @@ export async function incrementTotalLinesCompleted(audioVersionId: string) {
     return runsData
   }
 
-// const processBatch = (payload, tag, audioVersions, screenPlayVersionId) => {
+const processBatch = async (payload, tag, audioVersions, screenPlayVersionId) => {
 
-//   const batch = await tasks.batchTrigger<typeof getAudioTask>('get-audio-4', audioVersions.map((u) => {
-//     // const handle = await tasks.batchTrigger<typeof getAudioTask>("get-audio-2", data.slice(0, 1).map((u) => {
-//       u.userId = payload.userId
-//       const options = { tags: tag }
-//       return { payload: u, options }
-//     }));
+  let batch = null
+  try {
+    batch = await tasks.batchTrigger<typeof getAudioTask>('get-audio-4', audioVersions.map((u) => {
+    // const handle = await tasks.batchTrigger<typeof getAudioTask>("get-audio-2", data.slice(0, 1).map((u) => {
+      u.userId = payload.userId
+      const options = { tags: tag }
+      return {
+        payload: u,
+        options
+      }
+    }));
 
-//     console.log("handle------", batch)
-//     console.log("tag------", tag)
+    console.log("handle------", batch)
+    console.log("tag------", tag)
 
-//     await updateJobId(screenPlayVersionId, batch?.batchId)
-//   } catch(e) {
-//     logger.error('Error--', e)
-//     return e;
-//   }
+    // await updateJobId(screenPlayVersionId, batch?.batchId)
+  } catch(e) {
+    logger.error('Error--', e)
+    return e;
+  }
 
 
-//   try {
+  try {
 
-//     const numberOfRuns = batch.runs.length
-//     const runsSet = new Set(batch.runs)
-//     let isProcessing = false
-//     await new Promise((resolve) => {  
-//       const inter = setInterval(async () => {
-//         logger.info('Interval')
-//         if (isProcessing) return
-//         isProcessing = true
+    const numberOfRuns = batch.runs.length
+    const runsSet = new Set(batch.runs)
+    let isProcessing = false
+    await new Promise((resolve) => {  
+      const inter = setInterval(async () => {
+        logger.info('Interval')
+        if (isProcessing) return
+        isProcessing = true
         
-//         // const completed = .filter();
-       
-//         logger.info('fetchRuns first')
-//         let all = await fetchRuns({
-//           status: ['FAILED', 'COMPLETED' ],
-//           bulkAction: batch?.batchId,
-//           tag,
-//         });
-//         logger.info('fetchRuns end')
-
-//         const completed = all.filter(item => item.status === 'COMPLETED')
-//         const failed = all.filter(item => item.status === 'FAILED')
-//         logger.info('completed', completed)
-//         logger.info('failed', failed)
-        
-//         const numberCompleted = completed?.length || 0
-//         const numberFailed = failed?.length || 0
-//         logger.info('runs', {numberOfRuns, numberFailed, numberCompleted, screenPlayVersionId: payload.screenPlayVersionId,})
-        
-//         await incrementTotalLinesCompleted(payload.screenPlayVersionId, numberCompleted)
-
-//         if (numberCompleted != null && numberCompleted === numberOfRuns) {
-//           // TODO we may need to handle errors
-//           await updateScreenplayVersion(payload.screenPlayVersionId, {
-//             status: 'full'
-//           })
-//           clearTimeout(inter)
-//           resolve()
-//         }
+        // const completed = .filter();
       
-//         if (numberFailed === numberOfRuns) {
-//           // TODO we may need to handle errors
-//           clearTimeout(inter)
-//           await updateScreenplayVersion(payload.screenPlayVersionId, {
-//             status: 'failed'
-//           })
+        logger.info('fetchRuns first')
+        let all = await fetchRuns({
+          status: ['FAILED', 'COMPLETED' ],
+          bulkAction: batch?.batchId,
+          tag,
+        });
+        logger.info('fetchRuns end')
+
+        const completed = all.filter(item => item.status === 'COMPLETED')
+        const failed = all.filter(item => item.status === 'FAILED')
+        logger.info('completed', completed)
+        logger.info('failed', failed)
+        
+        const numberCompleted = completed?.length || 0
+        const numberFailed = failed?.length || 0
+        logger.info('runs', {numberOfRuns, numberFailed, numberCompleted, screenPlayVersionId: payload.screenPlayVersionId,})
+        
+        await incrementTotalLinesCompleted(payload.screenPlayVersionId, numberCompleted)
+
+        if (numberCompleted != null && numberCompleted === numberOfRuns) {
+          // TODO we may need to handle errors
+          await updateScreenplayVersion(payload.screenPlayVersionId, {
+            status: 'full'
+          })
+          clearTimeout(inter)
+          resolve()
+        }
+      
+        if (numberFailed === numberOfRuns) {
+          // TODO we may need to handle errors
+          clearTimeout(inter)
+          await updateScreenplayVersion(payload.screenPlayVersionId, {
+            status: 'failed'
+          })
           
-//           resolve()
-//         }
-     
-//         if (numberFailed !== 0 && numberCompleted !== 0 && numberFailed + numberCompleted === numberOfRuns) {
-//           // TODO we may need to handle errors
-//           clearTimeout(inter)
-//           await updateScreenplayVersion(payload.screenPlayVersionId, {
-//             status: 'partial'
-//           })
-
-//           resolve()
-//         }
-        
-        
-        
-//         isProcessing = false
-//       }, 2000)
-//     })
+          resolve()
+        }
     
-//   } catch(e) {
-//     logger.error('error tracking jobs', e)
-//   }
+        if (numberFailed !== 0 && numberCompleted !== 0 && numberFailed + numberCompleted === numberOfRuns) {
+          // TODO we may need to handle errors
+          clearTimeout(inter)
+          await updateScreenplayVersion(payload.screenPlayVersionId, {
+            status: 'partial'
+          })
 
-// }
+          resolve()
+        }
+        
+        
+        
+        isProcessing = false
+      }, 2000)
+    })
+    
+  } catch(e) {
+    logger.error('error tracking jobs', e)
+  }
+
+}
 
 /**
  {
@@ -404,98 +409,19 @@ export const trackAudioRuns = task({
       }
     
     
-      logger.log('audioVersions', audioVersions)
+      logger.log('audioVersions', {audioVersions})
       tag = "get-audio-4-" + getId()
-      
-      batch = await tasks.batchTrigger<typeof getAudioTask>('get-audio-4', audioVersions.map((u) => {
-      // const handle = await tasks.batchTrigger<typeof getAudioTask>("get-audio-2", data.slice(0, 1).map((u) => {
-        u.userId = payload.userId
-        const options = { tags: tag }
-        return {
-          payload: u,
-          options
-        }
-      }));
 
-      console.log("handle------", batch)
-      console.log("tag------", tag)
-
-      // await updateJobId(screenPlayVersionId, batch?.batchId)
+      // The max number of requests 
+      // that can be setn to trigger.dev
+      // is 100. We will do a smaller amount
+      // to keep the queue filled
+      let step = 50
+      for (let i = 0; i < audioVersions.length; i += step) {
+        await processBatch(payload, tag, audioVersions.slice(i,  i + step ), screenPlayVersionId)
+      }
     } catch(e) {
-      logger.error('Error--', e)
-      return e;
-    }
-
-
-    try {
-
-      const numberOfRuns = batch.runs.length
-      const runsSet = new Set(batch.runs)
-      let isProcessing = false
-      await new Promise((resolve) => {  
-        const inter = setInterval(async () => {
-          logger.info('Interval')
-          if (isProcessing) return
-          isProcessing = true
-          
-          // const completed = .filter();
-         
-          logger.info('fetchRuns first')
-          let all = await fetchRuns({
-            status: ['FAILED', 'COMPLETED' ],
-            bulkAction: batch?.batchId,
-            tag,
-          });
-          logger.info('fetchRuns end')
-
-          const completed = all.filter(item => item.status === 'COMPLETED')
-          const failed = all.filter(item => item.status === 'FAILED')
-          logger.info('completed', completed)
-          logger.info('failed', failed)
-          
-          const numberCompleted = completed?.length || 0
-          const numberFailed = failed?.length || 0
-          logger.info('runs', {numberOfRuns, numberFailed, numberCompleted, screenPlayVersionId: payload.screenPlayVersionId,})
-          
-          await incrementTotalLinesCompleted(payload.screenPlayVersionId, numberCompleted)
-
-          if (numberCompleted != null && numberCompleted === numberOfRuns) {
-            // TODO we may need to handle errors
-            await updateScreenplayVersion(payload.screenPlayVersionId, {
-              status: 'full'
-            })
-            clearTimeout(inter)
-            resolve()
-          }
-        
-          if (numberFailed === numberOfRuns) {
-            // TODO we may need to handle errors
-            clearTimeout(inter)
-            await updateScreenplayVersion(payload.screenPlayVersionId, {
-              status: 'failed'
-            })
-            
-            resolve()
-          }
-       
-          if (numberFailed !== 0 && numberCompleted !== 0 && numberFailed + numberCompleted === numberOfRuns) {
-            // TODO we may need to handle errors
-            clearTimeout(inter)
-            await updateScreenplayVersion(payload.screenPlayVersionId, {
-              status: 'partial'
-            })
-
-            resolve()
-          }
-          
-          
-          
-          isProcessing = false
-        }, 2000)
-      })
-      
-    } catch(e) {
-      logger.error('error tracking jobs', e)
+      logger.error(e)
     }
 
     return {
@@ -505,3 +431,138 @@ export const trackAudioRuns = task({
   }
 
 });
+// export const trackAudioRuns = task({
+//   id: "track-audio-runs-15",
+//   cleanup: async (payload, { ctx }) => {
+//     logger.info("cleanup payLoad", aloudMeta)
+//     logger.info("cleanup ctx", ctx)
+//   },
+//   onFailure: async (payload, error, { ctx }) => {
+//     logger.info("Task failed", ctx.task.id, error);
+//   },
+//   run: async (payload: unknown, { ctx }) => {
+//     let batch = null
+//     let tag = null
+//     try {
+//       const screenPlayVersionId = payload.screenPlayVersionId
+      
+//       // TODO batch to 50 or 100 at a time
+//       const audioVersion = await getScreenPlayAudioVersion(screenPlayVersionId)
+
+//       logger.info('audioVersion---', { audioVersion })
+//       await setAudioVersionInProgress(screenPlayVersionId)
+    
+//       const audioVersionsUnsorted = await getAudioVersionsByScreenplayId(audioVersion.screenplay_id)
+//       const audioVersions = audioVersionsUnsorted.reverse()
+    
+//       if (!audioVersions.length) {
+//         await updateScreenplayVersion(screenPlayVersionId, { status: 'full' })
+//         return
+//       }
+    
+//       if (!audioVersion.total_lines) {
+//         await setAudioVersionCount(screenPlayVersionId, audioVersions.length)
+//       }
+    
+    
+//       logger.log('audioVersions', audioVersions)
+//       tag = "get-audio-4-" + getId()
+      
+//       batch = await tasks.batchTrigger<typeof getAudioTask>('get-audio-4', audioVersions.map((u) => {
+//       // const handle = await tasks.batchTrigger<typeof getAudioTask>("get-audio-2", data.slice(0, 1).map((u) => {
+//         u.userId = payload.userId
+//         const options = { tags: tag }
+//         return {
+//           payload: u,
+//           options
+//         }
+//       }));
+
+//       console.log("handle------", batch)
+//       console.log("tag------", tag)
+
+//       // await updateJobId(screenPlayVersionId, batch?.batchId)
+//     } catch(e) {
+//       logger.error('Error--', e)
+//       return e;
+//     }
+
+
+//     try {
+
+//       const numberOfRuns = batch.runs.length
+//       const runsSet = new Set(batch.runs)
+//       let isProcessing = false
+//       await new Promise((resolve) => {  
+//         const inter = setInterval(async () => {
+//           logger.info('Interval')
+//           if (isProcessing) return
+//           isProcessing = true
+          
+//           // const completed = .filter();
+         
+//           logger.info('fetchRuns first')
+//           let all = await fetchRuns({
+//             status: ['FAILED', 'COMPLETED' ],
+//             bulkAction: batch?.batchId,
+//             tag,
+//           });
+//           logger.info('fetchRuns end')
+
+//           const completed = all.filter(item => item.status === 'COMPLETED')
+//           const failed = all.filter(item => item.status === 'FAILED')
+//           logger.info('completed', completed)
+//           logger.info('failed', failed)
+          
+//           const numberCompleted = completed?.length || 0
+//           const numberFailed = failed?.length || 0
+//           logger.info('runs', {numberOfRuns, numberFailed, numberCompleted, screenPlayVersionId: payload.screenPlayVersionId,})
+          
+//           await incrementTotalLinesCompleted(payload.screenPlayVersionId, numberCompleted)
+
+//           if (numberCompleted != null && numberCompleted === numberOfRuns) {
+//             // TODO we may need to handle errors
+//             await updateScreenplayVersion(payload.screenPlayVersionId, {
+//               status: 'full'
+//             })
+//             clearTimeout(inter)
+//             resolve()
+//           }
+        
+//           if (numberFailed === numberOfRuns) {
+//             // TODO we may need to handle errors
+//             clearTimeout(inter)
+//             await updateScreenplayVersion(payload.screenPlayVersionId, {
+//               status: 'failed'
+//             })
+            
+//             resolve()
+//           }
+       
+//           if (numberFailed !== 0 && numberCompleted !== 0 && numberFailed + numberCompleted === numberOfRuns) {
+//             // TODO we may need to handle errors
+//             clearTimeout(inter)
+//             await updateScreenplayVersion(payload.screenPlayVersionId, {
+//               status: 'partial'
+//             })
+
+//             resolve()
+//           }
+          
+          
+          
+//           isProcessing = false
+//         }, 2000)
+//       })
+      
+//     } catch(e) {
+//       logger.error('error tracking jobs', e)
+//     }
+
+//     return {
+//       message: 'success',
+//       error: null
+//     }
+//   }
+
+// });

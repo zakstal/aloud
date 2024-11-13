@@ -113,12 +113,10 @@ class ScriptMeta {
     }
 
     setClean() {
-        console.log('set clearn============================')
         this.saveStatus = 'clean'
     }
     
     setDirty() {
-        console.log("set dirt-----------------------------")
         this.saveStatus = 'dirty'
     }
 

@@ -197,7 +197,7 @@ async function updateAudioScreenplayVersionTotalLines(screenplayId: string, audi
     // Step 3: Update the total_lines in the audio_screenplay_versions table
 
     const inputData = {
-      total_lines: incomplete_count,
+      total_lines: incomplete_count + complete_count,
       total_lines_completed: complete_count,
     }
 

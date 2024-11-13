@@ -39,12 +39,10 @@ const TooltipContainer = ({ children, text, sideOffset = 1 }) => {
 };
 
 function GetAudio({ audioBeingGotten, processAudio, cancelProcessAudio, audioScreenPlayVersion, isEditorDirty }) {
-    console.log('audioScreenPlayVersion', audioScreenPlayVersion)
     const status = audioScreenPlayVersion.status
     const [totalLines, setTotalLines]  = useState(0)
     const [totalLinesCompleted, setTotalLinesCompleted]  = useState(0)
     useEffect(() => {
-        console.log("use effect changed")
         if (audioScreenPlayVersion?.total_lines) {
             setTotalLines(audioScreenPlayVersion?.total_lines)
         }
@@ -54,6 +52,7 @@ function GetAudio({ audioBeingGotten, processAudio, cancelProcessAudio, audioScr
         }
         
     }, [audioScreenPlayVersion?.total_lines_completed, audioScreenPlayVersion?.total_lines])
+
     const progress = totalLinesCompleted != null && totalLines != null ? (totalLinesCompleted / totalLines) * 100 : 0
     let element = null
 
@@ -200,7 +199,7 @@ export default function ScreenPlayConatiner({
                                             if (!saveFunc.current) return
                                             const res = await saveFunc.current()
 
-                                            await processAudio(res.audioScreenPlayVersionId)
+                                            await processAudio(res?.audioScreenPlayVersionId)
                                             setAudioBeingGotten(false)
                                         }}
                                         cancelProcessAudio={async () => {
