@@ -1,9 +1,10 @@
 'use client'
 
 import './screenplay.css'
+
 import { Characters } from '@/components/characters';
 import { VoiceActors } from '@/components/voice-actors';
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { cn } from '@/lib/utils';
 import { Voice } from '@v1/script-to-audio/voices'
 import AudioPlayer from '@/components/ui/AudioPlayer-refactor'
@@ -37,7 +38,7 @@ const TooltipContainer = ({ children, text, sideOffset = 1 }) => {
 	);
 };
 
-function GetAudio({ audioBeingGotten, processAudio, setAudioBeingGotten, audioScreenPlayVersion }) {
+function GetAudio({ audioBeingGotten, processAudio, cancelProcessAudio, audioScreenPlayVersion }) {
     const status = audioScreenPlayVersion.status
     const totalLines  = audioScreenPlayVersion?.total_lines || 0
     const totalLinesCompleted  = audioScreenPlayVersion?.total_lines_completed || 0
@@ -49,18 +50,12 @@ function GetAudio({ audioBeingGotten, processAudio, setAudioBeingGotten, audioSc
             element = <div className="text-sm px-4 completed py-2 border-1 rounded-2xl">Completed</div>
             break;
         case 'inProgress':
-            console.log('going in progressssss')
             element =
             <ProgressLoader
                 className="progress-loading "
                 progress={Number(progress.toFixed())}
                 isLoading={audioBeingGotten}
-                onClick={async () => {
-                    setAudioBeingGotten(true)
-                    const res = await cancelProcessAudio({ audioVersionId:audioScreenPlayVersion?.id })
-                    setAudioBeingGotten(false)
-                    console.log('res', res)
-                }}
+                onClick={cancelProcessAudio}
             />
             break;
         case 'partial':
@@ -70,13 +65,7 @@ function GetAudio({ audioBeingGotten, processAudio, setAudioBeingGotten, audioSc
                 <Button
                     type="button"
                     className={cn('flex gap-3', status === 'failed' && "failed")}
-                    onClick={async () => {
-                        setAudioBeingGotten(true)
-                        const res = await processAudio()
-                        setAudioBeingGotten(false)
-                        // if (['inProgress', 'full'].includes(res.status)) {
-                        // }
-                    }}
+                    onClick={processAudio}
                     variant="outline"
                     size="sm"
                 >
@@ -86,18 +75,11 @@ function GetAudio({ audioBeingGotten, processAudio, setAudioBeingGotten, audioSc
             </TooltipContainer>
             break;
         default:
-            console.log('default------------')
             element = (
                 <Button
                     type="button"
                     className='flex gap-3'
-                    onClick={async () => {
-                        setAudioBeingGotten(true)
-                        const res = await processAudio()
-                        setAudioBeingGotten(false)
-                        // if (['inProgress', 'full'].includes(res.status)) {
-                            // }
-                        }}
+                    onClick={processAudio}
                         variant="outline"
                         size="sm"
                         >
@@ -147,6 +129,12 @@ export default function ScreenPlayConatiner({
   const [isPlaying, setIsPlaying] = useState(false)
   const [startScreenPlayButtonPressed, setStartScreenPlayButtonPressed] = useState(false)
 
+  // TODO this needs to be fixed up probably by moving the script editor to a provider
+  const saveFunc = useRef(null)
+  const setSaveFunc = useCallback((saveFunction) => {
+    saveFunc.current = saveFunction
+  }, [])
+
   
   if (isLoading) return <div className="flex justify-center h-screen items-center"><Progress /></div>
 
@@ -189,7 +177,19 @@ export default function ScreenPlayConatiner({
                                     <GetAudio
                                         key={screenplayId}
                                         audioBeingGotten={audioBeingGotten}
-                                        processAudio={processAudio}
+                                        processAudio={async () => {
+                                            setAudioBeingGotten(true)
+                                            if (!saveFunc.current) return
+                                            const res = await saveFunc.current(true)
+
+                                            await processAudio(res.audioScreenPlayVersionId)
+                                            setAudioBeingGotten(false)
+                                        }}
+                                        cancelProcessAudio={async () => {
+                                            setAudioBeingGotten(true)
+                                            const res = await cancelProcessAudio({ audioVersionId: audioScreenPlayVersion?.id })
+                                            setAudioBeingGotten(false)
+                                        }}
                                         setAudioBeingGotten={setAudioBeingGotten}
                                         audioScreenPlayVersion={audioScreenPlayVersion}
                                     />
@@ -219,6 +219,7 @@ export default function ScreenPlayConatiner({
                     className="script-text bg-white p-8 pt-0 pb-[70px] outline-none border-slate-400 overflow-scroll max-w-4xl font-courier"
                     scriptTokens={lines}
                     audioScreenPlayVersion={audioScreenPlayVersion?.id}
+                    audioScreenPlayVersionStatus={audioScreenPlayVersion?.status}
                     currentLinePlaying={currentLinePlaying}
                     pdfText={screenPlayText}
                     saveLines={updateOrCreateLines}
@@ -228,6 +229,7 @@ export default function ScreenPlayConatiner({
                     currentTokenId={currentlyPlayingLineId}
                     highlightToken={isPlaying}
                     selectToken={setCurrentlyPlayingLineId}
+                    setSaveFunc={setSaveFunc}
                 />
                 : <div className={'script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-4xl font-courier script-editor'}>
                     <h1 className="text-3xl pb-6 pt-16 tracking-tight text-center ">🎉  Welcome! 🎊</h1>

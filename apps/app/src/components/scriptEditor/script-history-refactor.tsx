@@ -51,6 +51,8 @@ type LineId = string;
 type commitCallbackType = ((tokens: Tokens[], caretPosition: number | null, currentId: number | null) => void) | null
 type setCharactersType = ((characters: Character[] | []) => void) | null
 
+type saveStatus = 'clean' | 'dirty'
+
 class Line {
     line: Tokens = null
     scriptMeta = null
@@ -102,11 +104,34 @@ class ScriptMeta {
     characters: Character[] = [] // existing characters from the remote db
     linesById: {[key: LineId]: Line} = {}
     linesByType: {[key: TokenType]: {[key: LineId]: Tokens} } = {}
+    saveStatus: saveStatus = 'clean'
 
     constructor(characters: Character[] | null, lines: Tokens[] | null) {
         this.addCharacters(characters)
         this.addExistingLines(lines)
         window.scriptMeta = this
+    }
+
+    setClean() {
+        console.log('set clearn============================')
+        this.saveStatus = 'clean'
+    }
+    
+    setDirty() {
+        console.log("set dirt-----------------------------")
+        this.saveStatus = 'dirty'
+    }
+
+    get isDirty() {
+        return this.saveStatus === 'dirty'
+    }
+
+    get isClean() {
+        return this.saveStatus === 'clean'
+    }
+
+    get saveStaus () {
+        return this.saveStatus
     }
 
     createNarrator() {
@@ -571,6 +596,7 @@ export class ScriptHistory extends History {
     }
 
     onTab(orderId, offset) {
+
         const token = this.tokens[orderId]
         const lastToken = this.tokens[orderId - 1]
 
@@ -758,6 +784,26 @@ export class ScriptHistory extends History {
     
     getCharacters() {
         return this.scriptMeta.getCharacters()
+    }
+
+    get saveStatus () {
+        return this.scriptMeta.saveStaus
+    }
+
+    setClean() {
+        this.scriptMeta.setClean()
+    }
+    
+    setDirty() {
+        this.scriptMeta.setDirty()
+    }
+    
+    get isDirty() {
+        return this.scriptMeta.isDirty
+    }
+
+    get isClean() {
+        return this.scriptMeta.isClean
     }
 
 }

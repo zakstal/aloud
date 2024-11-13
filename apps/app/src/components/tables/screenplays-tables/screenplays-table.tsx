@@ -116,7 +116,7 @@ export function ScreenplayTable<TData, TValue>({
     manualFiltering: true,
   });
 
-  const searchValue = table.getColumn('')?.getFilterValue() as string;
+  // const searchValue = table?.getColumn('')?.getFilterValue() as string;
 
   // React.useEffect(() => {
   //   if (debounceValue.length > 0) {
@@ -145,36 +145,36 @@ export function ScreenplayTable<TData, TValue>({
   //   // eslint-disable-next-line react-hooks/exhaustive-deps
   // }, [debounceValue, filterVariety, selectedOption.value])
 
-  React.useEffect(() => {
-    if (searchValue?.length > 0) {
-      router.push(
-        `${pathname}?${createQueryString({
-          page: null,
-          limit: null,
-          search: searchValue
-        })}`,
-        {
-          scroll: false
-        }
-      );
-    }
-    if (searchValue?.length === 0 || searchValue === undefined) {
-      router.push(
-        `${pathname}?${createQueryString({
-          page: null,
-          limit: null,
-          search: null
-        })}`,
-        {
-          scroll: false
-        }
-      );
-    }
+  // React.useEffect(() => {
+  //   if (searchValue?.length > 0) {
+  //     router.push(
+  //       `${pathname}?${createQueryString({
+  //         page: null,
+  //         limit: null,
+  //         search: searchValue
+  //       })}`,
+  //       {
+  //         scroll: false
+  //       }
+  //     );
+  //   }
+  //   if (searchValue?.length === 0 || searchValue === undefined) {
+  //     router.push(
+  //       `${pathname}?${createQueryString({
+  //         page: null,
+  //         limit: null,
+  //         search: null
+  //       })}`,
+  //       {
+  //         scroll: false
+  //       }
+  //     );
+  //   }
 
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  //   setPagination((prev) => ({ ...prev, pageIndex: 0 }));
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchValue]);
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [searchValue]);
 
   return (
     <>

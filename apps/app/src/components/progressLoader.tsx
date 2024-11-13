@@ -4,7 +4,7 @@ import './progressLoader.css'
 export const ProgressLoader = ({ progress = 90, className, onClick, isLoading = false }) => {
     const dashedStroke = 216
     const dashedOffset = ((dashedStroke - 85)  * (1 - (progress/100))) + 85
-    console.log('progress-----------', dashedStroke, dashedOffset)
+
     return (
     <div id="myLoaderpro" className={cn("loaderpro", className)} onClick={onClick}>
         <div className="loaderpro__graphics">

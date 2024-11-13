@@ -254,7 +254,6 @@ export default function Page() {
           }}
           updateOrCreateLines={async (changes) => {
             const res = await updateOrCreateLines(changes)
-            console.log("res====  ", res)
 
             //TODO clean this up a little more
             if (res.validationErrors) {
@@ -286,11 +285,12 @@ export default function Page() {
 
             const params = new URLSearchParams(searchParams.toString())
             params.set('version', res.data.version_number)
-            router.push(`${pathname}?${params.toString()}`, { shallow: true })
+            // router.push(`${pathname}?${params.toString()}`, { shallow: true })
             
             setAudioScreenPlayVersion(res.data)
             return {
               success: true,
+              audioScreenPlayVersionId: res.data.id
             }
           }}
           characters={[...characters, ...charactersTemp]}
@@ -300,7 +300,7 @@ export default function Page() {
           audioVersions={audioVersions}
           lines={lines}
           scriptTokens={data?.screen_play_fountain}
-          processAudio={async () => {
+          processAudio={async (screenPlayVersionId) => {
 
             if (characters.some(character => !Boolean(character?.audio_character_version?.voice_id))) {
               toast({
@@ -310,7 +310,7 @@ export default function Page() {
   
               return
           }
-            const res = await processAudio({ screenPlayVersionId: audioScreenPlayVersion.id })
+            const res = await processAudio({ screenPlayVersionId: screenPlayVersionId || audioScreenPlayVersion.id })
 
             let data = null
             let error = false

@@ -1,4 +1,4 @@
-import { logger, task, wait } from "@trigger.dev/sdk/v3";
+import { logger, task, runs } from "@trigger.dev/sdk/v3";
 import { getAudioVersion } from '@v1/supabase/queries'
 import { updateAudioVersionUrl, incrementTotalLinesCompleted } from "@v1/supabase/mutations";
 import { createClient } from '@v1/supabase/serviceClient'
@@ -13,6 +13,7 @@ const BUCKET = 'audio_version_lines'
 export const getAudioTask = task({
   id: "get-audio-4",
   run: async (payload: unknown, { ctx }) => {
+
     logger.log("payload", { payload })
     const voiceVersion = payload
     const audioCharacter = voiceVersion.lines.characters.audio_character_version
@@ -32,6 +33,7 @@ export const getAudioTask = task({
     logger.log("fileName",{ fileName, outputPath })
 
 
+    
     // Check if the file already exitsts
     try {
       const info = await supabase.storage
@@ -56,7 +58,6 @@ export const getAudioTask = task({
       logger.log(`Error checking bucket ${e}`)
       throw `Error checking bucket ${e}`
     }
-
 
     logger.info('Before textToSpeech')
     // Get audio from text 

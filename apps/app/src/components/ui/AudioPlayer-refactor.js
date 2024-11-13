@@ -162,7 +162,7 @@ class AudioPlayer extends React.Component {
 
         const disabled = this.checkDisabled(currentAudioVersion)
 
-        console.log("AudioVersions", this.props.audioVersions)
+        console.log("AudioVersions load", this.props.audioVersions)
 
         this.state = {
             playing: false,
@@ -209,7 +209,7 @@ class AudioPlayer extends React.Component {
         this.handleRate = this.handleRate.bind(this)
 
         // load some limited amount of audio
-        console.log("pre load")
+
         this.getSignedUrlNextN(3, false, 3)
     }
 
@@ -325,7 +325,6 @@ class AudioPlayer extends React.Component {
 
 
     }
-
 
     componentDidUpdate(prevProps) {
         console.log("componentDidUpdate")

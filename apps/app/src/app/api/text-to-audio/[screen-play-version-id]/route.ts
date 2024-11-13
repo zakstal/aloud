@@ -73,6 +73,8 @@ export async function GET(req: NextRequest, { params }, res: NextResponse) {
       userId,
     })
 
+  console.log('trackHandle', trackHandle)
+  await updateJobId(screenPlayVersionId, trackHandle?.id)
   // const audioVersions = await getAudioVersionsByScreenplayId(screenPlayVersionId)
 
   // console.log("audio-versions------------------", audioVersions)

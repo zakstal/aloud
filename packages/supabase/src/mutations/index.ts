@@ -188,20 +188,27 @@ async function insertCharacterVersions ({
 async function updateAudioScreenplayVersionTotalLines(screenplayId: string, audioScreenplayVersionId: string) {
   try {
     const supabase = createClient();
-    // Step 2: Count lines that are not deleted and have isDialog set to true for this screenplay_id
-    const { count, error: countError } = await supabase
-      .from('lines')
-      .select('*', { count: 'exact', head: true }) // Get only the count
-      .eq('screenplay_id', screenplayId)
-      .eq('deleted', false)
-      .eq('isDialog', true);
 
+    const { data , error: countError } = await supabase.rpc('get_line_counts', { screenplayid: screenplayId });
+
+    const { complete_count, incomplete_count} = (data?.length && data[0]) || {}
     if (countError) throw countError;
 
     // Step 3: Update the total_lines in the audio_screenplay_versions table
+
+    const inputData = {
+      total_lines: incomplete_count,
+      total_lines_completed: complete_count,
+    }
+
+    const isComplete = incomplete_count === 0
+
+    if (isComplete) {
+      inputData.status = 'full'
+    }
     const { data: updateData, error: updateError } = await supabase
       .from('audio_screenplay_versions')
-      .update({ total_lines: count })
+      .update(inputData)
       .eq('id', audioScreenplayVersionId);
 
     if (updateError) throw updateError;
@@ -663,7 +670,7 @@ export async function updateOrCreateLinesInDb(created: Dialog[], removed: Dialog
   const res = await processLines({ created, removed, updated, characters, screenplayId, screenPlayVersionId, versionNumber: versionNumberNew })
 
   await updateAudioScreenplayVersionTotalLines(screenplayId, screenPlayVersionId)
-  
+
   if (res.error) {
     return res
   }

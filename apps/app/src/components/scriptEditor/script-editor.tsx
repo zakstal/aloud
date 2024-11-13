@@ -16,9 +16,11 @@ interface ScriptEditorInput {
     className: string;
     audioVersionNumber: string;
     audioScreenPlayVersion: string,
+    audioScreenPlayVersionStatus: string,
     pdfText: string,
     saveLines: () => null,
     setCharacters: (characters: string[]) => null,
+    setSaveFunc: () => null,
     selectToken: (id: string) => null,
     screenplayId: string,
     characters: Character[]
@@ -100,7 +102,12 @@ function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters) {
 function createDebounce() {
     let id = null
     let callback = null
-    return (callbackIn) => {
+    return (callbackIn, immediate) => {
+        console.log("immediate", immediate)
+        if (immediate) {
+            id && clearTimeout(id)
+            return callbackIn()
+        }
         callback = callbackIn
         if (id) return
         id = setTimeout(() => {
@@ -115,6 +122,7 @@ export const ScriptEditor =({
     scriptTokens,
     className,
     audioScreenPlayVersion,
+    audioScreenPlayVersionStatus,
     pdfText,
     saveLines,
     setCharacters,
@@ -123,9 +131,9 @@ export const ScriptEditor =({
     currentTokenId,
     highlightToken,
     selectToken,
+    setSaveFunc,
 }: ScriptEditorInput) => {
     const myRef = useRef(null);
-
     const [
         tokens, 
         handleKeyDown, 
@@ -137,31 +145,45 @@ export const ScriptEditor =({
         handleOnSelect,
         handlePaste,
         handleCut,
-        getNewCharacters
+        getNewCharacters,
+        statues
     ] = useFountainNodes(scriptTokens, audioScreenPlayVersion, pdfText, setCharacters, characters, screenplayId)
 
     const debounce = useCallback(createDebounce(), [])
-    const save = useCallback(async () => {
-        const newCharacters = getNewCharacters && getNewCharacters()
-        const changes = getChanges(scriptTokens, tokens, screenplayId, newCharacters)
-    
-        if (!changes) return
-        console.log("save0-------------", changes)
-        const res = await saveLines(changes)
+    const save = useCallback((scriptTokens, tokens, screenplayId, getNewCharacters, immediate = false) => {
+        return debounce(async () => {
+            if (!statues?.setClean) return
+            statues.setClean()
+            const newCharacters = getNewCharacters && getNewCharacters()
+            const changes = getChanges(scriptTokens, tokens, screenplayId, newCharacters)
         
-        console.log('res----', res)
+            if (!changes) return
+            console.log("save0-------------", changes)
+            const res = await saveLines(changes)
+            
+            console.log('res----', res)
+
+            return res // only returned when immediate is true
+        }, immediate)
     
-    }, [scriptTokens, tokens, screenplayId, getNewCharacters])
+    }, []) //scriptTokens, tokens, screenplayId, getNewCharacters
 
 
     useEffect(() => {
         myRef.current && myRef.current.focus()
     }, [myRef])
     
+    useEffect(() => {
+        setSaveFunc(() => save(scriptTokens, tokens, screenplayId, getNewCharacters, true))
+    }, [scriptTokens, tokens, screenplayId, getNewCharacters, true])
+    
     // Save loop
     useEffect(() => {
-        debounce(save)
-    }, [tokens])
+        // Don't allow autosaving because autosaving creates a new auidioScreenplayVersion
+        if (statues.isClean()) return
+        if (audioScreenPlayVersionStatus == 'inProgress') return
+        save(scriptTokens, tokens, screenplayId, getNewCharacters)
+    }, [tokens, audioScreenPlayVersionStatus])
 
     // this is necessary because if you are typing in the editor
     // and an update happens becuase of say, a save event, and the component is not memoed 
