@@ -110,8 +110,8 @@ function GetAudio({ audioBeingGotten, processAudio, cancelProcessAudio, audioScr
                     <span>{totalLinesCompleted}</span>
                 </TooltipContainer>
                 /
-                <TooltipContainer text="Total audio lines.">
-                    <span>{totalLines}</span>
+                <TooltipContainer text="Total audio lines without audio.">
+                    <span>{Math.max(totalLines - totalLinesCompleted, 0)}</span>
                 </TooltipContainer>
                 <span>lines</span>
                 <span>-</span>
