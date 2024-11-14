@@ -102,7 +102,7 @@ export async function getScreenPlayLines(screenPlayId: string, versionNumber = n
         .rpc('get_screenplay_version', {
           screenplayid: screenPlayId,
           versionnumber: versionNumber,
-          result_limit: 100,
+          result_limit: 1000,
           pagination_token: null,
         });
 

@@ -59,7 +59,13 @@ export function VoiceActors({
               </div> */}
           </CardHeader>
         </div>
-        <Character key={character?.name} name={character?.name} gender={character?.gender} className="mb-2" />
+        <Character
+          key={character?.id}
+          name={character?.name}
+          gender={character?.gender}
+          className="mb-2"
+          avatar={character?.audio_character_version?.voice_data?.avatar}
+        />
         <Separator className="mt-2"/>
         {/* <div>
           <div className="flex gap-2">

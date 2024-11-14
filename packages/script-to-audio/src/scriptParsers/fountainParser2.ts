@@ -78,7 +78,16 @@ var tokenize = function (script) {
             meta = meta[2];
             text = text.replace(regex.scene_number, '');
         }
-        tokens.push({ type: 'scene_heading', text: text, scene_number: meta || undefined });
+        
+            // Split scene heading if there is more text that should be separate lines
+            if (text.length < line.length) {
+                const next = line.replace(text, '')
+                const newLines = next.split('\n')
+                src.splice(Math.max(Number(i) - 1, 0), 0, text, next)
+                i += 2
+            } else {
+                tokens.push({ type: 'scene_heading', text: text, scene_number: meta || undefined });
+            }
         }
         continue;
     }

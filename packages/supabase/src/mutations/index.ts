@@ -68,34 +68,28 @@ async function createLines({
     return obj
   }).filter(Boolean)
 
-  console.log('toInsertLines', toInsertLines)
+  console.log('toInsertLines', JSON.stringify(toInsertLines, null, 2))
 
   console.timeEnd("lines prepare")
   try {
+    let step = 50
     console.time("lines insert")
-    const { data, errorInsert } = toInsertLines 
-      ? await supabase
-        .from("lines")
-        .upsert(toInsertLines, { onConflict: 'id'})
-      : {} // Optionally, return the inserted data
-      
-      if (errorInsert) {
-        console.log("error lines", errorInsert)
-        throw errorInsert;
-      }
+    for (let i = 0; i < toInsertLines.length; i += step) {
+      console.log('step------')
+      const toInsert = toInsertLines?.slice(i,  i + step )
+      const { data, error: errorInsert } = toInsert
+        ? await supabase
+          .from("lines")
+          .upsert(toInsert, { onConflict: 'id'})
+        : {} // Optionally, return the inserted data
+        
+        if (errorInsert) {
+          console.log("error lines", errorInsert)
+          throw errorInsert;
+        }
+    }
+ 
 
-      const { data: insertedData, errorGetLines } = toInsertLines 
-      ? await supabase
-        .from("lines")
-        .select("id, character_id, isDialog")
-      : {} // Optionally, return the inserted
-
-      if (errorGetLines) {
-        console.log("error lines", errorGetLines)
-        throw errorGetLines;
-      }
-
-    return insertedData;
   } catch (error) {
     console.error("Error inserting line:", error);
     throw error;
