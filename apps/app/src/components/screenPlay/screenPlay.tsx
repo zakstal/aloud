@@ -139,6 +139,7 @@ export default function ScreenPlayConatiner({
   setCharacters,
   screenplayId,
   updateOrCreateLines,
+  title,
 }) {
   const [voiceSelectionOpen, setVoiceSelectionOpen] = useState(false)
   const [selectedCharacter, setSelectedCharacter] = useState(null)
@@ -281,6 +282,7 @@ export default function ScreenPlayConatiner({
             setCurrentlyPlayingLineId={setCurrentlyPlayingLineId}
             currentlyPlayingLineId={currentlyPlayingLineId}
             setIsPlaying={setIsPlaying}
+            title={title}
         />
     </div>
     </>

@@ -5,7 +5,7 @@ import * as Slider from '@radix-ui/react-slider';
 import { cn } from '@/lib/utils';
 import './AudioPlayer.css';
 import { getWindow } from '@/getWindow'
-import { ChevronLeft } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 let window = getWindow()
 const BUTTON_SIZE = 12
@@ -40,7 +40,7 @@ async function appendBlob(arrayBuffer, sourceBuffer, mediaSource) {
 
 // TODO audio that is partially gotten still needs to load correclty in sequence.
 // TODO only load the first batch until this starts playing, then load the rest
-async function assembleSource(audioUrls, mediaSrcIn, setSrc, urlToDurationStartnd, originalUrls) {
+async function assembleSource(audioUrls, mediaSrcIn, setSrc, urlToDurationStartnd, originalUrls, bufferedChunks) {
     if (!('MediaSource' in window && MediaSource.isTypeSupported('audio/mpeg'))) {
         console.log('MediaSource API is not supported in this browser.');
         return
@@ -124,6 +124,8 @@ async function assembleSource(audioUrls, mediaSrcIn, setSrc, urlToDurationStartn
     for (const idx in resultBuffers) {
         onUpdateIdx = idx
         const buffer = resultBuffers[idx]
+        console.log('buffer', buffer)
+        bufferedChunks.push(buffer.slice(0))
         const duration = await appendBlob(buffer, sourceBuffer, mediaSource);
         durationByUrl[audioUrls[idx]] = duration
         appendedDuration += duration
@@ -137,6 +139,8 @@ class AudioPlayer extends React.Component {
     mediaSrc = null;
     getSignedUrlNextNInProgress = false
     urlsAssembled = new Set()
+    bufferedChunks = []
+    
 
     urlToDurationStartnd = {}
 
@@ -251,6 +255,7 @@ class AudioPlayer extends React.Component {
         if (!this?.state?.audioVersions) return
         this.getSignedUrlNextNInProgress = true
 
+        this.bufferedChunks = []
         // get urls that exist and have not been processed 
         const audioVersionsFilered = this.state.audioVersions
             .map(audioVersion => audioVersion.audio_file_url)
@@ -292,7 +297,7 @@ class AudioPlayer extends React.Component {
                 this.setState({
                     objSrc: src
                 })
-            }, this.urlToDurationStartnd, urls)
+            }, this.urlToDurationStartnd, urls, this.bufferedChunks)
 
             let durationCount = this.state.loadedDuration || 0
             urls.forEach((url, idx) => {
@@ -617,6 +622,7 @@ class AudioPlayer extends React.Component {
         const id = this.state?.currentAudioVersion?.id
         if (!id) return
         this.state.signedUrlById[id] = null
+        console.log('removeCurrentSrc handleToggle')
         this.handleToggle()
     }
 
@@ -700,6 +706,24 @@ class AudioPlayer extends React.Component {
                             </button>
                         }
                     </div>
+
+                    <div className="flex items-center gap-4">
+                        {this.state.objSrc && (
+                            <button
+                                onClick={() =>{
+                                    console.log('bufferedChunks', bufferedChunks)
+                                    const a = document.createElement('a')
+                                    a.href = URL.createObjectURL(new Blob(this.bufferedChunks))
+                                    a.download = `${this.props.title || 'aloud-audio'}.mp3`
+                                    a.click()
+                                }}
+                                className="download-button"
+                            >
+                                <Download className="dowload-icon" size={20} />
+                            </button>
+                        )}
+                    </div>
+
 
                     
                     <Slider.Root
