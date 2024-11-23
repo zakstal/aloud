@@ -65,6 +65,12 @@
   /* background-color: color(display-p3 0.872 0.575 0.572); */
 }
 
+.dowload-icon {
+  cursor: pointer;
+  color: hsl(var(--editor-text-dark));
+  opacity: 0.5;
+}
+
 .play-icon {
     transform: translateX(1px)
 }

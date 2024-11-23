@@ -1,5 +1,5 @@
 import { Tokens } from './script-tokens'
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { ScriptHistory } from './script-history-refactor'
 // import { ScriptHistory } from './script-history'
 import * as db from './storage'
@@ -60,6 +60,7 @@ const noUpdateKyes = [
 const removeTokens = ['dialogue_end', 'dialogue_begin']
 
 const prepareTokensRender = (tokens: Tokens[]) => {
+    if (!tokens) return tokens
     return tokens.filter((token: Tokens) => !removeTokens.includes(token.type))
 }
 
@@ -85,18 +86,36 @@ function getElementAtCaret() {
 }
 
 
-console.log("start here")
-window.scriptStorage = window.scriptStorage || new ScriptHistory()
+// window.scriptStorage = window.scriptStorage || new ScriptHistory()
 
-export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string, pdfText, setCharacters, characters) {
+export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string, pdfText, setCharacters, characters, screenplayId) {
 
 
-    const [tokens, setTokens] = useState(prepareTokensRender(tokensIn?.length ? tokensIn : [{ type: 'editNode', text: ' '}]))
+    const [tokens, setTokens] = useState([])
+
     const tokensChanged = useMemo(() => tokens, [tokens])
-    const [nextCaretPosition, setNextCaretPosition] = useState([])
-    const [currentOrderId, setCurrentOrderId] = useState(null)
-    const [secondaryOrderId, setSecondaryOrderId] = useState(null) // for ranges
-    const [rangeOffsets, setRangeOffsets] = useState(null) // for ranges
+
+    const nextCaretPosition = useRef(null)
+    const setNextCaretPosition = useCallback((position) => {
+        nextCaretPosition.current = position
+    }, [])
+
+    const currentOrderId = useRef(null)
+    const setCurrentOrderId = useCallback((position) => {
+        currentOrderId.current = position
+    }, [])
+
+     // for ranges
+    const secondaryOrderId = useRef(null)
+    const setSecondaryOrderId = useCallback((position) => {
+        secondaryOrderId.current = position
+    }, [])
+
+    // for ranges
+    const rangeOffsets = useRef(null)
+    const setRangeOffsets = useCallback((arr) => {
+        rangeOffsets.current = arr
+    }, [])
 
     useEffect(() => {
         if (!pdfText || tokensIn.length) return
@@ -114,7 +133,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
     }, [pdfText])
 
     useEffect(() => {
-        // window.scriptStorage = window.scriptStorage || new ScriptHistory()
+        window.scriptStorage = window.scriptStorage || new ScriptHistory()
         // NB ScriptHistory has an internal representation of tokens. not sure if we should keep 
         // to sets, hoever we can change the internal as we like and only update it later if needed
         window.scriptStorage.setCallbackValues(
@@ -125,23 +144,30 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
                 caretPosition && setNextCaretPosition(caretPosition)
                 currentOrderId && setCurrentOrderId(currentOrderId)
             },
-            tokens,
+            prepareTokensRender(tokensIn),
             setCharacters,
             characters,
         )
 
-        // return () => {
-        //     window.scriptStorage = null
-        // }
+        return () => {
+            window.scriptStorage = null
+        }
 
+    }, [screenplayId])
+
+    useEffect(() => {
+        if (window?.scriptStorage) {
+            window.scriptStorage.dbTokenVersion = versionNumber
+        }
     }, [versionNumber])
 
 
+    // Set the caret position after updates
     useEffect(() => {
-        if (!currentOrderId) return
+        if (!currentOrderId.current) return
 
-        const element = document.querySelector(`[data-order="${Number(currentOrderId)}"]`)
-        if (!element && nextCaretPosition) return
+        const element = document.querySelector(`[data-order="${Number(currentOrderId.current)}"]`)
+        if (!element && nextCaretPosition.current) return
 
         const range = document.createRange();
         const sel = window.getSelection();
@@ -153,7 +179,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
 
         // caret can fail if there is a space character in the text. 
         // This is to handle situations where the nextCaretPosition is off for some reason.
-        const caret = textLength < nextCaretPosition ? textLength : nextCaretPosition
+        const caret = textLength < nextCaretPosition.current ? textLength : nextCaretPosition.current
 
         try {
             if (el) {
@@ -180,6 +206,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             if (e.key === 'Tab' && orderId) {
                 e.preventDefault()
 
+                window?.scriptStorage?.setDirty()
                 // window.scriptStorage.modify({
                 //     type: 'character',
                 // }, orderId, selection?.anchorOffset)
@@ -218,14 +245,15 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
                 return
             }
    
-            if (!rangeOffsets) return
+            if (!rangeOffsets.current) return
             if (e.shiftKey) return
             if (noUpdateKeySet.has(e.key)) return
             e.preventDefault()
 
+            window?.scriptStorage?.setDirty()
             // hande range and key press
-            const [currentOffset, secondOffset] = rangeOffsets || []
-            const [carotPostiion, focusId   ] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            const [currentOffset, secondOffset] = rangeOffsets.current || []
+            const [carotPostiion, focusId   ] = window.scriptStorage.combineRange(Number(currentOrderId.current), Number(secondaryOrderId.current), currentOffset, secondOffset)
 
             setNextCaretPosition(selection?.anchorOffset)
             window.scriptStorage.commit()
@@ -255,6 +283,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             if (e.keyCode === 32) return // space bar. having a space sometimes doesn't register in the inner text and setting the caret can fail
             if (orderId) {
 
+                window?.scriptStorage?.setDirty()
                 console.log("update text")
                 const [ didUpdate ] = window.scriptStorage.updateText({
                     text: currentElement.innerText
@@ -269,12 +298,13 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             }
         },
         function handleOnEnter(e) {
+            window?.scriptStorage?.setDirty()
             e.preventDefault()
             try {
                 const selection = window.getSelection();
 
                 let carotPostiion = 0
-                let focusId = currentOrderId
+                let focusId = currentOrderId.current
 
                 console.log("onEnter")
                 window.scriptStorage.combineSplitRange(focusId, carotPostiion || selection?.anchorOffset)
@@ -282,7 +312,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
                     updateCharacters: true
                 })
 
-                setCurrentOrderId(Number(currentOrderId) + 1)
+                setCurrentOrderId(Number(currentOrderId.current) + 1)
                 setNextCaretPosition(0)
                 setSecondaryOrderId(null)
                 setRangeOffsets(null)
@@ -293,17 +323,18 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             }
         },
         function handleOnBackSpace(e) {
+            window?.scriptStorage?.setDirty()
             const selection = window.getSelection();
-            console.log("e backsapce-----------", e.target, e.currentTarget)
+            console.log("e backsapce-----------", rangeOffsets.current, selection)
             
-            if (selection.anchorOffset !== 0 && !rangeOffsets) return
-            console.log('backaspace----------', rangeOffsets)
+            if (selection.anchorOffset !== 0 && !rangeOffsets.current) return
+            console.log('backaspace----------', rangeOffsets.current)
             e.preventDefault()
             
-            const [currentOffset, secondOffset] = rangeOffsets || []
-            // if (!currentOffset) return
+            const [currentOffset, secondOffset] = rangeOffsets.current || []
+
             try {
-                const res = window.scriptStorage?.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+                const res = window.scriptStorage?.combineRange(Number(currentOrderId.current), Number(secondaryOrderId.current), currentOffset, secondOffset)
                 const [carotPostiion, focusId] = res
                 window.scriptStorage.commit({
                     updateCharacters: true
@@ -313,7 +344,6 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
                 setNextCaretPosition(carotPostiion)
                 setSecondaryOrderId(null)
                 setRangeOffsets(null)
-                // setTokens(newTokens)
             } catch(e) {
                 console.log("error", e)
             }
@@ -331,11 +361,6 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
         function handleOnSelect(e) {
             const selection = window.getSelection();
 
-            // selection.anchorNode // start node
-            // selection.anchorOffset // start node cursor start
-            // selection.extentNode // end node offset
-            // selection.extentOffset // end node offset
-
             const acnchorNode = selection.anchorNode?.parentNode
             const extentNode = selection.extentNode?.parentNode
 
@@ -350,6 +375,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             }
         },
         function handlePaste(e) {
+            window?.scriptStorage?.setDirty()
             e.preventDefault()
             const selection = window.getSelection();
             const currentElement = getElementAtCaret()
@@ -362,20 +388,22 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             // This is to save updating. if we are not changing the type or the tranformation of the text,
             // we can just register the changeand if we rerender later, all the text will be updated.
             if (didUpdate) {
-                window.scriptStorage.commit()
+                window.scriptStorage.commitCharacters()
+                window.scriptStorage.commit({ updateCharacters: true })
                 setCurrentOrderId(focusId)
                 setNextCaretPosition(nextCaretPostion)
             }
 
         },
         function handleCut(e) {
+            window?.scriptStorage?.setDirty()
             const selection = window.getSelection();
             
-            if (!rangeOffsets) return
+            if (!rangeOffsets.current) return
             e.preventDefault()
 
-            const [currentOffset, secondOffset] = rangeOffsets || []
-            const [carotPostiion, focusId] = window.scriptStorage.combineRange(Number(currentOrderId), Number(secondaryOrderId), currentOffset, secondOffset)
+            const [currentOffset, secondOffset] = rangeOffsets.current || []
+            const [carotPostiion, focusId] = window.scriptStorage.combineRange(Number(currentOrderId.current), Number(secondaryOrderId.current), currentOffset, secondOffset)
             window.scriptStorage.commit()
 
             setCurrentOrderId(focusId)
@@ -384,8 +412,15 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             setRangeOffsets(null)
             // setTokens(newTokens)
         },
-        window.scriptStorage.getNewCharacters.bind(window.scriptStorage),
-        currentOrderId,
-        secondaryOrderId,
+        window?.scriptStorage?.getNewCharacters?.bind(window?.scriptStorage),
+        {
+            setClean: () => window?.scriptStorage?.setClean(),
+            setDirty: () => window?.scriptStorage?.setDirty(),
+            isDirty: () => window?.scriptStorage?.isDirty,
+            isClean: () => {
+                const isClean = window?.scriptStorage?.isClean
+                return isClean
+            }
+        }
     ]
 }

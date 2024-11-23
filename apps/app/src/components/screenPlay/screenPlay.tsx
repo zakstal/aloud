@@ -1,9 +1,10 @@
 'use client'
 
 import './screenplay.css'
+
 import { Characters } from '@/components/characters';
 import { VoiceActors } from '@/components/voice-actors';
-import { useState } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { cn } from '@/lib/utils';
 import { Voice } from '@v1/script-to-audio/voices'
 import AudioPlayer from '@/components/ui/AudioPlayer-refactor'
@@ -37,50 +38,45 @@ const TooltipContainer = ({ children, text, sideOffset = 1 }) => {
 	);
 };
 
-function GetAudio({ audioBeingGotten, processAudio, setAudioBeingGotten, audioScreenPlayVersion }) {
+function GetAudio({ audioBeingGotten, processAudio, cancelProcessAudio, audioScreenPlayVersion, isEditorDirty }) {
     const status = audioScreenPlayVersion.status
-    const totalLines  = audioScreenPlayVersion.total_lines
-    const totalLinesCompleted  = audioScreenPlayVersion.total_lines_completed
-    const progress = totalLinesCompleted != null && totalLines != null ? (totalLinesCompleted / totalLines) * 100 : 0
-    if (status === 'full') return (
-        <div className="text-sm px-4 completed py-2 border-1 rounded-2xl">Completed</div>
-    )
-    
+    const [totalLines, setTotalLines]  = useState(0)
+    const [totalLinesCompleted, setTotalLinesCompleted]  = useState(0)
+    useEffect(() => {
+        if (audioScreenPlayVersion?.total_lines) {
+            setTotalLines(audioScreenPlayVersion?.total_lines)
+        }
+        
+        if (audioScreenPlayVersion?.total_lines_completed) {
+            setTotalLinesCompleted(audioScreenPlayVersion?.total_lines_completed)
+        }
+        
+    }, [audioScreenPlayVersion?.total_lines_completed, audioScreenPlayVersion?.total_lines])
 
-    if (status === 'inProgress' ) return (
-        <div className="flex gap-2 items-center text-sm">
+    const progress = totalLinesCompleted != null && totalLines != null ? (totalLinesCompleted / totalLines) * 100 : 0
+    let element = null
+
+    switch(isEditorDirty && status === 'full' ? '' : status) {
+        case 'full':
+            element = <div className="text-sm px-4 completed py-2 border-1 rounded-2xl">Completed</div>
+            break;
+        case 'inProgress':
+            element =
             <ProgressLoader
                 className="progress-loading "
                 progress={Number(progress.toFixed())}
                 isLoading={audioBeingGotten}
-                onClick={async () => {
-                    setAudioBeingGotten(true)
-                    const res = await cancelProcessAudio({ audioVersionId:audioScreenPlayVersion?.id })
-                    setAudioBeingGotten(false)
-                    console.log('res', res)
-                }}
+                onClick={cancelProcessAudio}
             />
-            
-            <span>{totalLinesCompleted}</span>
-            /
-            <span>{totalLines}</span>
-            <span>lines</span>
-        </div>
-    )
-  
-    if (status === 'partial' || status === 'failed') return (
-        <div className="flex gap-2 items-center text-sm">
+            break;
+        case 'partial':
+        case 'failed':
+            element =
             <TooltipContainer text="There were some... issues getting your audio. Feel free to try again.">
                 <Button
                     type="button"
                     className={cn('flex gap-3', status === 'failed' && "failed")}
-                    onClick={async () => {
-                        setAudioBeingGotten(true)
-                        const res = await processAudio()
-                        setAudioBeingGotten(false)
-                        // if (['inProgress', 'full'].includes(res.status)) {
-                        // }
-                    }}
+                    onClick={processAudio}
                     variant="outline"
                     size="sm"
                 >
@@ -88,32 +84,42 @@ function GetAudio({ audioBeingGotten, processAudio, setAudioBeingGotten, audioSc
                     { audioBeingGotten ? <Progress hw={20} bw={2} className=""/> : null}
                 </Button>
             </TooltipContainer>
-            
-            <span>{totalLinesCompleted}</span>
-            /
-            <span>{totalLines}</span>
-            <span>lines</span>
-        </div>
-    )
+            break;
+        default:
+            element = (
+                <Button
+                    type="button"
+                    className='flex gap-3'
+                    onClick={processAudio}
+                        variant="outline"
+                        size="sm"
+                        >
+                    <span className=""> {!audioBeingGotten ? "Get Audio!" : "in progress" }</span>
+                    { audioBeingGotten ? <Progress hw={20} bw={2} className=""/> : null}
+                </Button>
+            )
+        }
 
     return (
-        
-        <Button
-            type="button"
-            className='flex gap-3'
-            onClick={async () => {
-                setAudioBeingGotten(true)
-                const res = await processAudio()
-                setAudioBeingGotten(false)
-                // if (['inProgress', 'full'].includes(res.status)) {
-                // }
-            }}
-            variant="outline"
-            size="sm"
-        >
-            <span className=""> {!audioBeingGotten ? "Get Audio!" : "in progress" }</span>
-            { audioBeingGotten ? <Progress hw={20} bw={2} className=""/> : null}
-        </Button>
+        <div>
+            <div className="flex gap-2 items-center text-sm">
+                {element}
+            </div>
+            <div className="flex gap-2 items-center text-sm pt-3 pl-2">
+                <TooltipContainer text="Lines with completed audio.">
+                    <span>{totalLinesCompleted}</span>
+                </TooltipContainer>
+                /
+                <TooltipContainer text="Total audio lines without audio.">
+                    <span>{Math.max(totalLines - totalLinesCompleted, 0)}</span>
+                </TooltipContainer>
+                <span>lines</span>
+                <span>-</span>
+                <TooltipContainer text="Updates you make are automatically saved and versioned. This is the current version.">
+                    <span className="font-bold">v{audioScreenPlayVersion.version_number}</span>
+                </TooltipContainer>
+            </div>
+        </div>
     )
 }
 
@@ -133,75 +139,101 @@ export default function ScreenPlayConatiner({
   setCharacters,
   screenplayId,
   updateOrCreateLines,
+  title,
 }) {
   const [voiceSelectionOpen, setVoiceSelectionOpen] = useState(false)
   const [selectedCharacter, setSelectedCharacter] = useState(null)
   const [currentLinePlaying, setCurrentLinePlaying] = useState(null)
   const [audioBeingGotten, setAudioBeingGotten] = useState(false)
   const [currentlyPlayingLineId, setCurrentlyPlayingLineId] = useState(false)
+  const [isEditorDirty, setIsEditorDirty] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [startScreenPlayButtonPressed, setStartScreenPlayButtonPressed] = useState(false)
 
   console.log('currentlyPlayingLineId', currentlyPlayingLineId)
   console.log('characters screenPlay', characters)
   console.log('isPlaying', isPlaying)
+  // TODO this needs to be fixed up probably by moving the script editor to a provider
+  const saveFunc = useRef(null)
+  const setSaveFunc = useCallback((saveFunction) => {
+    saveFunc.current = saveFunction
+  }, [])
+
+  
   if (isLoading) return <div className="flex justify-center h-screen items-center"><Progress /></div>
 
   return (
     <>
     <div>
         <div className="flex flex-row gap-4 text-lg script-parent items-streatch">
-            <aside className="script-characters flex-1 pt-20 max-w-72">
+            <aside className="script-characters flex-1 pt-16 max-w-72">
                 { screenPlayText !== undefined
                 ?
                 <>
                 <div className="col-span-4 md:col-span-3 rounded-4 script-card">
-                    {
-                        voiceSelectionOpen
-                        ? 
-                            <div
-                                className={cn(
-                                ` pl-8 pr-4 relative  hidden flex-none transition-[width] duration-500 md:block`,
-                                voiceSelectionOpen ? 'w-75' : 'w-[75px]',
-                                )}
-                            >
-                            <VoiceActors
-                                key={audioScreenPlayVersion?.id}
-                                character={selectedCharacter}
-                                onClose={() => {
-                                    setSelectedCharacter(null)
-                                    setVoiceSelectionOpen(false)
+                   
+                    <div
+                        className={cn(
+                        ` pl-8 pr-4 relative  hidden flex-none transition-[width] duration-500 md:block`,
+                        // voiceSelectionOpen ? 'w-75' : 'w-[75px]',
+                        voiceSelectionOpen ? '' : 'sp-hidden',
+                        )}
+                    >
+                        <VoiceActors
+                            key={screenplayId}
+                            character={selectedCharacter}
+                            onClose={() => {
+                                setSelectedCharacter(null)
+                                setVoiceSelectionOpen(false)
+                            }}
+                            voices={voices}
+                            audioVersionNumber={audioVersionNumber}
+                            onSelectVoice={(voice: Voice, character) => {
+                                onSelectVoice(voice, character)
+                                setVoiceSelectionOpen(false)
+                            }}
+                        />
+                    </div>
+
+                    <div className={cn("pl-8", voiceSelectionOpen ? 'sp-hidden' : '')} >
+                        <div className="h-24 flex items-center" >
+                            <GetAudio
+                                key={screenplayId}
+                                isEditorDirty={isEditorDirty}
+                                audioBeingGotten={audioBeingGotten}
+                                processAudio={async () => {
+                                    setAudioBeingGotten(true)
+                                    console.log('saveFunc.current', saveFunc.current)
+                                    if (!saveFunc.current) return
+                                    console.log('saveFunc.current after')
+                                    const res = await saveFunc.current()
+                                    if (res?.success && !res.success) {
+                                        setAudioBeingGotten(false)
+                                        return
+                                    }
+                                    await processAudio(res?.audioScreenPlayVersionId)
+                                    setAudioBeingGotten(false)
                                 }}
-                                voices={voices}
-                                audioVersionNumber={audioVersionNumber}
-                                onSelectVoice={(voice: Voice, character) => {
-                                    onSelectVoice(voice, character)
-                                    setVoiceSelectionOpen(false)
+                                cancelProcessAudio={async () => {
+                                    setAudioBeingGotten(true)
+                                    const res = await cancelProcessAudio({ audioVersionId: audioScreenPlayVersion?.id })
+                                    setAudioBeingGotten(false)
                                 }}
+                                setAudioBeingGotten={setAudioBeingGotten}
+                                audioScreenPlayVersion={audioScreenPlayVersion}
                             />
-                            </div>
-                        : (
-                            <div className="pl-8" >
-                                <div className="h-14 flex items-center" >
-                                    <GetAudio
-                                        key={audioScreenPlayVersion?.id}
-                                        audioBeingGotten={audioBeingGotten}
-                                        processAudio={processAudio}
-                                        setAudioBeingGotten={setAudioBeingGotten}
-                                        audioScreenPlayVersion={audioScreenPlayVersion}
-                                    />
-                                </div>
-                                <Characters
-                                    key={audioScreenPlayVersion?.id}
-                                    characters={characters}
-                                    audioVersionNumber={audioVersionNumber}
-                                    onCharacterClick={(character) => {
-                                        setSelectedCharacter(character)
-                                        setVoiceSelectionOpen(true)
-                                    }}
-                                />
-                            </div>
-                        )
-                    }
+                        </div>
+                        <Characters
+                            key={screenplayId}
+                            characters={characters}
+                            audioVersionNumber={audioVersionNumber}
+                            onCharacterClick={(character) => {
+                                setSelectedCharacter(character)
+                                setVoiceSelectionOpen(true)
+                            }}
+                        />
+                    </div>
+                    
                 </div>
                 </> 
                 : null }   
@@ -211,10 +243,11 @@ export default function ScreenPlayConatiner({
                 screenPlayText !== undefined 
                 ?
                 <ScriptEditor
-                    key={audioScreenPlayVersion?.id}
+                    key={screenplayId}
                     className="script-text bg-white p-8 pt-0 pb-[70px] outline-none border-slate-400 overflow-scroll max-w-4xl font-courier"
                     scriptTokens={lines}
                     audioScreenPlayVersion={audioScreenPlayVersion?.id}
+                    audioScreenPlayVersionStatus={audioScreenPlayVersion?.status}
                     currentLinePlaying={currentLinePlaying}
                     pdfText={screenPlayText}
                     saveLines={updateOrCreateLines}
@@ -224,6 +257,8 @@ export default function ScreenPlayConatiner({
                     currentTokenId={currentlyPlayingLineId}
                     highlightToken={isPlaying}
                     selectToken={setCurrentlyPlayingLineId}
+                    setSaveFunc={setSaveFunc}
+                    setIsEditorDirty={setIsEditorDirty}
                 />
                 : <div className={'script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-4xl font-courier script-editor'}>
                     <h1 className="text-3xl pb-6 pt-16 tracking-tight text-center ">🎉  Welcome! 🎊</h1>
@@ -233,21 +268,27 @@ export default function ScreenPlayConatiner({
                     <Button
                         variant="outline"
                         className="text-md h-20 mt-6 w-full box-border"
-                        onClick={() => startScreenPlay()}
+                        onClick={() => {
+                            if (startScreenPlayButtonPressed) return
+                            setStartScreenPlayButtonPressed(true)
+                            startScreenPlay()
+                        }}
                     >
                         Go to a blank document
+                        { startScreenPlayButtonPressed ? <Progress hw={20} bw={2} className="ml-3"/> : null}
                     </Button>
                 </div>
             }
         </div>
         <AudioPlayer
+            key={audioScreenPlayVersion?.id}
             audioVersions={audioVersions}
             setCurrentLinePlaying={setCurrentLinePlaying}
             getSignedUrl={(url: string) => getSignedUrl({ url })}
             setCurrentlyPlayingLineId={setCurrentlyPlayingLineId}
             currentlyPlayingLineId={currentlyPlayingLineId}
             setIsPlaying={setIsPlaying}
-            key={audioScreenPlayVersion?.id}
+            title={title}
         />
     </div>
     </>

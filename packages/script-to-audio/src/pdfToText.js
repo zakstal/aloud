@@ -55,7 +55,7 @@ import { execSync } from 'child_process';
 export const getTextFromPdf = (pdfFilePath) => {
   try {
     // Construct the curl command with the file path
-    const curlCommand = `curl -X GET -F 'pdf=@${pdfFilePath}' https://starfish-app-wsluw.ondigitalocean.app/extract`;
+    const curlCommand = `curl -X POST -F 'pdf=@${pdfFilePath}' https://starfish-app-wsluw.ondigitalocean.app/extract`;
 
     // Execute the command using execSync
     const result = execSync(curlCommand, { encoding: 'utf-8' });

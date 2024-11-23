@@ -17,20 +17,17 @@ export const cancelProcessAudio = authActionClient
     try {
 
         const audioVersion = await getScreenPlayAudioVersion(input.audioVersionId)
-        console.log("audioVersion", audioVersion)
+        const okCancelStatuses = ['WAITING_FOR_DEPLOY', 'QUEUED', 'EXECUTING', 'REATTEMPTING', 'FROZEN' ]
         
-
         if (audioVersion?.job_id) {
-            
-            let page = await runs.list({
-                status: ['WAITING_FOR_DEPLOY', 'QUEUED', 'EXECUTING', 'REATTEMPTING', 'FROZEN' ],
-                bulkAction: audioVersion?.job_id
-            });
+            const res = await runs.retrieve(audioVersion?.job_id);
 
-            if (page.data && page.data.length) {
-                for (const job of page.data) {
+            runs.cancel(audioVersion?.job_id)
+
+            if (res?.relatedRuns?.children) {
+                for (const job of res?.relatedRuns?.children) {
+                    if (!okCancelStatuses.includes(job.status)) continue
                     const res = await runs.cancel(job.id);
-                    console.log('job res', res)
                 }
             }
         }

@@ -45,7 +45,7 @@ export async function getScreenPlays() {
 
 export async function getScreenPlay(screenPlayId) {
   const supabase = createClient();
-  console.time('Get screenplay');
+  console.time('Get screenplay=');
 
   try {
     let query = await supabase
@@ -62,7 +62,7 @@ export async function getScreenPlay(screenPlayId) {
           name,
           gender,
           created_at,
-          audio_character_version (
+          audio_character_version!fk_audio_character_version (
             id,
             audio_screenplay_version_id,
             version_number,
@@ -102,7 +102,7 @@ export async function getScreenPlayLines(screenPlayId: string, versionNumber = n
         .rpc('get_screenplay_version', {
           screenplayid: screenPlayId,
           versionnumber: versionNumber,
-          result_limit: 100,
+          result_limit: 1000,
           pagination_token: null,
         });
 

@@ -3,13 +3,18 @@
 import './script-editor.css';
 
 import { TokenContent, Tokens, GetElement, isTokenType, tokenTypes } from './script-tokens'
-import { useRef, useEffect, useCallback, useMemo } from 'react';
+import { useRef, useEffect, useCallback, useMemo, useState } from 'react';
 import { useFountainNodes } from './useFountainNodes'
 import { createEditor, Transforms, Editor, Element, Path } from 'slate'
 import { Slate, Editable, withReact } from 'slate-react'
 import { withHistory } from 'slate-history'
 import { max } from 'date-fns';
 import { v4 as uuid } from 'uuid';
+
+import * as Y from 'yjs';
+import { WebrtcProvider } from 'y-webrtc';
+import { slateYjsSyncPlugin, withYjs } from 'slate-yjs';
+
 
 type Character = {
     name: string,
@@ -21,16 +26,18 @@ interface ScriptEditorInput {
     className: string;
     audioVersionNumber: string;
     audioScreenPlayVersion: string,
+    audioScreenPlayVersionStatus: string,
     pdfText: string,
     saveLines: () => null,
     setCharacters: (characters: string[]) => null,
+    setSaveFunc: () => null,
+    setIsEditorDirty: () => null,
     selectToken: (id: string) => null,
     screenplayId: string,
     characters: Character[]
     currentTokenId?: string;
     highlightToken?: boolean;
 }
-
 
 const idSet = new Set()
 const getId = () => {
@@ -40,15 +47,12 @@ const getId = () => {
     return id
 };
 
-function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, characters) {
-
-    const narrator = characters.find(character => character.name.toLowerCase() === 'narrator')
+function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters) {
     // update ordering 
     updatedTokens.forEach((token, i) => {
+        if (!token) return
         token.order = i
     })
-
-    console.log("after order update", JSON.stringify(updatedTokens, null, 2))
 
     const newIds = {}
 
@@ -58,20 +62,11 @@ function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, chara
 
     // check if new tokens have been created
     for (const newToken of updatedTokens) {
-        const id = newToken.id
-
-
-        // if (!id || id?.startsWith('internal')) {
-        //     console.log("newToken", newToken)
-        //     newToken.id = newToken.id.replace('internal', '')
-        //     newTokens.push(newToken)
-        //     continue
-        // }
+        const id = newToken?.id
+        if (!id) continue
 
         newIds[id] =  newToken
     }
-
-    console.log('newIds', newIds)
     
     // check if tokens have been removed or changed
     for (const oldToken of oldTokens) {
@@ -102,10 +97,16 @@ function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, chara
         delete newIds[id]
     }
 
-
-    console.log('newCharacters--', newCharacters)
     const newTokens = Object.values(newIds)
-    const names = new Set(characters.map(obj => obj.name))
+
+    const shoudlUpdate = 
+        Boolean(newTokens?.length) || 
+        Boolean(removeTokens?.length) ||
+        Boolean(updateTokens?.length) || 
+        Boolean(newCharacters?.length)
+
+
+    if (!shoudlUpdate) return null
 
     return {
         created: newTokens,
@@ -113,7 +114,6 @@ function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters, chara
         updated: updateTokens,
         screenplayId,
         characters: newCharacters
-        // characters: [ ...newCharacters, ...characters ]
     }
 
 }
@@ -136,10 +136,61 @@ const maybeChangeNodeTypeTo = Object.fromEntries(
 )
 
 
+function createDebounce() {
+    let id = null
+    let callback = null
+    return (callbackIn, immediate) => {
+        console.log("immediate", immediate)
+        if (immediate) {
+            id && clearTimeout(id)
+            return callbackIn()
+        }
+        callback = callbackIn
+        if (id) return
+        id = setTimeout(() => {
+            callback()
+            id = null
+        }, 5000)
+
+    }
+}
+
+export const CollaborativeEditor = () => {
+    const [connected, setConnected] = useState(false)
+    const [sharedType, setSharedType] = useState()
+    const [provider, setProvider] = useState()
+  
+    // Set up your Yjs provider and document
+    useEffect(() => {
+      const yDoc = new Y.Doc()
+      const sharedDoc = yDoc.get('slate', Y.XmlText)
+  
+      // Set up your Yjs provider. This line of code is different for each provider.
+      const yProvider = new YjsProvider(/* ... */)
+  
+      yProvider.on('sync', setConnected)
+      setSharedType(sharedDoc)
+      setProvider(yProvider)
+  
+      return () => {
+        yDoc?.destroy()
+        yProvider?.off('sync', setConnected)
+        yProvider?.destroy()
+      }
+    }, [])
+  
+    if (!connected || !sharedType || !provider) {
+      return <div>Loading…</div>
+    }
+  
+    return <SlateEditor />
+  }
+
 export const ScriptEditor =({
     scriptTokens,
     className,
     audioScreenPlayVersion,
+    audioScreenPlayVersionStatus,
     pdfText,
     saveLines,
     setCharacters,
@@ -148,26 +199,12 @@ export const ScriptEditor =({
     currentTokenId,
     highlightToken,
     selectToken,
+    setSaveFunc,
+    setIsEditorDirty,
 }: ScriptEditorInput) => {
-
     const myRef = useRef(null);
-    // const [
-    //     tokens, 
-    //     handleKeyDown, 
-    //     handleKeyUp, 
-    //     handleEnter, 
-    //     handleOnBackSpace,
-    //     clearCurrrentNode, 
-    //     setCurrentNode, 
-    //     handleOnSelect,
-    //     handlePaste,
-    //     handleCut,
-    //     getNewCharacters
-    // ] = useFountainNodes(scriptTokens, audioScreenPlayVersion, pdfText, setCharacters, characters)
-
-    // useEffect(() => {
-    //     myRef.current && myRef.current.focus()
-    // }, [myRef])
+    const yDoc = new Y.Doc()
+    const sharedDoc = yDoc.get('slate', Y.XmlText)
 
     const renderElement = useCallback(props => <GetElement {...props} />, [])
     const editor = useMemo(() => withReact(withHistory(createEditor())), [])
@@ -204,7 +241,13 @@ export const ScriptEditor =({
         <div className={className + ' script-editor'}>
             <Slate
                 editor={editor}
-                initialValue={slateTokens}
+                initialValue={slateTokens.length ? slateTokens : [{ 
+                    type: 'action',
+                    children: [{ 
+                        text: '',
+                        id: getId() ,
+                    }],
+                }]}
                 onChange={(value) => {
                     console.log('value update', value)
                 }}
@@ -213,10 +256,15 @@ export const ScriptEditor =({
                     renderElement={renderElement}
                     spellCheck
                     autoFocus
+
                     onChange={(value) => {
                         console.log('onChange', value)
                     }}
+                    onPaste={(value) => {
+                        console.log('onPaste------------', value)
+                    }}
                     onKeyUp={event => {
+                        console.log("key up---")
                         // event.preventDefault()
                         const [node, path] = Editor.node(editor, editor.selection);
                         if (event.key === 'Enter') {
@@ -238,9 +286,9 @@ export const ScriptEditor =({
                         }
                     }}
                     onKeyDown={event => {
-
+                        console.log("key down---")
                         // Get the currently selected node
-                        const [node, path] = Editor.node(editor, editor.selection);
+                        const [node, path] = Editor?.node(editor, editor?.selection) || [];
                         const [lastNode, lastPath] = Editor.last(editor, path);
 
                         if (event.key === 'Tab') {
@@ -269,58 +317,6 @@ export const ScriptEditor =({
                 />
             </Slate>
         </div>
-    
-{/* 
-        <div
-            autoFocus
-            ref={myRef}
-            contentEditable={true}
-            suppressContentEditableWarning={true} 
-            className={className + ' script-editor'}
-            onBlur={clearCurrrentNode}
-            onMouseDown={setCurrentNode}
-            onKeyUp={handleKeyUp}
-            onPaste={handlePaste}
-            onCut={handleCut}
-            onClick={(e) => {
-                const id = e.target.id
-                const token = scriptTokens.find(token => token.id === id)
-                console.log('id', id, 'token', token)
-                if (token && token.isDialog) {
-                    selectToken(id)
-                }}
-            }
-            onSelect={function(event) {
-                handleOnSelect(event)
-            }}
-            // onSelectChange={function(event) {
-            //     console.log('Selection change');
-            //     console.log('Element:', event.target);
-            // }}
-            onKeyDown={(e) => {
-
-                if (e.key === 'Backspace') {
-                   return  handleOnBackSpace(e)
-                }
-                if (e.key === 'Enter') {
-                    return handleEnter(e)
-                }
-
-                handleKeyDown(e)
-            }}
-
-                
-            >
-                
-                {/* <div style={{ position: 'sticky', top: 0 }}>currentOrderId: {currentOrderId}</div>
-                <div>secondaryOrderId: {secondaryOrderId}</div> */}
-            
-            {/* <TokenContent
-                tokens={tokens}
-                currentTokenId={currentTokenId}
-                highlightToken={highlightToken}
-            /> */}
-        {/* </div> */}
         </>
     )
 }

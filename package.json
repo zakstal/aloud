@@ -46,6 +46,9 @@
     "react-howler": "^5.2.0",
     "slate": "^0.110.2",
     "slate-history": "^0.110.3",
-    "slate-react": "^0.111.0"
+    "slate-react": "^0.111.0",
+    "slate-yjs": "^3.2.0",
+    "y-webrtc": "^10.3.0",
+    "yjs": "^13.6.20"
   }
 }

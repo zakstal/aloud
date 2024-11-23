@@ -5,13 +5,14 @@ import * as Slider from '@radix-ui/react-slider';
 import { cn } from '@/lib/utils';
 import './AudioPlayer.css';
 import { getWindow } from '@/getWindow'
-import { ChevronLeft } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 let window = getWindow()
 const BUTTON_SIZE = 12
 
 let audioContext = null
 
+let bufferedChunks = [];
 async function appendBlob(arrayBuffer, sourceBuffer, mediaSource) {
     if (!audioContext) {
         audioContext = window && new (window.AudioContext || window.webkitAudioContext)();
@@ -40,7 +41,7 @@ async function appendBlob(arrayBuffer, sourceBuffer, mediaSource) {
 
 // TODO audio that is partially gotten still needs to load correclty in sequence.
 // TODO only load the first batch until this starts playing, then load the rest
-async function assembleSource(audioUrls, mediaSrcIn, setSrc, urlToDurationStartnd, originalUrls) {
+async function assembleSource(audioUrls, mediaSrcIn, setSrc, urlToDurationStartnd, originalUrls, bufferedChunks) {
     if (!('MediaSource' in window && MediaSource.isTypeSupported('audio/mpeg'))) {
         console.log('MediaSource API is not supported in this browser.');
         return
@@ -103,7 +104,7 @@ async function assembleSource(audioUrls, mediaSrcIn, setSrc, urlToDurationStartn
         const url = audioUrls[onUpdateIdx]
         const urlOr = originalUrls[onUpdateIdx]
         const { startTime, endTime } = urlToDurationStartnd[urlOr]
-        console.log("onupdateend----", sourceBuffer.timestampOffset, endTime, sourceBuffer.timestampOffset - endTime, url, urlToDurationStartnd[urlOr])
+        // console.log("onupdateend----", sourceBuffer.timestampOffset, endTime, sourceBuffer.timestampOffset - endTime, url, urlToDurationStartnd[urlOr])
 		// if (clipIndex < clipsToAppend.length - 1) {
 		// 	// We have another segment to add
 		// 	// BUT, first we need to offset the time by the duration of
@@ -124,6 +125,8 @@ async function assembleSource(audioUrls, mediaSrcIn, setSrc, urlToDurationStartn
     for (const idx in resultBuffers) {
         onUpdateIdx = idx
         const buffer = resultBuffers[idx]
+        console.log('buffer', buffer)
+        bufferedChunks.push(buffer.slice(0))
         const duration = await appendBlob(buffer, sourceBuffer, mediaSource);
         durationByUrl[audioUrls[idx]] = duration
         appendedDuration += duration
@@ -137,6 +140,8 @@ class AudioPlayer extends React.Component {
     mediaSrc = null;
     getSignedUrlNextNInProgress = false
     urlsAssembled = new Set()
+    bufferedChunks = []
+    
 
     urlToDurationStartnd = {}
 
@@ -162,7 +167,7 @@ class AudioPlayer extends React.Component {
 
         const disabled = this.checkDisabled(currentAudioVersion)
 
-        console.log("AudioVersions", this.props.audioVersions)
+        console.log("AudioVersions load", this.props.audioVersions)
 
         this.state = {
             playing: false,
@@ -205,10 +210,11 @@ class AudioPlayer extends React.Component {
         this.handleMouseDownSeek = this.handleMouseDownSeek.bind(this)
         this.handleMouseUpSeek = this.handleMouseUpSeek.bind(this)
         this.handleSeekingChange = this.handleSeekingChange.bind(this)
+        this.handleSeekingChangeExternal = this.handleSeekingChangeExternal.bind(this)
         this.handleRate = this.handleRate.bind(this)
 
         // load some limited amount of audio
-        console.log("pre load")
+
         this.getSignedUrlNextN(3, false, 3)
     }
 
@@ -250,6 +256,7 @@ class AudioPlayer extends React.Component {
         if (!this?.state?.audioVersions) return
         this.getSignedUrlNextNInProgress = true
 
+        this.bufferedChunks = []
         // get urls that exist and have not been processed 
         const audioVersionsFilered = this.state.audioVersions
             .map(audioVersion => audioVersion.audio_file_url)
@@ -291,7 +298,7 @@ class AudioPlayer extends React.Component {
                 this.setState({
                     objSrc: src
                 })
-            }, this.urlToDurationStartnd, urls)
+            }, this.urlToDurationStartnd, urls, this.bufferedChunks)
 
             let durationCount = this.state.loadedDuration || 0
             urls.forEach((url, idx) => {
@@ -325,9 +332,11 @@ class AudioPlayer extends React.Component {
 
     }
 
-
     componentDidUpdate(prevProps) {
-        console.log("componentDidUpdate")
+        // console.log("componentDidUpdate", this.props.audioVersions.length, prevProps.audioVersions.length)
+        // if (this.props.audioVersions !== this.state.audioVersions) {
+        //     console.log('Previous state is not the same for audio versions')
+        // }
         // currentlyPlayingLineId can be set by other components
         // but is also set internally which triggers componentDidUpdate.
         // there could be a more efficeint way of doing this.
@@ -343,7 +352,7 @@ class AudioPlayer extends React.Component {
         // set the current seek time if a playing line has been set somewhere else
         if (currentAudioVersion && this.state.currentAudioVersion?.line_id !== this.props.currentlyPlayingLineId) {
             const { startTime = 0 } = this.getDurationByUrl(currentAudioVersion?.audio_file_url) || {}
-            this.handleSeekingChange(startTime)
+            this.handleSeekingChangeExternal(startTime)
         }
 
         const disabled = this.checkDisabled(currentAudioVersion)
@@ -375,13 +384,14 @@ class AudioPlayer extends React.Component {
     }
 
     handleToggle() {
-        console.log('handleToggle----------')
+        console.log('handleToggle----------', this.state.playing)
         if (!this.state.playing) {
-            this.props.setIsPlaying && this.props.setIsPlaying(true)
             this.player.play()
+            this.props.setIsPlaying && this.props.setIsPlaying(true)
         } else {
-            this.props.setIsPlaying && this.props.setIsPlaying(false)
+            console.log("pause")
             this.player.pause()
+            this.props.setIsPlaying && this.props.setIsPlaying(false)
         }
         this.setState({
             playing: !this.state.playing
@@ -394,7 +404,6 @@ class AudioPlayer extends React.Component {
             this.player.currentTime = this.state.seekedTo
         }
 
-        console.log('handleOnLoad---------------')
         if (this.state.playing) {
             this.player.play()
         } else {
@@ -502,6 +511,17 @@ class AudioPlayer extends React.Component {
             seek: parseFloat(e || 0)
         })
     }
+    
+    handleSeekingChangeExternal(e) {
+        console.log('seek change')
+        const seekChange = parseFloat(e || 0)
+     
+        this.player.currentTime = seekChange || 0
+        this.setCurrentAudioVersion(this.player.currentTime)
+        this.setState({
+            seek: parseFloat(e || 0)
+        })
+    }
 
     getDurationByUrl(url) {
         if (!url) return
@@ -515,7 +535,7 @@ class AudioPlayer extends React.Component {
     // this is mostly to broadcast out which line we are on
     setCurrentAudioVersion(currentTime) {
         const currentAudioVersion = this.state.currentAudioVersion
-        const durations = this.getDurationByUrl(currentAudioVersion.audio_file_url) || {}
+        const durations = this.getDurationByUrl(currentAudioVersion?.audio_file_url) || {}
         if (!durations) return
 
         const { startTime, endTime } = durations;
@@ -530,11 +550,14 @@ class AudioPlayer extends React.Component {
 
         for (let i = idx; i < this.state.audioVersions.length; i++) {
             const audioVersion = this.state.audioVersions[i]
-            const durations= this.getDurationByUrl(audioVersion.audio_file_url)
-            if (!durations) break // we've likely run to the end of the loaded data ready to be played
+
+            const durations = this.getDurationByUrl(audioVersion.audio_file_url)
+            if (!durations) continue 
+            
 
             const { startTime, endTime } = durations
             const isBetween = currentTime > startTime && currentTime < endTime
+
             if (!isBetween) continue
             this.setState({
                 currentAudioVersion: audioVersion,
@@ -549,7 +572,14 @@ class AudioPlayer extends React.Component {
 
     renderSeekPos() {
         if (this.player.currentTime >= this.state.duration) {
-            this.handleToggle()
+            this.player.pause()
+            this.props.setIsPlaying && this.props.setIsPlaying(false)
+            this.player.currentTime = 0
+            this.setState({
+                seek: 0,
+                playing: false // Need to update our local state so we don't immediately invoke autoplay
+            })
+            return
         }
 
         if (!this.state.isSeeking) {
@@ -593,6 +623,7 @@ class AudioPlayer extends React.Component {
         const id = this.state?.currentAudioVersion?.id
         if (!id) return
         this.state.signedUrlById[id] = null
+        console.log('removeCurrentSrc handleToggle')
         this.handleToggle()
     }
 
@@ -608,7 +639,6 @@ class AudioPlayer extends React.Component {
                 this.setIsLoading()
             }
 
-            console.log("load more")
             this.getSignedUrlNextN(5)
 
             return url
@@ -617,7 +647,7 @@ class AudioPlayer extends React.Component {
         if (!url && !this.state.isLoading && this.state.isAudioVersions !== false && !!this.state.currentAudioVersion?.audio_file_url) {
 
             let isPlaying = this.state.playing
-            console.log("is loading urls---------")
+
             this.setIsLoading()
             this.getSignedUrlNextN(5, isPlaying)
         }
@@ -633,7 +663,7 @@ class AudioPlayer extends React.Component {
         const finaLength = this.state.syntheticDuration ? new Date(this.state.syntheticDuration * 1000).toISOString().substring(14, 19) : '00'
         const currentLength = this.state.seek ? new Date(this.state.seek * 1000).toISOString().substring(14, 19) : '00'
         return (
-            <div className={'max-w-[600px] audio-player-container py-3 px-6 z-50 border-t' + ' ' + disabledClass}>
+            <div className={'max-w-[600px] audio-player-container py-3 px-6 z-50 border-t' + ' ' + disabledClass} tabindex={this.state.disabled ? -1 : 0}>
         
                     <audio
                         id="player-aloud"
@@ -677,6 +707,24 @@ class AudioPlayer extends React.Component {
                             </button>
                         }
                     </div>
+
+                    <div className="flex items-center gap-4">
+                        {this.state.objSrc && (
+                            <button
+                                onClick={() =>{
+                                    console.log('bufferedChunks', bufferedChunks)
+                                    const a = document.createElement('a')
+                                    a.href = URL.createObjectURL(new Blob(this.bufferedChunks))
+                                    a.download = `${this.props.title || 'aloud-audio'}.mp3`
+                                    a.click()
+                                }}
+                                className="download-button"
+                            >
+                                <Download className="dowload-icon" size={20} />
+                            </button>
+                        )}
+                    </div>
+
 
                     
                     <Slider.Root

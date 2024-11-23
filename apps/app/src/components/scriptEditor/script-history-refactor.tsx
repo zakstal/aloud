@@ -51,6 +51,8 @@ type LineId = string;
 type commitCallbackType = ((tokens: Tokens[], caretPosition: number | null, currentId: number | null) => void) | null
 type setCharactersType = ((characters: Character[] | []) => void) | null
 
+type saveStatus = 'clean' | 'dirty'
+
 class Line {
     line: Tokens = null
     scriptMeta = null
@@ -90,7 +92,7 @@ class Line {
             this.line.isDialog = true
         }
         
-        if (this.line.character_id && !this.line.isDialog) {
+        if (this.line.character_id && !this.line.isDialog && this.line.type !== 'character') {
             this.line.isDialog = true
         }
 
@@ -102,11 +104,32 @@ class ScriptMeta {
     characters: Character[] = [] // existing characters from the remote db
     linesById: {[key: LineId]: Line} = {}
     linesByType: {[key: TokenType]: {[key: LineId]: Tokens} } = {}
+    saveStatus: saveStatus = 'clean'
 
     constructor(characters: Character[] | null, lines: Tokens[] | null) {
         this.addCharacters(characters)
         this.addExistingLines(lines)
         window.scriptMeta = this
+    }
+
+    setClean() {
+        this.saveStatus = 'clean'
+    }
+    
+    setDirty() {
+        this.saveStatus = 'dirty'
+    }
+
+    get isDirty() {
+        return this.saveStatus === 'dirty'
+    }
+
+    get isClean() {
+        return this.saveStatus === 'clean'
+    }
+
+    get saveStaus () {
+        return this.saveStatus
     }
 
     createNarrator() {
@@ -317,19 +340,19 @@ export class ScriptHistory extends History {
 
     setCharacters: setCharactersType = null
 
-    constructor(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[], setCharacters: setCharactersType, characters: Character[]) {
+    constructor(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[] | null, setCharacters: setCharactersType, characters: Character[]) {
         
         super(dbTokenVersion, db)
         // TODO pass all tokens into script meta at some point
         this.setCallbackValues(dbTokenVersion, db, commitCallback, tokens, setCharacters, characters)
     }
 
-    async setCallbackValues(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[], setCharacters: setCharactersType, characters: Character[]) {
+    async setCallbackValues(dbTokenVersion: string, db, commitCallback: commitCallbackType, tokens: Tokens[] | null, setCharacters: setCharactersType, characters: Character[]) {
         this.scriptMeta = this.scriptMeta ? this.scriptMeta : new ScriptMeta()
         this.scriptMeta.addExistingLines(tokens)
         this.scriptMeta.addCharacters(characters)
 
-        const commitUpdateCallback = (lastToUpdate: Diff) => {
+        const commitUpdateCallback = (lastToUpdate: Diff | undefined) => {
             this.commitCallback && this.commitCallback(this.tokens, lastToUpdate?.caretPosition)
         }
         
@@ -341,7 +364,9 @@ export class ScriptHistory extends History {
         this.dbTokenVersion = dbTokenVersion
         this.db = db
         this.commitCallback = commitCallback
-        this.tokens = tokens
+        this.tokens = tokens && tokens.length ? tokens : [this.getEditNode()]
+
+      
         this.setCharacters = setCharacters
 
         tokens?.forEach(token => idSet.add(token.id))
@@ -353,6 +378,8 @@ export class ScriptHistory extends History {
             await this.applyChanges()
             this.commitCallback(this.tokens)
             this.commitCharacters()
+        } else if (commitCallback) {
+            commitCallback && commitCallback(this.tokens)
         }
 
         window.resetDb = async () => {
@@ -435,6 +462,16 @@ export class ScriptHistory extends History {
         return [currentOffset || carotPostiion, currentOrderId]
     }
 
+    getEditNode(text = '', anchorOffset = 0) {
+        return {
+            text,
+            caretPosition: anchorOffset,
+            type: 'editNode',
+            character_id: null,
+            id: getId()
+        }
+    }
+
     splitRange(currentOrderId: number, anchorOffset: number) {
 
         const currentToken = this.tokens[Number(currentOrderId)]
@@ -452,13 +489,7 @@ export class ScriptHistory extends History {
         
         const offset = anchorOffset === 0 ? 0 : 1
     
-        const update = {
-            text,
-            caretPosition: anchorOffset,
-            type: 'editNode',
-            character_id: null,
-            id: getId()
-        }
+        const update = this.getEditNode(text, anchorOffset)
 
         if (update.type === "action" && !update.character_id) {
             update.character_id = this.scriptMeta.charactersNames?.Narrator?.id
@@ -483,11 +514,11 @@ export class ScriptHistory extends History {
 
     updateText(tokenPartialMaybe, idxIn: number, caretPosition: number) {
         const idx = Number(idxIn)
-        if (!this.tokens) return
+        if (!this.tokens) []
 
         const lastToken = this.tokens[Math.max(idx - 1, 0)]
         const token = this.tokens[idx]
-        if (!token) return
+        if (!token) []
 
         // console.log('lastToken', lastToken)
         // console.log('token', token)
@@ -496,7 +527,7 @@ export class ScriptHistory extends History {
 
         let nextText = null
         // combine text if text was pasted into the middle of text
-        if (!token.text) {
+        if (!token?.text) {
             nextText = tokenPartialMaybe.text
         } else {
             if (tokenPartialMaybe.text) {
@@ -507,9 +538,9 @@ export class ScriptHistory extends History {
         }
 
         const foundTokens = tokenize(nextText, { isLastCharacter, characterNameMaybe }, this.setCharacters)
-        const [newText, didUpdate] = transformText(tokenPartialMaybe.text, token.type)
+        const [newText, didUpdate] = transformText(tokenPartialMaybe.text, token?.type)
         
-        if (!didUpdate) {
+        if (!didUpdate && this.tokens[idx]) {
             this.tokens[idx].text = newText
         }
 
@@ -522,7 +553,7 @@ export class ScriptHistory extends History {
         if (foundTokens.length === 1) {
             // Modify if needed
             const foundType = foundTokens[0]?.type
-            if (foundType !== token.type) {
+            if (foundType !== token?.type) {
                 textTransformed = true
             }
             console.log('modify--')
@@ -561,17 +592,18 @@ export class ScriptHistory extends History {
     }
 
     onTab(orderId, offset) {
+
         const token = this.tokens[orderId]
         const lastToken = this.tokens[orderId - 1]
 
-        if (!token.text && lastToken.type !== 'character') {
+        if (!token.text && lastToken?.type !== 'character') {
             this.modify({
                 type: 'character',
             }, orderId, offset)
             return
         }
 
-        if (lastToken.type === 'character') {
+        if (lastToken?.type === 'character') {
             this.modify({
                 type: 'dialogue',
                 character_id: lastToken.character_id,
@@ -748,6 +780,26 @@ export class ScriptHistory extends History {
     
     getCharacters() {
         return this.scriptMeta.getCharacters()
+    }
+
+    get saveStatus () {
+        return this.scriptMeta.saveStaus
+    }
+
+    setClean() {
+        this.scriptMeta.setClean()
+    }
+    
+    setDirty() {
+        this.scriptMeta.setDirty()
+    }
+    
+    get isDirty() {
+        return this.scriptMeta.isDirty
+    }
+
+    get isClean() {
+        return this.scriptMeta.isClean
     }
 
 }
