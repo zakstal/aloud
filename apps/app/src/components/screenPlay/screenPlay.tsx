@@ -168,66 +168,69 @@ export default function ScreenPlayConatiner({
                 ?
                 <>
                 <div className="col-span-4 md:col-span-3 rounded-4 script-card">
-                    {
-                        voiceSelectionOpen
-                        ? 
-                            <div
-                                className={cn(
-                                ` pl-8 pr-4 relative  hidden flex-none transition-[width] duration-500 md:block`,
-                                voiceSelectionOpen ? 'w-75' : 'w-[75px]',
-                                )}
-                            >
-                            <VoiceActors
-                                key={screenplayId}
-                                character={selectedCharacter}
-                                onClose={() => {
-                                    setSelectedCharacter(null)
-                                    setVoiceSelectionOpen(false)
-                                }}
-                                voices={voices}
-                                audioVersionNumber={audioVersionNumber}
-                                onSelectVoice={(voice: Voice, character) => {
-                                    onSelectVoice(voice, character)
-                                    setVoiceSelectionOpen(false)
-                                }}
-                            />
-                            </div>
-                        : (
-                            <div className="pl-8" >
-                                <div className="h-16 flex items-center" >
-                                    <GetAudio
-                                        key={screenplayId}
-                                        isEditorDirty={isEditorDirty}
-                                        audioBeingGotten={audioBeingGotten}
-                                        processAudio={async () => {
-                                            setAudioBeingGotten(true)
-                                            if (!saveFunc.current) return
-                                            const res = await saveFunc.current()
+                   
+                    <div
+                        className={cn(
+                        ` pl-8 pr-4 relative  hidden flex-none transition-[width] duration-500 md:block`,
+                        // voiceSelectionOpen ? 'w-75' : 'w-[75px]',
+                        voiceSelectionOpen ? '' : 'sp-hidden',
+                        )}
+                    >
+                        <VoiceActors
+                            key={screenplayId}
+                            character={selectedCharacter}
+                            onClose={() => {
+                                setSelectedCharacter(null)
+                                setVoiceSelectionOpen(false)
+                            }}
+                            voices={voices}
+                            audioVersionNumber={audioVersionNumber}
+                            onSelectVoice={(voice: Voice, character) => {
+                                onSelectVoice(voice, character)
+                                setVoiceSelectionOpen(false)
+                            }}
+                        />
+                    </div>
 
-                                            await processAudio(res?.audioScreenPlayVersionId)
-                                            setAudioBeingGotten(false)
-                                        }}
-                                        cancelProcessAudio={async () => {
-                                            setAudioBeingGotten(true)
-                                            const res = await cancelProcessAudio({ audioVersionId: audioScreenPlayVersion?.id })
-                                            setAudioBeingGotten(false)
-                                        }}
-                                        setAudioBeingGotten={setAudioBeingGotten}
-                                        audioScreenPlayVersion={audioScreenPlayVersion}
-                                    />
-                                </div>
-                                <Characters
-                                    key={screenplayId}
-                                    characters={characters}
-                                    audioVersionNumber={audioVersionNumber}
-                                    onCharacterClick={(character) => {
-                                        setSelectedCharacter(character)
-                                        setVoiceSelectionOpen(true)
-                                    }}
-                                />
-                            </div>
-                        )
-                    }
+                    <div className={cn("pl-8", voiceSelectionOpen ? 'sp-hidden' : '')} >
+                        <div className="h-24 flex items-center" >
+                            <GetAudio
+                                key={screenplayId}
+                                isEditorDirty={isEditorDirty}
+                                audioBeingGotten={audioBeingGotten}
+                                processAudio={async () => {
+                                    setAudioBeingGotten(true)
+                                    console.log('saveFunc.current', saveFunc.current)
+                                    if (!saveFunc.current) return
+                                    console.log('saveFunc.current after')
+                                    const res = await saveFunc.current()
+                                    if (res?.success && !res.success) {
+                                        setAudioBeingGotten(false)
+                                        return
+                                    }
+                                    await processAudio(res?.audioScreenPlayVersionId)
+                                    setAudioBeingGotten(false)
+                                }}
+                                cancelProcessAudio={async () => {
+                                    setAudioBeingGotten(true)
+                                    const res = await cancelProcessAudio({ audioVersionId: audioScreenPlayVersion?.id })
+                                    setAudioBeingGotten(false)
+                                }}
+                                setAudioBeingGotten={setAudioBeingGotten}
+                                audioScreenPlayVersion={audioScreenPlayVersion}
+                            />
+                        </div>
+                        <Characters
+                            key={screenplayId}
+                            characters={characters}
+                            audioVersionNumber={audioVersionNumber}
+                            onCharacterClick={(character) => {
+                                setSelectedCharacter(character)
+                                setVoiceSelectionOpen(true)
+                            }}
+                        />
+                    </div>
+                    
                 </div>
                 </> 
                 : null }   

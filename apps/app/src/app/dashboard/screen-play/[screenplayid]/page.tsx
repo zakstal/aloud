@@ -275,8 +275,21 @@ export default function Page() {
                 // description: res.validationErrors
               })
               console.log('validation errors', res.validationErrors)
-              return
+              return {
+                success: false
+              }
             }
+
+            if (res.serverError) {
+              toast({
+                title: 'Error saving lines',
+                description: res.serverError
+              })
+              return {
+                success: false
+              }
+            }
+            
             if (res.error) {
               toast({
                 title: 'Error updating lines',

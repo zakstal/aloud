@@ -389,7 +389,7 @@ export function useFountainNodes(tokensIn: Tokens[] = [], versionNumber: string,
             // we can just register the changeand if we rerender later, all the text will be updated.
             if (didUpdate) {
                 window.scriptStorage.commitCharacters()
-                window.scriptStorage.commit()
+                window.scriptStorage.commit({ updateCharacters: true })
                 setCurrentOrderId(focusId)
                 setNextCaretPosition(nextCaretPostion)
             }

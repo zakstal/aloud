@@ -12,6 +12,7 @@ const BUTTON_SIZE = 12
 
 let audioContext = null
 
+let bufferedChunks = [];
 async function appendBlob(arrayBuffer, sourceBuffer, mediaSource) {
     if (!audioContext) {
         audioContext = window && new (window.AudioContext || window.webkitAudioContext)();

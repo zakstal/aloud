@@ -1,5 +1,5 @@
 "use client"
-
+import './character.css'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AudioPlayerButton } from '@/components/ui/audioButtonOnly'
 
@@ -42,14 +42,14 @@ export function Character ({
           <AvatarFallback>{abbreveation}</AvatarFallback>
         </Avatar>
         <div className="ml-4 space-y-1">
-          <p className="text-sm font-medium leading-none">{name}</p>
+          <p className="text-sm font-medium leading-none break-words">{name}</p>
           <p className="text-xs text-muted-foreground italic">
             {gender}
           </p>
         </div>
         {/* <div className="ml-auto font-medium">+$1,999.00</div> */}
       </div>
-      <div className="max-w-40" onClick={onClick} >
+      <div className="max-w-24" onClick={onClick} >
         {
           assigned ? (
             !assigned?.voice_id
