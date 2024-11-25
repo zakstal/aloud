@@ -1,8 +1,7 @@
 'use client'
 
 import './script-editor.css';
-
-import { TokenContent, Tokens, GetElement, isTokenType, tokenTypes } from './script-tokens'
+import { TokenContent, Tokens, GetElement, isTokenType, tokenTypes, tokenize  } from './script-tokens'
 import { useRef, useEffect, useCallback, useMemo, useState } from 'react';
 import { useFountainNodes } from './useFountainNodes'
 import { createEditor, Transforms, Editor, Element, Path } from 'slate'
@@ -197,6 +196,14 @@ const CollaborativeEditor = ({ children, initialValue, roomName }) => {
   
     return <SlateEditor sharedType={sharedType} provider={provider} children={children} initialValue={initialValue} />
   }
+
+  /**
+   * TODO
+   * In order to make this work properly we need to add two things
+   * - webrtc signal server. We can probably do this with supabase
+   * - some way to sync saving if two peers and the server. If one peer saves the other needs to update too.
+   * 
+   */
   
   const SlateEditor = ({ sharedType, provider, children, initialValue }) => {
     const [connected, setConnected] = useState(false)
@@ -265,7 +272,7 @@ export const ScriptEditor =({
     const renderElement = useCallback(props => <GetElement {...props} />, [])
 
 
-    const slateTokens = scriptTokens.slice(0, 41).map(obj => {
+    const slateTokens = scriptTokens.map(obj => {
         return {
             type: obj.type,
             id: obj.id,
@@ -303,8 +310,47 @@ export const ScriptEditor =({
                             onChange={(value) => {
                                 console.log('onChange', value)
                             }}
-                            onPaste={(value) => {
-                                console.log('onPaste------------', value)
+                            onPaste={(event) => {
+
+                                event.preventDefault();
+
+                                // Get clipboard data
+                                const clipboardData = event.clipboardData || window.clipboardData;
+                                const pastedText = clipboardData.getData('text/plain');
+                            
+                                // Check if text is pasted
+                                if (pastedText) {
+                                    console.log('Pasted content:', pastedText);
+                            
+                                    // Split the pasted text into lines
+                                    const lines = tokenize(pastedText).reverse();
+                            
+                                    // // Transform each line into a Slate-compatible format
+                                    // const fragments = lines.map(line => ({
+                                    //     type: 'action', // Example default type
+                                    //     children: [{ text: line }],
+                                    // }));
+
+                                    const slateTokens = lines.map(obj => {
+                                        return {
+                                            type: obj.type,
+                                            id: obj.id,
+                                            isDialog: Boolean(obj.isDialog),
+                                            character_id: obj.character_id || '',
+                                            order: obj.order,
+                                            children: [{ 
+                                                text: obj.text || ' ',
+                                                id: obj.id,
+                                            }],
+                                          }
+                                    })
+                            
+                                    // Insert the fragments into the editor
+                                    const { selection } = editor;
+                                    if (selection) {
+                                        Transforms.insertNodes(editor, slateTokens, { at: selection.focus });
+                                    }
+                                }
                             }}
                             onKeyUp={event => {
                                 console.log("key up---")

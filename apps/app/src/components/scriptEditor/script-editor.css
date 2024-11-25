@@ -1,6 +1,7 @@
 /* depreicated */
 .script-editor > div { 
     outline: none;
+    height: 100%;
 }
 
 .script-editor { 
