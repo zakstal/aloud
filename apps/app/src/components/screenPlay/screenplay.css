@@ -30,6 +30,7 @@
     /* padding: 45px 147px; */
 	padding: 0;
     flex: 1;
+	outline: none;
 }
 .script-characters {
     align-self: flex-start;

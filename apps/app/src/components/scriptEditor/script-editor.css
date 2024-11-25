@@ -1,5 +1,10 @@
 /* depreicated */
 .script-editor > div { 
+    outline: none;
+}
+
+.script-editor { 
+/* .script-editor > div {  */
     background-color: hsl(var(--editor-background));  
     /* background-color: var(--editor-background);   */
     color: hsl(var(--editor-text));

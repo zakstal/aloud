@@ -13,7 +13,7 @@ import { v4 as uuid } from 'uuid';
 
 import * as Y from 'yjs';
 import { WebrtcProvider } from 'y-webrtc';
-import { slateYjsSyncPlugin, withYjs } from 'slate-yjs';
+import { withYjs, YjsEditor } from '@slate-yjs/core'
 
 
 type Character = {
@@ -155,18 +155,27 @@ function createDebounce() {
     }
 }
 
-export const CollaborativeEditor = () => {
+
+
+const CollaborativeEditor = ({ children, initialValue, roomName }) => {
     const [connected, setConnected] = useState(false)
     const [sharedType, setSharedType] = useState()
     const [provider, setProvider] = useState()
   
-    // Set up your Yjs provider and document
+    // Connect to your Yjs provider and document
     useEffect(() => {
       const yDoc = new Y.Doc()
       const sharedDoc = yDoc.get('slate', Y.XmlText)
   
       // Set up your Yjs provider. This line of code is different for each provider.
-      const yProvider = new YjsProvider(/* ... */)
+
+    //   if (sharedDoc.length === 0) {
+    //     sharedDoc.insert(0, JSON.stringify(initialValue));
+    //   }
+
+      console.log("sharedDoc-------", sharedDoc)
+  
+      const yProvider = new WebrtcProvider(roomName, yDoc, { signaling: ['ws://localhost:4444'] });
   
       yProvider.on('sync', setConnected)
       setSharedType(sharedDoc)
@@ -178,12 +187,60 @@ export const CollaborativeEditor = () => {
         yProvider?.destroy()
       }
     }, [])
+
+    console.log("sharedType", )
   
-    if (!connected || !sharedType || !provider) {
+  //   if (!connected || !sharedType || !provider) {
+    if (!sharedType || !provider) {
       return <div>Loading…</div>
     }
   
-    return <SlateEditor />
+    return <SlateEditor sharedType={sharedType} provider={provider} children={children} initialValue={initialValue} />
+  }
+  
+  const SlateEditor = ({ sharedType, provider, children, initialValue }) => {
+    const [connected, setConnected] = useState(false)
+    const editor = useMemo(() => {
+      console.log("slate edit strt---")
+    //   const e = withReact(createEditor(), [])
+      const e = withReact(withYjs(createEditor(), sharedType))
+  
+      // Ensure editor always has at least 1 valid child
+      const { normalizeNode } = e
+      e.normalizeNode = entry => {
+        const [node] = entry
+  
+        if (Editor.isEditor(node) && node.children.length === 0) {
+            Transforms.insertNodes(editor, {
+                type: 'action',
+                children: [{ text: '' }],
+            }, { at: [0] });
+            return; // Exit early to avoid additional normalization
+        }
+    
+        normalizeNode(entry); // Call the original normalization logic
+      }
+  
+      console.log('e---', e)
+      return e
+    }, [])
+    
+  
+    useEffect(() => {
+      YjsEditor.connect(editor)
+      setConnected(true)
+      return () => YjsEditor.disconnect(editor)
+    }, [editor])
+
+    // NB this is important because the initialValues will load first before YjsEditor.connect(editor)
+    // if this is not here and then YjsEditor.connect(editor) wipes out the initialValues
+    if (!connected) return <div>Loading more</div>
+  
+    return (
+      <Slate editor={editor} initialValue={initialValue}>
+        {children(editor)}
+      </Slate>
+    )
   }
 
 export const ScriptEditor =({
@@ -203,119 +260,107 @@ export const ScriptEditor =({
     setIsEditorDirty,
 }: ScriptEditorInput) => {
     const myRef = useRef(null);
-    const yDoc = new Y.Doc()
-    const sharedDoc = yDoc.get('slate', Y.XmlText)
+
 
     const renderElement = useCallback(props => <GetElement {...props} />, [])
-    const editor = useMemo(() => withReact(withHistory(createEditor())), [])
 
-    // console.log("scriptTokens", scriptTokens)
 
-    const slateTokens = scriptTokens.map(obj => {
+    const slateTokens = scriptTokens.slice(0, 41).map(obj => {
         return {
             type: obj.type,
             id: obj.id,
-            isDialog: obj.id,
-            character_id: obj.character_id,
+            isDialog: Boolean(obj.isDialog),
+            character_id: obj.character_id || '',
             order: obj.order,
             children: [{ 
-                text: obj.text,
+                text: obj.text || ' ',
                 id: obj.id,
             }],
           }
     })
 
+    console.log('slateTokens', audioScreenPlayVersion, slateTokens)
+
     return (
         <>
-        <button id="savebutton" onClick={async () => {
-            console.log("save1-------------", JSON.stringify(tokens, null, 2))
-            const changes = getChanges(scriptTokens, tokens, screenplayId, getNewCharacters(), characters)
-
-            console.log("save0-------------", changes)
-            const res = await saveLines(changes)
-            console.log('res----', res)
-
-        }}>Save----</button>
-
-
         <div className={className + ' script-editor'}>
-            <Slate
-                editor={editor}
+            <CollaborativeEditor
+                roomName={audioScreenPlayVersion}
                 initialValue={slateTokens.length ? slateTokens : [{ 
-                    type: 'action',
-                    children: [{ 
-                        text: '',
-                        id: getId() ,
-                    }],
-                }]}
-                onChange={(value) => {
-                    console.log('value update', value)
-                }}
-            >
-                <Editable
-                    renderElement={renderElement}
-                    spellCheck
-                    autoFocus
+                            type: 'action',
+                            children: [{ 
+                                text: '',
+                                id: getId() ,
+                            }],
+                        }]}>
+            
+                    {(editor) => 
+                        <Editable
+                            renderElement={renderElement}
+                            spellCheck
+                            autoFocus
 
-                    onChange={(value) => {
-                        console.log('onChange', value)
-                    }}
-                    onPaste={(value) => {
-                        console.log('onPaste------------', value)
-                    }}
-                    onKeyUp={event => {
-                        console.log("key up---")
-                        // event.preventDefault()
-                        const [node, path] = Editor.node(editor, editor.selection);
-                        if (event.key === 'Enter') {
-                            const [lastNode, lastPath] = Editor.last(editor, path);
-                            const isLastCharacter = isTokenType(tokenTypes.character, lastNode.text)
-                            
-                            const nextType = isLastCharacter ? tokenTypes.dialogue : tokenTypes.action
-                            
-                            Transforms.setNodes(
-                                editor,
-                                { 
-                                    type: nextType,
-                                    id: getId() 
-                                },
-                                { match: n => Element.isElement(n) && Editor.isBlock(editor, n) }
-                            )
+                            onChange={(value) => {
+                                console.log('onChange', value)
+                            }}
+                            onPaste={(value) => {
+                                console.log('onPaste------------', value)
+                            }}
+                            onKeyUp={event => {
+                                console.log("key up---")
+                                // event.preventDefault()
+                                const [node, path] = Editor.node(editor, editor.selection);
+                                if (event.key === 'Enter') {
+                                    const [lastNode, lastPath] = Editor.last(editor, path);
+                                    const isLastCharacter = isTokenType(tokenTypes.character, lastNode.text)
+                                    
+                                    const nextType = isLastCharacter ? tokenTypes.dialogue : tokenTypes.action
+                                    
+                                    Transforms.setNodes(
+                                        editor,
+                                        { 
+                                            type: nextType,
+                                            id: getId() 
+                                        },
+                                        { match: n => Element.isElement(n) && Editor.isBlock(editor, n) }
+                                    )
 
-                            return
+                                    return
+                                }
+                            }}
+                            onKeyDown={event => {
+                                console.log("key down---")
+                                // Get the currently selected node
+                                const [node, path] = Editor?.node(editor, editor?.selection) || [];
+                                const [lastNode, lastPath] = Editor.last(editor, path);
+
+                                if (event.key === 'Tab') {
+                                    event.preventDefault()
+                                    const isCharacter = isTokenType(tokenTypes.character, lastNode.text)
+                                    const isText = lastNode.text !== ''
+                                    
+                                    const nextType = isText ? tokenTypes.dialogue : tokenTypes.character
+                                    Transforms.setNodes(
+                                        editor,
+                                        { type: nextType },
+                                        { match: n => Element.isElement(n) && Editor.isBlock(editor, n) }
+                                        
+                                    )
+                                }
+
+                                if (node.type === tokenTypes.character) {
+                                    maybeChangeNodeTypeTo.dialogue(node, editor)
+                                }
+
+                                maybeChangeNodeTypeTo.character(node, editor)
+                                maybeChangeNodeTypeTo.scene_heading(node, editor)
+                                maybeChangeNodeTypeTo.transition(node, editor)
+
+                            }}
+                        />
+
                         }
-                    }}
-                    onKeyDown={event => {
-                        console.log("key down---")
-                        // Get the currently selected node
-                        const [node, path] = Editor?.node(editor, editor?.selection) || [];
-                        const [lastNode, lastPath] = Editor.last(editor, path);
-
-                        if (event.key === 'Tab') {
-                            event.preventDefault()
-                            const isCharacter = isTokenType(tokenTypes.character, lastNode.text)
-                            const isText = lastNode.text !== ''
-                            
-                            const nextType = isText ? tokenTypes.dialogue : tokenTypes.character
-                            Transforms.setNodes(
-                                editor,
-                                { type: nextType },
-                                { match: n => Element.isElement(n) && Editor.isBlock(editor, n) }
-                                
-                            )
-                        }
-
-                        if (node.type === tokenTypes.character) {
-                            maybeChangeNodeTypeTo.dialogue(node, editor)
-                        }
-
-                        maybeChangeNodeTypeTo.character(node, editor)
-                        maybeChangeNodeTypeTo.scene_heading(node, editor)
-                        maybeChangeNodeTypeTo.transition(node, editor)
-
-                      }}
-                />
-            </Slate>
+            </CollaborativeEditor>
         </div>
         </>
     )
