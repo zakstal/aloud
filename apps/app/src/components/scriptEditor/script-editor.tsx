@@ -286,7 +286,6 @@ export const ScriptEditor =({
           }
     })
 
-    console.log('slateTokens', audioScreenPlayVersion, slateTokens)
 
     return (
         <>
@@ -324,13 +323,7 @@ export const ScriptEditor =({
                             
                                     // Split the pasted text into lines
                                     const lines = tokenize(pastedText).reverse();
-                            
-                                    // // Transform each line into a Slate-compatible format
-                                    // const fragments = lines.map(line => ({
-                                    //     type: 'action', // Example default type
-                                    //     children: [{ text: line }],
-                                    // }));
-
+            
                                     const slateTokens = lines.map(obj => {
                                         return {
                                             type: obj.type,
