@@ -1,0 +1,13 @@
+.character {
+    transform: translate all 0.2s;
+}
+
+.avatar-fallback {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(34deg, rgb(160, 147, 236), rgb(236, 160, 147));
+    color: white;
+    font-size: 11.2px;
+    font-weight: bold;
+    margin-top: 3px;
+}
