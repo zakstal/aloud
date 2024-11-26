@@ -140,6 +140,7 @@ const Client: React.FC<ScriptEditorInput> = ({
   }, [sharedType, provider]);
 
   useEffect(() => {
+    toSharedType(sharedType, slateTokens);
     provider.on("status", ({ status }: { status: string }) => {
       setOnlineState(status === "connected");
     });
