@@ -11,6 +11,8 @@ import { startScreenPlay } from '@/actions/screenPlays/create-screenplay'
 import { createClient } from "@v1/supabase/client";
 import { updateOrCreateLines } from '@/actions/screenPlays/update-lines'
 import { useToast } from '@/components/ui/use-toast';
+import { useSession } from "@v1/supabase/supbaseSessionContext";
+
 const supabase = createClient();
 type Character = { name: string, gender: string | null }
 
@@ -66,6 +68,7 @@ const statusToastMessage = {
 const statusAudioVersion = {}
 
 export default function Page() {
+  const { session } = useSession();
   const pathname = usePathname();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -233,6 +236,7 @@ export default function Page() {
     <>  
         <ScreenPlayConatiner
           key={params?.screenplayid}
+          user={session?.user}
           title={data?.title}
           screenplayId={params?.screenplayid}
           isLoading={isLoading}

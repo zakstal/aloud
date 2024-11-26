@@ -5,10 +5,8 @@ import ThemeProvider from './ThemeToggle/theme-provider';
 import { SessionProvider } from "@v1/supabase/supbaseSessionContext";
 import { Session } from "@supabase/supabase-js";
 export default function Providers({
-  session,
   children
 }: {
-  session: Session;
   children: React.ReactNode;
 }) {
   return (

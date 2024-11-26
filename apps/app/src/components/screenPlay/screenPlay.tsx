@@ -11,7 +11,8 @@ import AudioPlayer from '@/components/ui/AudioPlayer-refactor'
 // import AudioPlayer from '@/components/ui/AudioPlayer'
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress'
-import { ScriptEditor } from '@/components/scriptEditor/script-editor'
+// import { ScriptEditor } from '@/components/scriptEditor/script-editor'
+import ScriptEditor from '@/components/scriptEditor2'
 import PDFLocalUplaod from '@/components/pdf-upload-local'
 import { ProductForm } from '@/components/forms/product-form';
 import { getSignedUrl } from '@/actions/screenPlays/get-signed-url'
@@ -125,6 +126,7 @@ function GetAudio({ audioBeingGotten, processAudio, cancelProcessAudio, audioScr
 
 export default function ScreenPlayConatiner({
   screenPlayText,
+  user,
   characters,
   voices,
   onSelectVoice,
@@ -241,6 +243,7 @@ export default function ScreenPlayConatiner({
                 ?
                 <ScriptEditor
                     key={screenplayId}
+                    user={user}
                     className="script-text bg-white p-8 pt-0 pb-[70px] outline-none border-slate-400 overflow-scroll max-w-4xl font-courier"
                     scriptTokens={lines}
                     audioScreenPlayVersion={audioScreenPlayVersion?.id}
