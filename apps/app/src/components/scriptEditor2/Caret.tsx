@@ -44,6 +44,7 @@ const cursorStyleBase = {
   color: "white",
   background: "palevioletred",
   whiteSpace: "nowrap",
+  padding: "3px, 10px",
 } as any;
 
 const caretStyleBase = {

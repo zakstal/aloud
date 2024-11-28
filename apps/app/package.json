@@ -51,6 +51,8 @@
     "@v1/script-to-audio": "workspace:*",
     "@v1/supabase": "workspace:*",
     "@v1/ui": "workspace:*",
+    "@v1/y-supabase": "workspace:*",
+    "@v1/y-supabase-2": "workspace:*",
     "autoprefixer": "10.4.15",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",

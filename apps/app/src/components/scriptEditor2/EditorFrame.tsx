@@ -55,9 +55,6 @@ const getId = (): string => {
 function createChangeType (type: string) {
   return (node: Node, editor: Editor) => { 
       if (node.type === type ) return
-      console.log('isTokenType(type, node.text as any)', isTokenType(type, node.text as any))
-      console.log("type", type)
-      console.log("node", node)
       if (!isTokenType(type, node.text as any)) return
 
       Transforms.setNodes(

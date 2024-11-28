@@ -232,11 +232,12 @@ export default function Page() {
 
   // TODO add type for character
   // TODO add type for audio character version
+
   return (
     <>  
         <ScreenPlayConatiner
           key={params?.screenplayid}
-          user={session?.user}
+          user={session}
           title={data?.title}
           screenplayId={params?.screenplayid}
           isLoading={isLoading}
