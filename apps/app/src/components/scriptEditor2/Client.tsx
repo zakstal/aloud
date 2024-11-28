@@ -12,9 +12,7 @@ import {
   withCursor,
   withYjs,
 } from "slate-yjs";
-// import { WebsocketProvider } from "y-websocket";
-import { WebsocketProvider } from "@v1/y-supabase-2";
-import SupabaseProvider from "@v1/y-supabase/index";
+import { WebsocketProvider } from "@v1/y-supabase";
 import { WebrtcProvider } from 'y-webrtc';
 import * as Y from "yjs";
 import EditorFrame from "./EditorFrame";
