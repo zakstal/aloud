@@ -2,7 +2,7 @@
 
 import './script-editor.css';
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { createEditor, Node } from "slate";
+import { createEditor, Editor, Node, Path } from "slate";
 import { withHistory } from "slate-history";
 import { withReact } from "slate-react";
 import {
@@ -20,8 +20,10 @@ import { withLinks } from "./plugins/link";
 import randomColor from "randomcolor";
 import { Tokens } from './script-tokens'
 import { createClient } from "@v1/supabase/client";
-const supabase = createClient();
+import { getId } from './utils'
+import { ScriptMeta } from './scriptMeta'
 
+const supabase = createClient();
 
 const WEBSOCKET_ENDPOINT =
   process.env.NODE_ENV === "production"
@@ -56,6 +58,13 @@ type AloudNodeSlate = {
   children: AloudChildNodeSlate[],
 }
 
+type SaveLinesChanges = {
+  newLines: AloudNode[],
+  screenplayId: string,
+  characters: Character[],
+  versionNumber: number,
+}
+
 interface ScriptEditorInput {
     scriptTokens: Tokens[];
     className: string;
@@ -64,7 +73,7 @@ interface ScriptEditorInput {
     audioScreenPlayVersion: string,
     audioScreenPlayVersionStatus: string,
     pdfText: string,
-    saveLines: () => null,
+    saveLines: (changes: SaveLinesChanges, toastAlert: boolean) => null,
     setCharacters: (characters: string[]) => null,
     setSaveFunc: () => null,
     setIsEditorDirty: (boolean) => null,
@@ -73,78 +82,7 @@ interface ScriptEditorInput {
     characters: Character[]
     currentTokenId?: string;
     highlightToken?: boolean;
-}
-
-function getChanges(oldTokens, updatedTokens, screenplayId, newCharacters) {
-  console.log("updatedTokens", updatedTokens)
-  // update ordering 
-  updatedTokens.forEach((token, i) => {
-      if (!token) return
-      token.order = i
-  })
-
-  const newIds = {}
-
-  // const newTokens = []
-  const removeTokens = []
-  const updateTokens = []
-
-  // check if new tokens have been created
-  for (const newToken of updatedTokens) {
-      const id = newToken?.id
-      if (!id) continue
-
-      newIds[id] =  newToken
-  }
-  
-  // check if tokens have been removed or changed
-  for (const oldToken of oldTokens) {
-      const id = oldToken.id
-      const newToken = newIds[id]
-
-      // check if removed
-      if (!newToken) {
-          removeTokens.push(oldToken)
-          continue
-      }
-
-
-      // check if changed
-      const isSame = 
-          newToken.text === oldToken.text &&
-          newToken.order === oldToken.order &&
-          newToken.isDialog === oldToken.isDialog &&
-          newToken.type === oldToken.type
-
-      if (!isSame) {
-          if (typeof newToken.isDialog === 'string') {
-              
-          }
-          updateTokens.push(newToken)
-      }
-
-      delete newIds[id]
-  }
-
-  const newTokens = Object.values(newIds)
-
-  const shoudlUpdate = 
-      Boolean(newTokens?.length) || 
-      Boolean(removeTokens?.length) ||
-      Boolean(updateTokens?.length) || 
-      Boolean(newCharacters?.length)
-
-
-  if (!shoudlUpdate) return null
-
-  return {
-      created: newTokens,
-      removed: removeTokens,
-      updated: updateTokens,
-      screenplayId,
-      characters: newCharacters
-  }
-
+    // user
 }
 
 function createDebounce() {
@@ -185,20 +123,37 @@ const Client: React.FC<ScriptEditorInput> = ({
   setIsEditorDirty,
 }) => {
 
-
-  const slateTokens = scriptTokens.map((obj: AloudNodeSlate) => {
-    return {
-        type: obj.type,
-        id: obj.id,
-        isDialog: Boolean(obj.isDialog),
-        character_id: obj.character_id || '',
-        order: obj.order,
-        children: [{ 
-            text: obj.text || ' ',
+  let slateTokens = null
+  if (scriptTokens && scriptTokens.length) {
+      slateTokens = scriptTokens.map((obj: AloudNodeSlate) => {
+        return {
+            type: obj.type,
             id: obj.id,
-        }],
-      }
-})
+            isDialog: Boolean(obj.isDialog),
+            character_id: obj.character_id || '',
+            order: obj.order,
+            children: [{ 
+                text: obj.text || ' ',
+                id: obj.id,
+            }],
+          }
+        })
+    } else {
+      const narrator = characters?.find(character => character.name === "Narrator")
+      const id = getId()
+
+      slateTokens = [{
+          type: 'action',
+          isDialog: true,
+          order: 1,
+          id,
+          character_id: narrator?.id,
+          children: [{ 
+                text:  ' ',
+                id,
+          }]
+      }]
+    }
 
   const [isClean, setIsClean] = useState(false);
   const [value, setValue] = useState<Node[]>([]);
@@ -234,15 +189,83 @@ const Client: React.FC<ScriptEditorInput> = ({
       channel: audioScreenPlayVersion,
     });
 
+
     return [sharedType, provider];
   }, [user?.id]);
   // }, [id]);
+
+  const scriptmeta = useMemo(() => {
+    const scriptmeta = new ScriptMeta(characters, slateTokens)
+
+    return scriptmeta;
+  }, []);
 
   const editor = useMemo(() => {
     const editor = withCursor(
       withYjs(withLinks(withReact(withHistory(createEditor()))), sharedType),
       provider.awareness
     );
+
+    editor.onChange = () => {
+      // editor.operations.forEach(op => {
+      //     try {
+      //         switch (op.type) {
+      //             case 'split_node':
+      //                 console.log('\n\nSplit Node Operation:', op);
+      //                 if (Node.has(editor, op.path)) {
+      //                     const firstNode = Node.get(editor, op.path);
+      //                     const secondNodePath = Path.next(op.path);
+      //                     const secondNode = Node.has(editor, secondNodePath)
+      //                         ? Node.get(editor, secondNodePath)
+      //                         : null;
+  
+      //                     scriptmeta.changeLines(firstNode)
+      //                     scriptmeta.changeLines(secondNode)
+      //                     console.log('First Node (before split):', firstNode);
+      //                     console.log('Second Node (after split):', secondNode);
+      //                 }
+      //                 break;
+  
+      //             case 'merge_node':
+      //                 console.log('\n\nMerge Node Operation:', op);
+      //                 if (Node.has(editor, op.path)) {
+      //                     const mergedNode = Node.get(editor, op.path);
+      //                     console.log('Merged Node:', mergedNode);
+      //                 }
+      //                 break;
+  
+      //             case 'set_node':
+      //                 console.log('\n\nSet Node Operation:', op);
+      //                 if (Node.has(editor, op.path)) {
+      //                     const node = Node.get(editor, op.path);
+      //                     scriptmeta.changeLines(node)
+      //                     console.log('Updated Node:', node);
+      //                     console.log('Old Properties:', op.properties);
+      //                     console.log('New Properties:', op.newProperties);
+      //                 }
+      //                 break;
+  
+      //             case 'insert_text':
+      //                 console.log('\n\nInsert Text Operation:', op);
+      //                 if (Node.has(editor, op.path)) {
+      //                     const node = Node.get(editor, op.path);
+      //                     scriptmeta.changeLines(node)
+      //                     console.log('Affected Node:', node);
+      //                     console.log('Inserted Text:', op.text);
+      //                     console.log('Offset:', op.offset);
+      //                 }
+      //                 break;
+  
+      //             default:
+      //                 console.log('\n\nUnhandled Operation:', op);
+      //                 break;
+      //         }
+      //     } catch (err) {
+      //         console.error('Error processing operation:', err, 'Operation:', op);
+      //     }
+      // });
+  };
+  
 
     return editor;
   }, [sharedType, provider]);
@@ -281,18 +304,35 @@ const Client: React.FC<ScriptEditorInput> = ({
   }, [provider]);
 
   const debounce = useCallback(createDebounce(), [])
-  const save = useCallback((scriptTokens, newTokens, screenplayId, getNewCharacters, immediate = false, toastAlert = false) => {
+  const save = useCallback((newTokens, screenplayId, newCharacters, versionNumber, immediate = false, toastAlert = false) => {
       return debounce(async () => {
           setIsClean(true)
-          const newCharacters = getNewCharacters && getNewCharacters()
+
           // const changes = getChanges(scriptTokens, newTokens, screenplayId, newCharacters)
-          // // if (editor.history.redos.length) return
+          // if (editor.history.redos.length) return
+
+        //   const lines = newTokens.map((obj: AloudNodeSlate) => {
+        //     return {
+        //         type: obj.type,
+        //         id: obj.id,
+        //         isDialog: Boolean(obj.isDialog),
+        //         character_id: obj.character_id || '',
+        //         order: obj.order,
+        //         text: obj.children?.length ? obj.children[0].text : ''
+        //       }
+        // })
       
-          // if (!changes) return
-          // console.log("save0-------------", changes)
-          // // const res = await saveLines(changes, toastAlert)
+        // const changes = {
+        //   newLines: lines,
+        //   screenplayId,
+        //   characters,
+        //   versionNumber,
+        // }
+        //   // if (!changes) return
+        //   console.log("save0-------------", changes)
+        //   const res = await saveLines(changes, toastAlert)
           
-          // // console.log('res----', res)
+        //   console.log('res----', res)
           // setIsEditorDirty(false)
 
           // return res // only returned when immediate is true
@@ -306,8 +346,8 @@ const Client: React.FC<ScriptEditorInput> = ({
   // }, [myRef])
 
   useEffect(() => {
-      setSaveFunc(() => save(scriptTokens, editor.children, screenplayId, null, true, true))
-  }, [scriptTokens, screenplayId, isClean])
+      setSaveFunc(() => save(editor.children, screenplayId, null, audioScreenPlayVersion, true, true))
+  }, [scriptTokens, screenplayId, isClean, audioScreenPlayVersion])
 
   // // Save loop
   useEffect(() => {
@@ -315,7 +355,7 @@ const Client: React.FC<ScriptEditorInput> = ({
       if (isClean) return
       setIsEditorDirty(true)
       if (audioScreenPlayVersionStatus == 'inProgress') return
-      save(scriptTokens, editor.children, screenplayId, null)
+      save(editor.children, screenplayId, null, audioScreenPlayVersion)
   }, [audioScreenPlayVersionStatus, isClean])
 
 
@@ -328,6 +368,7 @@ const Client: React.FC<ScriptEditorInput> = ({
         initialValue={slateTokens}
         decorate={decorate}
         className={className}
+        scriptmeta={scriptmeta}
         onChange={(value: Node[]) => {
           setIsClean(false)
           // console.log("editor", processHistoryWithText(editor.history.undos))

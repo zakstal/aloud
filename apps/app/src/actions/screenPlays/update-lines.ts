@@ -10,11 +10,11 @@ export const updateOrCreateLines = authActionClient
   .metadata({
     name: "update-or-create-lines",
   })
-  .action(async ({ parsedInput: { created, removed, updated, characters, screenplayId } = {}, ctx: { user } }) => {
-    console.log('updateOrCreateLines----------------',created, removed, updated, characters, screenplayId)
+  .action(async ({ parsedInput: { newLines, characters, screenplayId, versionNumber } = {}, ctx: { user } }) => {
+    console.log('updateOrCreateLines----------------', newLines, characters, screenplayId)
 
     // Call the function to update or create lines in the DB
-    const result = await updateOrCreateLinesInDb(created, removed, updated, characters, screenplayId);
+    const result = await updateOrCreateLinesInDb(newLines, characters, screenplayId, versionNumber);
 
     return result;
   });

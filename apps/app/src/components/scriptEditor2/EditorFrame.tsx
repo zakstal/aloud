@@ -1,5 +1,5 @@
 import Caret from "./Caret";
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { Node } from "slate";
 import {
   Editable,
@@ -10,7 +10,8 @@ import {
 } from "slate-react";
 import {GetElement, isTokenType, tokenTypes, tokenize  } from './script-tokens'
 import { Transforms, Editor, Element as SElement, Path } from 'slate'
-import { v4 as uuid } from 'uuid';
+import { getId } from './utils'
+import { ScriptMeta } from './scriptMeta'
 
 export interface EditorFrame {
   editor: ReactEditor;
@@ -19,8 +20,8 @@ export interface EditorFrame {
   onChange: (value: Node[]) => void;
   decorate: any;
   className: string;
+  scriptmeta: ScriptMeta,
 }
-
 
 type AloudNode = {
   type: string;
@@ -35,40 +36,30 @@ type AloudChildNodeSlate = {
   id: string;
   text: string;
 }
+
 type AloudNodeSlate = {
   type: string;
   id: string;
   isDialog: boolean | null;
   character_id: string;
   order: number;
-  children: AloudChildNodeSlate[],
+  children: AloudChildNodeSlate[];
 }
 
-const idSet = new Set()
-const getId = (): string => {
-    const id  = uuid()
-    if (idSet.has(id)) return getId()
-    idSet.add(id)
-    return id
-};
 
-function createChangeType (type: string) {
-  return (node: Node, editor: Editor) => { 
+
+function createChangeType (type: string, editor: Editor, scriptMeta: ScriptMeta) {
+  return (node: Node) => { 
       if (node.type === type ) return
       if (!isTokenType(type, node.text as any)) return
 
       Transforms.setNodes(
           editor,
-          { type },
+          { type } as any, // not sure what type this shoudl be
           { match: n => SElement.isElement(n) && Editor.isBlock(editor, n) }
       )
   }
 }
-
-const maybeChangeNodeTypeTo = Object.fromEntries(
-  Object.values(tokenTypes).map(type => [type, createChangeType(type)])
-)
-
 
 const renderElement = (props: any) => <GetElement {...props} />;
 
@@ -79,10 +70,17 @@ const EditorFrame: React.FC<EditorFrame> = ({
   onChange,
   decorate,
   className,
+  scriptmeta,
 }) => {
   const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [
     decorate,
   ]);
+
+  const maybeChangeNodeTypeTo = useMemo(() => {
+    return Object.fromEntries(
+      Object.values(tokenTypes).map(type => [type, createChangeType(type, editor, scriptMeta)])
+    )
+  }, [scriptmeta, editor])
 
   return (
     <div className={className + ' script-editor'}>
@@ -129,21 +127,23 @@ const EditorFrame: React.FC<EditorFrame> = ({
               }
           }}
           onKeyUp={event => {
-              console.log("key up---")
               // event.preventDefault()
               const [node, path] = Editor.node(editor, editor.selection as any);
+              maybeChangeNodeTypeTo.character(node)
               if (event.key === 'Enter') {
                   const [lastNode, lastPath] = Editor.last(editor, path);
                   const isLastCharacter = isTokenType(tokenTypes.character, lastNode.text as any)
                   
                   const nextType = isLastCharacter ? tokenTypes.dialogue : tokenTypes.action
                   
+                  const newChange =  { 
+                    type: nextType,
+                    id: getId() ,
+                  }
+
                   Transforms.setNodes(
                       editor,
-                      { 
-                          type: nextType,
-                          id: getId() 
-                      },
+                      newChange,
                       { match: n => SElement.isElement(n) && Editor.isBlock(editor, n) }
                   )
 
@@ -151,7 +151,6 @@ const EditorFrame: React.FC<EditorFrame> = ({
               }
           }}
           onKeyDown={event => {
-              console.log("key down---")
               // Get the currently selected node
               const [node, path] = Editor.node(editor, editor.selection as any) || [];
               const [lastNode, lastPath] = Editor.last(editor, path);
@@ -162,6 +161,12 @@ const EditorFrame: React.FC<EditorFrame> = ({
                   const isText = lastNode.text !== ''
                   
                   const nextType = isText ? tokenTypes.dialogue : tokenTypes.character
+
+                  // scriptmeta.addLines({
+                  //   id: lastNode.id,
+                  //   type: nextType
+                  // })
+                  
                   Transforms.setNodes(
                       editor,
                       { type: nextType },
@@ -171,12 +176,11 @@ const EditorFrame: React.FC<EditorFrame> = ({
               }
 
               if (node.type === tokenTypes.character) {
-                  maybeChangeNodeTypeTo.dialogue(node, editor)
+                  maybeChangeNodeTypeTo.dialogue(node)
               }
 
-              maybeChangeNodeTypeTo.character(node, editor)
-              maybeChangeNodeTypeTo.scene_heading(node, editor)
-              maybeChangeNodeTypeTo.transition(node, editor)
+              maybeChangeNodeTypeTo.scene_heading(node)
+              maybeChangeNodeTypeTo.transition(node)
 
           }}
         />

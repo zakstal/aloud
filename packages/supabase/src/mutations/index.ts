@@ -611,15 +611,106 @@ export async function processLines({ created, removed, updated, characters = [],
   }
 }
 
+function getChanges(currentLines: Dialog[], updatedLines: Dialog[]) {
+  console.log("updatedLines", updatedLines)
+  // update ordering 
+  updatedLines.forEach((token, i) => {
+      if (!token) return
+      token.order = i
+  })
+
+  const newIds: {[key: string]: Dialog} = {}
+
+  // const newLines = []
+  const removeTokens = []
+  const updateTokens = []
+
+  // check if new tokens have been created
+  for (const newLine of updatedLines) {
+      const id = newLine?.id
+      if (!id) continue
+
+      newIds[id] =  newLine
+  }
+  
+  // check if tokens have been removed or changed
+  for (const oldLine of currentLines) {
+      const id = oldLine.id
+      const newLine = newIds[id]
+
+      // check if removed
+      if (!newLine) {
+          removeTokens.push(oldLine)
+          continue
+      }
+
+
+      // check if changed
+      const isSame = 
+          newLine.text === oldLine.text &&
+          newLine.order === oldLine.order &&
+          newLine.isDialog === oldLine.isDialog &&
+          newLine.type === oldLine.type
+
+      if (!isSame) {
+          if (typeof newLine.isDialog === 'string') {
+              
+          }
+          updateTokens.push(newLine)
+      }
+
+      delete newIds[id]
+  }
+
+  const newLines = Object.values(newIds)
+
+  const shoudlUpdate = 
+      Boolean(newLines?.length) || 
+      Boolean(removeTokens?.length) ||
+      Boolean(updateTokens?.length) 
+
+
+  if (!shoudlUpdate) return null
+
+  return {
+      created: newLines,
+      removed: removeTokens,
+      updated: updateTokens,
+  }
+
+}
+
 
 // TODO creating is not idempotent atm. This needs to be updated to prevent duplicates
-export async function updateOrCreateLinesInDb(created: Dialog[], removed: Dialog[], updated: Dialog[], characters: CharacterData[], screenplayId: string, versionNumber: number) {
-  console.log('created--------------------', created)
-  console.log('removed--------------------', removed)
-  console.log('updated--------------------', updated)
-  console.log('characters--------------------', characters)
-  console.log('screenplayId--------------------', screenplayId)
+export async function updateOrCreateLinesInDb(newLines: Dialog[], characters: CharacterData[], screenplayId: string, versionNumber: number) {
+// export async function updateOrCreateLinesInDb(created: Dialog[], removed: Dialog[], updated: Dialog[], characters: CharacterData[], screenplayId: string, versionNumber: number) {
+console.log("updateOrCreateLinesInDb----------")
   const supabase = createClient();
+
+  const { data: currentLines, error: currentLinesError } = await supabase
+    .from("lines")
+    .select(`
+      id,
+      text,
+      order,
+      deleted
+    `)
+    .eq('deleted', false) 
+    .eq('screenplay_id', screenplayId) 
+
+    if (currentLinesError) {
+      throw currentLinesError;
+    }
+
+
+    const { created, removed, updated } = getChanges(currentLines, newLines)
+    console.log('created--------------------', created)
+    console.log('removed--------------------', removed)
+    console.log('updated--------------------', updated)
+    console.log('characters--------------------', characters)
+    console.log('screenplayId--------------------', screenplayId)
+    return
+  
 
   const screenPlayVersionId = await bumpAudioScreenplayVersion(screenplayId)
   const { data, error }  = await supabase
@@ -641,7 +732,6 @@ export async function updateOrCreateLinesInDb(created: Dialog[], removed: Dialog
     }
 
     const versionNumberNew =  Number(data.version_number)
-    versionNumber
 
     // if changes are made off of an old version, set old version to current 
     // bumpAudioScreenplayVersion needs to be run first

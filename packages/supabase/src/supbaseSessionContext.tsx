@@ -34,11 +34,9 @@ export const SessionProvider = ({ children }: Props) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  console.log("attemtp---")
   useEffect(() => {
     const authStateListener = supabase.auth.onAuthStateChange(
       async (_, session) => {
-        console.log('session----', session)
         setSession(session?.user);
         setIsLoading(false);
       }
