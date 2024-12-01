@@ -1,8 +1,8 @@
 'use client'
 
 import './script-editor.css';
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { createEditor, Editor, Node, Path } from "slate";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { Transforms, createEditor, Editor, Node, Path } from "slate";
 import { withHistory } from "slate-history";
 import { withReact } from "slate-react";
 import {
@@ -159,6 +159,7 @@ const Client: React.FC<ScriptEditorInput> = ({
   const [value, setValue] = useState<Node[]>([]);
   const [newCharacters, setNewCharacters] = useState<Node[]>([]);
   const [isOnline, setOnlineState] = useState<boolean>(false);
+  const scriptMetaRef = useRef(null)
 
   const color = useMemo(
     () =>
@@ -176,6 +177,21 @@ const Client: React.FC<ScriptEditorInput> = ({
     if (sharedType.length === 0) {
       toSharedType(sharedType, slateTokens);
     }
+
+  //   doc.on('update', (update, origin) => {
+  //     // `update` is the encoded binary update from Yjs
+  //     // `origin` is the source of the update
+  
+  //     if (origin !== editor) {
+  //         console.log('Received an update from a peer:', update);
+  
+  //         // Decode the update for inspection (optional)
+  //         const decodedUpdate = Y.decodeUpdate(update);
+  //         console.log('Decoded Update:', decodedUpdate);
+  //     } else {
+  //         console.log('Local update, ignoring.');
+  //     }
+  // });
     // const sharedType = doc.get("slate", Y.XmlText);
   //   const provider = new SupabaseProvider(doc, supabase, {
   //     channel: audioScreenPlayVersion,
@@ -194,92 +210,121 @@ const Client: React.FC<ScriptEditorInput> = ({
   }, [user?.id]);
   // }, [id]);
 
-  const scriptmeta = useMemo(() => {
-    const scriptmeta = new ScriptMeta(characters, slateTokens)
-
-    return scriptmeta;
-  }, []);
-
   const editor = useMemo(() => {
     const editor = withCursor(
       withYjs(withLinks(withReact(withHistory(createEditor()))), sharedType),
+      // withYjs(withLinks(withReact(withHistory(createEditor()))), sharedType),
       provider.awareness
     );
-
-    editor.onChange = () => {
-      // editor.operations.forEach(op => {
-      //     try {
-      //         switch (op.type) {
-      //             case 'split_node':
-      //                 console.log('\n\nSplit Node Operation:', op);
-      //                 if (Node.has(editor, op.path)) {
-      //                     const firstNode = Node.get(editor, op.path);
-      //                     const secondNodePath = Path.next(op.path);
-      //                     const secondNode = Node.has(editor, secondNodePath)
-      //                         ? Node.get(editor, secondNodePath)
-      //                         : null;
-  
-      //                     scriptmeta.changeLines(firstNode)
-      //                     scriptmeta.changeLines(secondNode)
-      //                     console.log('First Node (before split):', firstNode);
-      //                     console.log('Second Node (after split):', secondNode);
-      //                 }
-      //                 break;
-  
-      //             case 'merge_node':
-      //                 console.log('\n\nMerge Node Operation:', op);
-      //                 if (Node.has(editor, op.path)) {
-      //                     const mergedNode = Node.get(editor, op.path);
-      //                     console.log('Merged Node:', mergedNode);
-      //                 }
-      //                 break;
-  
-      //             case 'set_node':
-      //                 console.log('\n\nSet Node Operation:', op);
-      //                 if (Node.has(editor, op.path)) {
-      //                     const node = Node.get(editor, op.path);
-      //                     scriptmeta.changeLines(node)
-      //                     console.log('Updated Node:', node);
-      //                     console.log('Old Properties:', op.properties);
-      //                     console.log('New Properties:', op.newProperties);
-      //                 }
-      //                 break;
-  
-      //             case 'insert_text':
-      //                 console.log('\n\nInsert Text Operation:', op);
-      //                 if (Node.has(editor, op.path)) {
-      //                     const node = Node.get(editor, op.path);
-      //                     scriptmeta.changeLines(node)
-      //                     console.log('Affected Node:', node);
-      //                     console.log('Inserted Text:', op.text);
-      //                     console.log('Offset:', op.offset);
-      //                 }
-      //                 break;
-  
-      //             default:
-      //                 console.log('\n\nUnhandled Operation:', op);
-      //                 break;
-      //         }
-      //     } catch (err) {
-      //         console.error('Error processing operation:', err, 'Operation:', op);
-      //     }
-      // });
-  };
-  
 
     return editor;
   }, [sharedType, provider]);
 
-  // console.log('editor===========', editor.history)
+  useEffect(() => {
+    scriptMetaRef.current = new ScriptMeta(characters, slateTokens)
+  }, [])
+
+  useEffect(() => {
+    const ogapply = editor.apply
+    const scriptmeta = scriptMetaRef.current
+    editor.apply = (op) => {
+      console.log('onchange editor',op)
+      ogapply(op)
+      editor.operations.forEach(op => {
+          try {
+              switch (op.type) {
+                  case 'split_node':
+                      // console.log('\n\nSplit Node Operation:', op);
+                      if (Node.has(editor, op.path)) {
+                          const firstNode = Node.get(editor, op.path);
+                          const secondNodePath = Path.next(op.path);
+                          const secondNode = Node.has(editor, secondNodePath)
+                              ? Node.get(editor, secondNodePath)
+                              : null;
+    
+                          if (firstNode?.type) {
+                            scriptmeta.changeLines(firstNode, 'split node')
+                          }
+      
+                          // console.log('split First Node (before split):', firstNode);
+                          // console.log('split Second Node (after split):', secondNode);
+                      }
+                      break;
+  
+                  case 'merge_node':
+                      // console.log('\n\nMerge Node Operation:', op);
+                      if (Node.has(editor, op.path)) {
+                          const mergedNode = Node.get(editor, op.path);
+                          // console.log('Merged Node:', mergedNode);
+                      }
+                      break;
+  
+                  case 'set_node':
+                      // console.log('\n\nSet Node Operation:', op);
+                      if (Node.has(editor, op.path)) {
+                          const node = Node.get(editor, op.path);
+                          scriptmeta.changeLines(node, 'set node')
+                          // console.log('Updated Node:', node);
+                          // console.log('Old Properties:', op.properties);
+                          // console.log('New Properties:', op.newProperties);
+                      }
+                      break;
+  
+                  case 'insert_text':
+                      // console.log('\n\nInsert Text Operation:', op);
+                      if (Node.has(editor, op.path)) {
+                          const parentPath = Path.parent(op.path);
+                          const node = Node.get(editor, parentPath)
+                          scriptmeta.changeLines(node, 'insert node')
+                          // console.log('Affected Node:', node);
+                          // console.log('Inserted Text:', op.text);
+                          // console.log('Offset:', op.offset);
+                      }
+                      break;
+
+                  
+                  case 'remove_node':
+                    console.log('\n\nRemove Node Operation:', op);
+                    const removedNode = op.node;
+                    if (removedNode) {
+                      // console.log("removedNode ", removedNode)
+                        scriptmeta.removeLines(removedNode, 'remove node');
+                        // console.log('Removed Node:', removedNode);
+                    }
+                    break;
+
+                case 'remove_text':
+                    // console.log('\n\nRemove Text Operation:', op);
+                    if (Node.has(editor, op.path)) {
+                        const parentPath = Path.parent(op.path);
+                        const node = Node.get(editor, parentPath);
+                        scriptmeta.changeLines(node, 'remove text');
+                        // console.log('Affected Node:', node);
+                        // console.log('Removed Text:', op.text);
+                        // console.log('Offset:', op.offset);
+                    }
+                    break;    
+  
+                  default:
+                      console.log('\n\nUnhandled Operation:', op);
+                      break;
+              }
+          } catch (err) {
+              console.error('Error processing operation:', err, 'Operation:', op);
+          }
+      });
+    }
+    
+  },[])
 
   useEffect(() => {
     // Hack to wipe some initial changes we don't want to track
     editor.history.undos = []
+
     provider.on("status", ({ status }: { status: string }) => {
       setOnlineState(status === "connected");
     });
 
-    console.log('user-------', user)
     provider.awareness.setLocalState({
       alphaColor: color.slice(0, -2) + "0.2)",
       color,
@@ -307,6 +352,7 @@ const Client: React.FC<ScriptEditorInput> = ({
   const save = useCallback((newTokens, screenplayId, newCharacters, versionNumber, immediate = false, toastAlert = false) => {
       return debounce(async () => {
           setIsClean(true)
+          // TODO get character ids from script meta
 
           // const changes = getChanges(scriptTokens, newTokens, screenplayId, newCharacters)
           // if (editor.history.redos.length) return
@@ -368,11 +414,11 @@ const Client: React.FC<ScriptEditorInput> = ({
         initialValue={slateTokens}
         decorate={decorate}
         className={className}
-        scriptmeta={scriptmeta}
         onChange={(value: Node[]) => {
           setIsClean(false)
           // console.log("editor", processHistoryWithText(editor.history.undos))
-          console.log('editor.history.undos', editor)
+          // console.log('editor.history.undos', editor)
+          // console.log('.value', value)
           // setValue(value)
         }}
       />

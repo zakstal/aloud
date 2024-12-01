@@ -20,7 +20,6 @@ export interface EditorFrame {
   onChange: (value: Node[]) => void;
   decorate: any;
   className: string;
-  scriptmeta: ScriptMeta,
 }
 
 type AloudNode = {
@@ -48,7 +47,7 @@ type AloudNodeSlate = {
 
 
 
-function createChangeType (type: string, editor: Editor, scriptMeta: ScriptMeta) {
+function createChangeType (type: string, editor: Editor) {
   return (node: Node) => { 
       if (node.type === type ) return
       if (!isTokenType(type, node.text as any)) return
@@ -70,7 +69,6 @@ const EditorFrame: React.FC<EditorFrame> = ({
   onChange,
   decorate,
   className,
-  scriptmeta,
 }) => {
   const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [
     decorate,
@@ -78,9 +76,9 @@ const EditorFrame: React.FC<EditorFrame> = ({
 
   const maybeChangeNodeTypeTo = useMemo(() => {
     return Object.fromEntries(
-      Object.values(tokenTypes).map(type => [type, createChangeType(type, editor, scriptMeta)])
+      Object.values(tokenTypes).map(type => [type, createChangeType(type, editor)])
     )
-  }, [scriptmeta, editor])
+  }, [editor])
 
   return (
     <div className={className + ' script-editor'}>
@@ -99,8 +97,6 @@ const EditorFrame: React.FC<EditorFrame> = ({
           
               // Check if text is pasted
               if (pastedText) {
-                  console.log('Pasted content:', pastedText);
-          
                   // Split the pasted text into lines
                   const lines = tokenize(pastedText).reverse();
 
@@ -129,6 +125,7 @@ const EditorFrame: React.FC<EditorFrame> = ({
           onKeyUp={event => {
               // event.preventDefault()
               const [node, path] = Editor.node(editor, editor.selection as any);
+
               maybeChangeNodeTypeTo.character(node)
               if (event.key === 'Enter') {
                   const [lastNode, lastPath] = Editor.last(editor, path);
@@ -138,7 +135,7 @@ const EditorFrame: React.FC<EditorFrame> = ({
                   
                   const newChange =  { 
                     type: nextType,
-                    id: getId() ,
+                    id: getId(),
                   }
 
                   Transforms.setNodes(
@@ -157,15 +154,9 @@ const EditorFrame: React.FC<EditorFrame> = ({
 
               if (event.key === 'Tab') {
                   event.preventDefault()
-                  // const isCharacter = isTokenType(tokenTypes.character, lastNode.text)
                   const isText = lastNode.text !== ''
                   
                   const nextType = isText ? tokenTypes.dialogue : tokenTypes.character
-
-                  // scriptmeta.addLines({
-                  //   id: lastNode.id,
-                  //   type: nextType
-                  // })
                   
                   Transforms.setNodes(
                       editor,

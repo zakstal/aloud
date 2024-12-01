@@ -12,12 +12,22 @@ type Character = { name: string, gender: string | null, id: string }
 type LineId = string;
 type saveStatus = 'clean' | 'dirty'
 
+
 class Line {
-    line: Tokens = null
+    line: Tokens = {
+        character_id: "",
+        children: [],
+        id: "",
+        isDialog: false,
+        order: null,
+        type: "",
+    }
     scriptMeta = null
     constructor(line, scriptMeta) {
         this.scriptMeta = scriptMeta
-        this.line = line
+        for (const key in line) {
+            this.line[key] = line[key]
+        }
         this.update(line)
         this.#updateType(line.type)
     }
@@ -43,13 +53,23 @@ class Line {
     }
 
     #updateType(newType) {
+
         this.scriptMeta.removeLineFromType(this)
         this.scriptMeta.addLineToType(newType, this)
     }
 
     update(line) {
-        if (line.type !== this.line?.type) this.#updateType(line.type)
-        this.line = line  
+        if (line.type && line.type !== this.line?.type) this.#updateType(line.type)
+
+        for (const key in line) {
+            if (key === 'id') continue
+            this.line[key] = line[key]
+        }
+
+        if (this.line.children && this.line.children.length === 1 ) {
+            const child = {...this.line.children[0]}
+            this.line.children = [child]
+        }
 
         if (this.line.type === "action" && !this.line.character_id) {
             this.line.character_id = this.scriptMeta.charactersNames?.Narrator?.id
@@ -63,17 +83,21 @@ class Line {
     }
 }
 
+let instance = null
 export class ScriptMeta {
     charactersNames: {[key: string]: Character} = {}
     characters: Character[] = [] // existing characters from the remote db
     linesById: {[key: LineId]: Line} = {}
     linesByType: {[key: TokenType]: {[key: LineId]: Tokens} } = {}
     saveStatus: saveStatus = 'clean'
+    scriptMetaId: string = null
 
     constructor(characters: Character[] | null, lines: Tokens[] | null) {
-        console.log("script meta----------==============------------")
+        if (instance) return instance
+        instance = this
         this.addCharacters(characters)
         this.addLines(lines)
+        this.scriptMetaId = getId()
         window.scriptMeta = this
     }
 
@@ -125,10 +149,9 @@ export class ScriptMeta {
         this.onLineChage(lines, ADD)
     }
     
-    changeLines(lines) {
+    changeLines(lines, info) {
         if (!lines) return;
         if (!Array.isArray(lines)) {
-            console.log('line change', lines)
             this.onLineChage([lines], MODIFY)   
             return 
         };
@@ -136,6 +159,17 @@ export class ScriptMeta {
         if (!lines.length) return;
 
         this.onLineChage(lines, MODIFY)
+    }
+    removeLines(lines) {
+        if (!lines) return;
+        if (!Array.isArray(lines)) {
+            this.onLineChage([lines], DELETE)   
+            return 
+        };
+
+        if (!lines.length) return;
+
+        this.onLineChage(lines, DELETE)
     }
 
     getCharacters() {
@@ -154,20 +188,15 @@ export class ScriptMeta {
         const exclude = ['written']
         try {
             const names = new Set(Object.keys(this.charactersNames))
-
-            console.log('names', names)
-            console.log('this.linesByType?.character', this.linesByType?.character)
             for (const lineId in this.linesByType?.character) {
                 const line = this.linesById[lineId]
-                const text = line?.line?.text || line.text || (line.children[0] && line?.children?.length ? line.children[0]?.text : {})
+                const text = line?.line?.text || line?.text || (line?.children && line?.children[0] && line?.children?.length ? line.children[0]?.text : null)
 
-                console.log('text', text)
                 if (!text) continue
                 const textLower = text.toLocaleLowerCase()
                 if (exclude.some(excludeName => textLower.startsWith(excludeName))) continue
                 // discard paraens
                 const name = text.endsWith(')') ? text.replace(/\(.+\)/g, '')?.trim() : text
-                console.log('name', name)
                 names.delete(name)
 
                 if (this.charactersNames[name]) {
@@ -182,15 +211,13 @@ export class ScriptMeta {
                     gender: null,
                 }  
 
-                this.linesById[lineId].character_id = id
+                this.linesById[lineId].character_id =  id
             }
 
-
-            console.log('names 2', names)
-            // for (const name of names) {
-            //     if (name.toLocaleLowerCase() === "narrator") continue
-            //     delete this.charactersNames[name]
-            // }
+            for (const name of names) {
+                if (name.toLocaleLowerCase() === "narrator") continue
+                delete this.charactersNames[name]
+            }
 
         } catch(e) {
             console.log("updateCharacterNameMap", e)
@@ -209,6 +236,10 @@ export class ScriptMeta {
     
     addLineToType(type, line: Line) {
 
+         if (!line.id) {
+            throw 'Change does not have id'
+        }
+
         if (!this.linesByType[type]) {
             this.linesByType[type] = {}
         }
@@ -220,6 +251,10 @@ export class ScriptMeta {
     onLineChage(changes, updateType) {
         let isCharacter = false
         for (const change of changes) {
+            let line = null
+            if (!change.id) {
+                throw 'Change does not have id'
+            }
             if (!isCharacter && change.type === 'character') {
                 isCharacter = true
             }
@@ -228,14 +263,19 @@ export class ScriptMeta {
                     this.linesById[change.id] = new Line(change, this)
                 break;
                 case MODIFY:
-                    const line = this.linesById[change.id]
+                    line = this.linesById[change.id]
+                    console.log("line change modify", line)
                     if (line) {
                         line.update(change)
+                    } else {
+                        this.linesById[change.id] = new Line(change, this)
                     }
-                    // this.linesById[change.id] = change
                 break;
                 case DELETE:
-                   delete this.linesById[change.id]
+                    line = this.linesById[change.id]
+                    if (!line) return
+                    this.removeLineFromType(line)
+                    delete this.linesById[change.id]
                 break;
             }
         }
