@@ -38,8 +38,7 @@ export function Character ({
     >
       <div className="flex items-start w-[110px]" style={{ flex: '2'}} onClick={onClick}>
         <Avatar className="h-9 w-9">
-          <AvatarImage src={avatar} alt="Avatar" />
-          <AvatarFallback className="avatar-fallback">{abbreveation}</AvatarFallback>
+          <AvatarImage src={avatar} alt="Avatar" fallbackData={abbreveation}/>
         </Avatar>
         <div className="ml-4 space-y-1">
           <p className="text-sm font-medium leading-none break-words">{name}</p>

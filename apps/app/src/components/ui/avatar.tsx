@@ -23,13 +23,32 @@ Avatar.displayName = AvatarPrimitive.Root.displayName;
 const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Image
-    ref={ref}
-    className={cn('aspect-square h-full w-full', className)}
-    {...props}
-  />
-));
+>(({ className, fallbackData, ...props }, ref) => {
+  const [isLoaded, setIsLoaded] = React.useState(false);
+
+  return (
+    <>
+      <AvatarPrimitive.Image
+        ref={ref}
+        className={cn(
+          'absolute inset-0 aspect-square h-full w-full transition-opacity duration-100',
+          isLoaded ? 'opacity-100' : 'opacity-0',
+          className
+        )}
+        onLoad={() => setIsLoaded(true)}
+        {...props}
+      />
+
+        <AvatarPrimitive.Fallback
+          className={cn(
+            'absolute inset-0 flex h-full w-full items-center justify-center rounded-full bg-muted transition-opacity duration-300 avatar-fallback',
+            // isLoaded ? 'opacity-0' : 'opacity-100'
+          )}
+        >{fallbackData}</AvatarPrimitive.Fallback>
+
+    </>
+  );
+});
 AvatarImage.displayName = AvatarPrimitive.Image.displayName;
 
 const AvatarFallback = React.forwardRef<
@@ -39,7 +58,7 @@ const AvatarFallback = React.forwardRef<
   <AvatarPrimitive.Fallback
     ref={ref}
     className={cn(
-      'flex h-full w-full items-center justify-center rounded-full bg-muted',
+      'absolute inset-0 flex h-full w-full items-center justify-center rounded-full bg-muted',
       className
     )}
     {...props}
