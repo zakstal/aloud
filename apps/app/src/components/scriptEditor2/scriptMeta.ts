@@ -61,6 +61,16 @@ class Line {
         this.scriptMeta.addLineToType(newType, this)
     }
 
+    getLine() {
+        const line = this.line
+        return { type: line.type,
+            id: line.id,
+            isDialog: Boolean(line.isDialog),
+            character_id: line.character_id || '',
+            order: line.order,
+            text: line.children?.length ? line.children[0].text : ''}
+    }
+
     update(line) {
         if (line.type && line.type !== this.line?.type) this.#updateType(line.type)
 
@@ -177,6 +187,11 @@ export class ScriptMeta {
         this.onLineChage(lines, DELETE)
     }
 
+    getLine(lineId: string) {
+        if (!lineId) return
+        return this.linesById[lineId]?.getLine()
+    }
+
     getCharacters() {
         // this.updateCharacterNameMap()
         return Object.values(this.charactersNames)
@@ -275,7 +290,6 @@ export class ScriptMeta {
                 break;
                 case MODIFY:
                     line = this.linesById[change.id]
-                    console.log("line change modify", line)
                     if (line) {
                         line.update(change)
                     } else {

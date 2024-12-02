@@ -32,7 +32,7 @@ export function VoiceActors({
   onSelectVoice
 }: VoiceActorsInput) {
   return (
-    <div className="">
+    <>
       <div className="z-40 sticky top-0" >
        <ChevronLeft
         className="cursor-pointer mb-4 z-50 chevron chevron-in"
@@ -80,12 +80,12 @@ export function VoiceActors({
         </div> */}
       </div>
       {/** Fix tye style issue. just a hack for now to view the full dropdown */}
-      <div className="space-y-2 overflow-scroll h-screen appear appear-in" style={{ paddingBottom: '317px'}}>
+      <div className="space-y-2 overflow-scroll appear appear-in h-[84%]">
         <SmallHeading text="Eleven labs" />
         { voices?.elevenLabs?.map(data => <Character key={data?.id} name={data.name} avatar={data.avatar} gender={`${data.gender}  ${data.age}  ${data.accent}`} assigned="" preview={data?.preview} onClick={() => onSelectVoice(data, character)}/> )}
         {/* <SmallHeading text="Murph" />
         { voices?.murph?.map(data => <Character key={data?.id} name={data.name} avatar={data.avatar} gender={`${data.gender}  ${data.age}  ${data.accent}`} assigned="" onClick={() => onSelectVoice(data, character)}/> )} */}
       </div>
-    </div>
+    </>
   );
 }

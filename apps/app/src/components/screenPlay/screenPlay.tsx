@@ -163,17 +163,17 @@ export default function ScreenPlayConatiner({
 
   return (
     <>
-    <div>
-        <div className="flex flex-row gap-4 text-lg script-parent items-streatch">
-            <aside className="script-characters flex-1 pt-16 max-w-72">
+        <div className="flex flex-col h-full">
+        <div className="flex flex-1 flex-row gap-4 overflow-auto text-lg script-parent items-streatch">
+            <aside className="script-characters flex-1 pt-16 max-w-72 h-full">
                 { screenPlayText !== undefined
                 ?
                 <>
-                <div className="col-span-4 md:col-span-3 rounded-4 script-card">
+                <div className="col-span-4 md:col-span-3 rounded-4 script-card h-full overflow-hidden">
                    
                     <div
                         className={cn(
-                        ` pl-8 pr-4 relative  hidden flex-none transition-[width] duration-500 md:block`,
+                        ` pl-8 pr-4 relative  hidden flex-none transition-[width] duration-500 md:block h-full overflow-hidden`,
                         // voiceSelectionOpen ? 'w-75' : 'w-[75px]',
                         voiceSelectionOpen ? '' : 'sp-hidden',
                         )}
@@ -194,8 +194,8 @@ export default function ScreenPlayConatiner({
                         />
                     </div>
 
-                    <div className={cn("pl-8", voiceSelectionOpen ? 'sp-hidden' : '')} >
-                        <div className="h-24 flex items-center" >
+                    <div className={cn("pl-8 h-full", voiceSelectionOpen ? 'sp-hidden' : '')} >
+                        {/* <div className="h-24 flex items-center" > */}
                             <GetAudio
                                 key={screenplayId}
                                 isEditorDirty={isEditorDirty}
@@ -221,7 +221,7 @@ export default function ScreenPlayConatiner({
                                 setAudioBeingGotten={setAudioBeingGotten}
                                 audioScreenPlayVersion={audioScreenPlayVersion}
                             />
-                        </div>
+                        {/* </div> */}
                         <Characters
                             key={screenplayId}
                             characters={characters}
@@ -290,7 +290,7 @@ export default function ScreenPlayConatiner({
             setIsPlaying={setIsPlaying}
             title={title}
         />
-    </div>
+        </div>
     </>
   );
 }

@@ -21,7 +21,7 @@ export function Characters({
   audioVersionNumber,
 }: CharactersInput) {
   return (
-    <div>
+    <>
       <div className="sticky top-0 z-50 header header-in" >
         <CardHeader className="p-0 pb-6 pt-6 pl-2">
           <div className="flex flex-row gap-4" >
@@ -43,27 +43,25 @@ export function Characters({
             </div>
         </CardHeader>
       </div>
-      <CardContent className="p-0">
-       
-          <div className="space-y-2 overflow-scroll h-screen appear appear-in pb-8" style={{ paddingBottom: '50px' }}>
-            { characters?.map(data => {
+    
+      <div className="space-y-2 overflow-scroll h-[67%] appear appear-in">
+        { characters?.map(data => {
 
-              let characterVersion = data?.audio_character_version
-              // characterVersion = characterVersion ? characterVersion : data?.audio_character_version && data?.audio_character_version[data?.audio_character_version?.length - 1]
-              return (
-              <Character
-                key={data.id}
-                name={data.name} 
-                gender={data.gender} 
-                avatar={characterVersion?.voice_data?.avatar}
-                assigned={characterVersion}
-                onClick={() => onCharacterClick(data)}
-              />
-              )
-            })
-            }
-          </div>
-      </CardContent>
+          let characterVersion = data?.audio_character_version
+          // characterVersion = characterVersion ? characterVersion : data?.audio_character_version && data?.audio_character_version[data?.audio_character_version?.length - 1]
+          return (
+          <Character
+            key={data.id}
+            name={data.name} 
+            gender={data.gender} 
+            avatar={characterVersion?.voice_data?.avatar}
+            assigned={characterVersion}
+            onClick={() => onCharacterClick(data)}
+          />
+          )
+        })
+        }
       </div>
+    </>
   )
 }

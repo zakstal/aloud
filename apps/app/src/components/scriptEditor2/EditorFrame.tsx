@@ -18,6 +18,7 @@ export interface EditorFrame {
   value: Node[];
   initialValue: Node[];
   onChange: (value: Node[]) => void;
+  setIsClean: (isClean: boolean) => void;
   decorate: any;
   className: string;
 }
@@ -69,6 +70,7 @@ const EditorFrame: React.FC<EditorFrame> = ({
   onChange,
   decorate,
   className,
+  setIsClean,
 }) => {
   const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [
     decorate,
@@ -148,6 +150,7 @@ const EditorFrame: React.FC<EditorFrame> = ({
               }
           }}
           onKeyDown={event => {
+              setIsClean(false)
               // Get the currently selected node
               const [node, path] = Editor.node(editor, editor.selection as any) || [];
               const [lastNode, lastPath] = Editor.last(editor, path);

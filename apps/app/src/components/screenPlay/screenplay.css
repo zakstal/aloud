@@ -45,11 +45,11 @@
 
 .script-card {
     /* padding-bottom: 50px; */
-    overflow: scroll
+    /* overflow: scroll */
 }
 
 .script-parent {
-    height: 100vh;
+    /* height: 100vh; */
 }
 
 .progress-loading {
