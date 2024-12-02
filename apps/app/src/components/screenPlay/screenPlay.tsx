@@ -260,23 +260,24 @@ export default function ScreenPlayConatiner({
                     setSaveFunc={setSaveFunc}
                     setIsEditorDirty={setIsEditorDirty}
                 />
-                : <div className={'script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-4xl font-courier script-editor'}>
+                : <div className={'script-text bg-white p-8 pt-0 outline-none border-slate-400 overflow-scroll max-w-4xl font-courier'}>
                     <h1 className="text-3xl pb-6 pt-16 tracking-tight text-center ">🎉  Welcome! 🎊</h1>
                     <h4 className="text-3xl pb-6 pt-16 tracking-tight text-center ">Start a new script</h4>
-                    <ProductForm />
+                        <ProductForm />
                     {/* <PDFLocalUplaod startScreenPlay={startScreenPlay} /> */}
-                    <Button
-                        variant="outline"
-                        className="text-md h-20 mt-6 w-full box-border"
-                        onClick={() => {
-                            if (startScreenPlayButtonPressed) return
-                            setStartScreenPlayButtonPressed(true)
-                            startScreenPlay()
-                        }}
-                    >
-                        Go to a blank document
-                        { startScreenPlayButtonPressed ? <Progress hw={20} bw={2} className="ml-3"/> : null}
-                    </Button>
+
+                        <Button
+                            variant="outline"
+                            className="text-md h-20 mt-6  box-border w-full"
+                            onClick={() => {
+                                if (startScreenPlayButtonPressed) return
+                                setStartScreenPlayButtonPressed(true)
+                                startScreenPlay()
+                            }}
+                        >
+                            Go to a blank document
+                            { startScreenPlayButtonPressed ? <Progress hw={20} bw={2} className="ml-3"/> : null}
+                        </Button>
                 </div>
             }
         </div>
