@@ -11,6 +11,9 @@ const ADD = 'add'
 type Character = { name: string, gender: string | null, id: string }
 type LineId = string;
 type saveStatus = 'clean' | 'dirty'
+type scriptMetaOptios = {
+    onCharacterChange: (characters: Character[]) => void;
+}
 
 
 class Line {
@@ -91,13 +94,15 @@ export class ScriptMeta {
     linesByType: {[key: TokenType]: {[key: LineId]: Tokens} } = {}
     saveStatus: saveStatus = 'clean'
     scriptMetaId: string = null
+    options: scriptMetaOptios = null
 
-    constructor(characters: Character[] | null, lines: Tokens[] | null) {
+    constructor(characters: Character[] | null, lines: Tokens[] | null, options: scriptMetaOptios) {
         if (instance) return instance
         instance = this
         this.addCharacters(characters)
         this.addLines(lines)
         this.scriptMetaId = getId()
+        this.options = options
         window.scriptMeta = this
     }
 
@@ -173,7 +178,7 @@ export class ScriptMeta {
     }
 
     getCharacters() {
-        this.updateCharacterNameMap()
+        // this.updateCharacterNameMap()
         return Object.values(this.charactersNames)
     }
  
@@ -218,6 +223,12 @@ export class ScriptMeta {
                 if (name.toLocaleLowerCase() === "narrator") continue
                 delete this.charactersNames[name]
             }
+
+            if (this.options && this.options.onCharacterChange) {
+                setTimeout(() => {
+                    this.options.onCharacterChange(this.getNewCharacters())
+                }, 0)
+            } 
 
         } catch(e) {
             console.log("updateCharacterNameMap", e)

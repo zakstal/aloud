@@ -221,14 +221,19 @@ const Client: React.FC<ScriptEditorInput> = ({
   }, [sharedType, provider]);
 
   useEffect(() => {
-    scriptMetaRef.current = new ScriptMeta(characters, slateTokens)
+    scriptMetaRef.current = new ScriptMeta(characters, slateTokens, {
+      onCharacterChange: (newcCharacters) => {
+        setCharacters(newcCharacters)
+        console.log('newcCharacters', newcCharacters)
+      }
+    })
   }, [])
 
   useEffect(() => {
     const ogapply = editor.apply
     const scriptmeta = scriptMetaRef.current
+    // TODO move to a plugin
     editor.apply = (op) => {
-      console.log('onchange editor',op)
       ogapply(op)
       editor.operations.forEach(op => {
           try {
