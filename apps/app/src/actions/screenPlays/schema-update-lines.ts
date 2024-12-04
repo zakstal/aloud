@@ -21,5 +21,5 @@ export const updateOrCreateLinesSchema = z.object({
   newLines: z.array(lineSchema),
   characters: z.array(characterSchema).optional(),
   screenplayId: z.string(),
-  versionNumber: z.string(),
+  versionNumber: z.number(),
 });

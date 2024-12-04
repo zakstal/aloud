@@ -124,58 +124,78 @@ const EditorFrame: React.FC<EditorFrame> = ({
                   }
               }
           }}
-          onKeyUp={event => {
-              // event.preventDefault()
-              const [node, path] = Editor.node(editor, editor.selection as any);
-
-              maybeChangeNodeTypeTo.character(node)
-              if (event.key === 'Enter') {
-                  const [lastNode, lastPath] = Editor.last(editor, path);
-                  const isLastCharacter = isTokenType(tokenTypes.character, lastNode.text as any)
-                  
-                  const nextType = isLastCharacter ? tokenTypes.dialogue : tokenTypes.action
-                  
-                  const newChange =  { 
-                    type: nextType,
-                    id: getId(),
-                  }
-
-                  Transforms.setNodes(
-                      editor,
-                      newChange,
-                      { match: n => SElement.isElement(n) && Editor.isBlock(editor, n) }
-                  )
-
-                  return
-              }
-          }}
           onKeyDown={event => {
               setIsClean(false)
               // Get the currently selected node
-              const [node, path] = Editor.node(editor, editor.selection as any) || [];
-              const [lastNode, lastPath] = Editor.last(editor, path);
 
-              if (event.key === 'Tab') {
+              const [node, path] = Editor.node(editor, editor.selection as any) || [];
+              const isEnter = event.key === 'Enter'
+              const isTab = event.key === 'Tab'
+
+              if (!isEnter && !isTab) {
+                maybeChangeNodeTypeTo.character(node)
+                maybeChangeNodeTypeTo.scene_heading(node)
+                maybeChangeNodeTypeTo.transition(node)
+                return 
+              }
+              
+              const [lastNode, lastPath] = Editor.last(editor, path);
+              const lastNodeParentPath = Path.parent(lastPath);
+              const lastNodeParent = Node.get(editor, lastNodeParentPath)
+              const nodeParentPath = Path.parent(path);
+              const nodeParent = Node.get(editor, nodeParentPath)
+
+              const isLastParenthetical = tokenTypes.parenthetical === lastNodeParent.type
+
+              if (isTab) {
                   event.preventDefault()
-                  const isText = lastNode.text !== ''
-                  
-                  const nextType = isText ? tokenTypes.dialogue : tokenTypes.character
-                  
-                  Transforms.setNodes(
+                  const isText = node.text !== ''
+
+                  const isLastCharacter = tokenTypes.character === lastNodeParent.type
+                  const isCurrentCharacter = isTokenType(tokenTypes.character, node.text as any)
+                  if ((!isText && !isLastCharacter && !isLastParenthetical) || isCurrentCharacter) {
+                    Transforms.setNodes(
                       editor,
-                      { type: nextType },
+                      { type: tokenTypes.character },
                       { match: n => SElement.isElement(n) && Editor.isBlock(editor, n) }
                       
+                    )
+                    return
+                  }
+
+
+                  const isParenthetical = isTokenType(tokenTypes.parenthetical, node.text as any)
+                  console.log('isParenthetical', isParenthetical)
+                  const nextType = isParenthetical ? tokenTypes.parenthetical : tokenTypes.dialogue
+                  Transforms.setNodes(
+                    editor,
+                    { type: nextType },
+                    { match: n => SElement.isElement(n) && Editor.isBlock(editor, n) }
+                    
                   )
+                  return
+
               }
 
-              if (node.type === tokenTypes.character) {
-                  maybeChangeNodeTypeTo.dialogue(node)
+              if (isEnter) {
+
+                // Slate's Transforms.splitNodes (implicitly invoked during the default Enter handling) 
+                // does not complete on this cycle. Without the setTimeout the below logic will affect
+                // both the old and new node.
+                setTimeout(() => {
+                  const isLastCharacter = tokenTypes.character === lastNodeParent.type
+
+                  const nextType = isLastCharacter || isLastParenthetical ? tokenTypes.dialogue : tokenTypes.action
+                  Transforms.setNodes(
+                    editor,
+                    { type: nextType, id: getId() },
+                    { match: n => SElement.isElement(n) && Editor.isBlock(editor, n) }
+                    
+                  )
+                }, 0)
+                return
+
               }
-
-              maybeChangeNodeTypeTo.scene_heading(node)
-              maybeChangeNodeTypeTo.transition(node)
-
           }}
         />
       </Slate>

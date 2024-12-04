@@ -632,6 +632,26 @@ function getChanges(currentLines: Dialog[], updatedLines: Dialog[]) {
 
       newIds[id] =  newLine
   }
+
+  // update character assignments 
+  let last = null
+  const lastTypes = ['character', 'dialogue','parenthetical']
+  const currentType = ['dialogue', 'parenthetical']
+  for (const newLine of updatedLines) {
+    if (!last) {
+      last = newLine
+      continue
+    }
+
+    if (
+        lastTypes.includes(newLine.type) && 
+        currentType.includes(newLine.type)
+    ) {
+      newLine.character_id = last.character_id
+    }
+
+    last = newLine
+  }
   
   // check if tokens have been removed or changed
   for (const oldLine of currentLines) {
@@ -650,7 +670,8 @@ function getChanges(currentLines: Dialog[], updatedLines: Dialog[]) {
           newLine.text === oldLine.text &&
           newLine.order === oldLine.order &&
           newLine.isDialog === oldLine.isDialog &&
-          newLine.type === oldLine.type
+          newLine.type === oldLine.type && 
+          newLine.character_id === oldLine.character_id
 
       if (!isSame) {
           if (typeof newLine.isDialog === 'string') {
@@ -683,9 +704,31 @@ function getChanges(currentLines: Dialog[], updatedLines: Dialog[]) {
 
 // TODO creating is not idempotent atm. This needs to be updated to prevent duplicates
 export async function updateOrCreateLinesInDb(newLines: Dialog[], characters: CharacterData[], screenplayId: string, versionNumber: number) {
-// export async function updateOrCreateLinesInDb(created: Dialog[], removed: Dialog[], updated: Dialog[], characters: CharacterData[], screenplayId: string, versionNumber: number) {
-console.log("updateOrCreateLinesInDb----------")
+console.log("updateOrCreateLinesInDb----------", versionNumber)
   const supabase = createClient();
+
+  // Check if current version is the same as latest.
+  // This will be a problem when going back a version and then updating.
+  // const { data: screenPlayVersions, error: versionError } = await supabase
+  //   .from('audio_screenplay_versions')
+  //   .select('id, version_number')
+  //   .eq('screenplay_id', screenplayId)
+  //   .gt('version_number', versionNumber)
+  //   .order('version_number', { ascending: true });
+  //   console.log('here 1', screenPlayVersions, versionError)
+
+  // if (versionError) {
+  //   throw 'Error fetching audio screenplay versions';
+  // }
+
+  // console.log('screenPlayVersions-----', screenPlayVersions)
+
+  // if (screenPlayVersions.length) {
+  //   return {
+  //     message: 'Version already exists',
+  //     data: screenPlayVersions.slice(-1)[0]
+  //   }
+  // }
 
   const { data: currentLines, error: currentLinesError } = await supabase
     .from("lines")
@@ -709,7 +752,6 @@ console.log("updateOrCreateLinesInDb----------")
     console.log('updated--------------------', updated)
     console.log('characters--------------------', characters)
     console.log('screenplayId--------------------', screenplayId)
-    return
   
 
   const screenPlayVersionId = await bumpAudioScreenplayVersion(screenplayId)
@@ -749,17 +791,21 @@ console.log("updateOrCreateLinesInDb----------")
 
   console.log('screenPlayVersionId--------------------', screenPlayVersionId, data)
 
-
-
   const res = await processLines({ created, removed, updated, characters, screenplayId, screenPlayVersionId, versionNumber: versionNumberNew })
 
   await updateAudioScreenplayVersionTotalLines(screenplayId, screenPlayVersionId)
 
   if (res.error) {
-    return res
+    return {
+      message: "error",
+      data: res
+    }
   }
 
-  return data
+  return {
+    message: 'success',
+    data,
+  }
 }
 
 export async function setAudioVersionInProgress(audioVersionId: string) {

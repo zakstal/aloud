@@ -31,7 +31,7 @@ const AvatarImage = React.forwardRef<
       <AvatarPrimitive.Image
         ref={ref}
         className={cn(
-          'absolute inset-0 aspect-square h-full w-full transition-opacity duration-100',
+          'absolute inset-0 aspect-square h-full w-full transition-opacity duration-300',
           isLoaded ? 'opacity-100' : 'opacity-0',
           className
         )}

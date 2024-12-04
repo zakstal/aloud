@@ -267,7 +267,7 @@ inline.lexer = function (s) {
 };
 
 
-export type TokenType = 'action' | 'scene_heading' | 'dialogue_begin' | 'dialogue_end' | 'dialogue' | 'character' | 'transition' | ''
+export type TokenType = 'action' | 'scene_heading' | 'dialogue_begin' | 'dialogue_end' | 'dialogue' | 'character' | 'transition' | 'parenthetical' |''
 
 
 export type Tokens = {

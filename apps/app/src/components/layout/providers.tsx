@@ -3,6 +3,7 @@ import React from 'react';
 import ThemeProvider from './ThemeToggle/theme-provider';
 // import { SessionProvider, SessionProviderProps } from 'next-auth/react';
 import { SessionProvider } from "@v1/supabase/supbaseSessionContext";
+import { ScriptMetaProvider } from "@/components/scriptEditor2/scriptMetaContext";
 import { Session } from "@supabase/supabase-js";
 export default function Providers({
   children
@@ -12,7 +13,11 @@ export default function Providers({
   return (
     <>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <SessionProvider>{children}</SessionProvider>
+        <ScriptMetaProvider>
+          <SessionProvider>
+            {children}
+          </SessionProvider>
+        </ScriptMetaProvider>
         {/* {children} */}
       </ThemeProvider>
     </>

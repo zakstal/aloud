@@ -83,7 +83,6 @@ export default function Page() {
   const [audioScreenPlayVersion, setAudioScreenPlayVersion ] = useState([])
   const { toast } = useToast();
 
-
   if (!screenPlay.error && screenPlay?.data?.data) {
     // console.log('screenPlay&&&', screenPlay?.data?.data)
     breadcrumbItems.pop()
@@ -218,7 +217,6 @@ export default function Page() {
           setScreenPlay(screenPlay)
           setCharacters(data?.characters || [])
           setAudioScreenPlayVersion(audio_screenplay_version)
-          setCharactersTemp([])
       })
       .catch(error => {
         console.log("error", error)
@@ -241,14 +239,17 @@ export default function Page() {
           title={data?.title}
           screenplayId={params?.screenplayid}
           isLoading={isLoading}
-          setCharacters={setCharactersTemp}
+          setCharacters={characters => {
+            console.log('set characters', characters)
+            setCharactersTemp(characters)
+          }}
           screenPlayText={data?.screen_play_text}
           startScreenPlay={async (obj = {}) => {
             console.log("start screen play")
             try {
 
               const res = await startScreenPlay(obj)
-              const id = res?.data?.id
+              const id = res?.data?.data?.id
               console.log("res", res)
               if (id) {
                 router.push(`/dashboard/screen-play/${id}`);
@@ -307,7 +308,7 @@ export default function Page() {
             if (res?.data?.error) {
               toast({
                 title: 'Error updating lines',
-                description: res.data.error
+                description: res.data.data.error
               })
               return {
                 success: false
@@ -315,16 +316,20 @@ export default function Page() {
             }
 
             const params = new URLSearchParams(searchParams.toString())
-            params.set('version', res.data.version_number)
-            router.push(`${pathname}?${params.toString()}`, { shallow: true })
+            const versionNumber = res?.data?.data?.version_number
+            if (versionNumber) {
+              params.set('version', versionNumber)
+              router.push(`${pathname}?${params.toString()}`, { shallow: true })
+            }
             
-            setAudioScreenPlayVersion(res.data)
+            setAudioScreenPlayVersion(res.data.data)
             return {
               success: true,
-              audioScreenPlayVersionId: res.data.id
+              audioScreenPlayVersionId: res.data.data.id
             }
           }}
           characters={[...characters, ...charactersTemp]}
+          charactersTemp={charactersTemp}
           voices={voices}
           audioScreenPlayVersion={audioScreenPlayVersion}
           audioVersionNumber={audioVersionNumber}

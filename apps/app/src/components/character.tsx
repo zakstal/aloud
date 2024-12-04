@@ -1,5 +1,6 @@
 "use client"
 import './character.css'
+import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AudioPlayerButton } from '@/components/ui/audioButtonOnly'
 
@@ -30,11 +31,12 @@ export function Character ({
   style,
   assigned }: characterInput) {
   const abbreveation = name?.split(' ')?.map((word: string) => word && word[0]?.toUpperCase())?.join('')
+ 
   return (
     <div
       
       style={style}
-      className={"flex items-start cursor-pointer hover:bg-[hsl(var(--card))] px-2 py-2 rounded-lg items-start" + className}
+      className={"flex items-start cursor-pointer hover:bg-[hsl(var(--card))] px-2 py-2 rounded-lg items-start group" + className}
     >
       <div className="flex items-start w-[110px]" style={{ flex: '2'}} onClick={onClick}>
         <Avatar className="h-9 w-9">
@@ -48,7 +50,7 @@ export function Character ({
         </div>
         {/* <div className="ml-auto font-medium">+$1,999.00</div> */}
       </div>
-      <div className="max-w-24" onClick={onClick} >
+      <div className="max-w-24 opacity-0 group-hover:opacity-100 transition-opacity duration-150" onClick={onClick} >
         {
           assigned ? (
             !assigned?.voice_id

@@ -106,7 +106,7 @@ function GetAudio({ audioBeingGotten, processAudio, cancelProcessAudio, audioScr
             <div className="flex gap-2 items-center text-sm">
                 {element}
             </div>
-            <div className="flex gap-2 items-center text-sm pt-3 pl-2">
+            {/* <div className="flex gap-2 items-center text-sm pt-3 pl-2">
                 <TooltipContainer text="Lines with completed audio.">
                     <span>{totalLinesCompleted}</span>
                 </TooltipContainer>
@@ -119,7 +119,7 @@ function GetAudio({ audioBeingGotten, processAudio, cancelProcessAudio, audioScr
                 <TooltipContainer text="Updates you make are automatically saved and versioned. This is the current version.">
                     <span className="font-bold">v{audioScreenPlayVersion.version_number}</span>
                 </TooltipContainer>
-            </div>
+            </div> */}
         </div>
     )
 }
@@ -128,6 +128,7 @@ export default function ScreenPlayConatiner({
   screenPlayText,
   user,
   characters,
+  charactersTemp,
   voices,
   onSelectVoice,
   audioVersionNumber,
@@ -179,7 +180,6 @@ export default function ScreenPlayConatiner({
                         )}
                     >
                         <VoiceActors
-                            key={screenplayId}
                             character={selectedCharacter}
                             onClose={() => {
                                 setSelectedCharacter(null)
@@ -197,7 +197,6 @@ export default function ScreenPlayConatiner({
                     <div className={cn("pl-8 h-full", voiceSelectionOpen ? 'sp-hidden' : '')} >
                         {/* <div className="h-24 flex items-center" > */}
                             <GetAudio
-                                key={screenplayId}
                                 isEditorDirty={isEditorDirty}
                                 audioBeingGotten={audioBeingGotten}
                                 processAudio={async () => {
@@ -223,8 +222,8 @@ export default function ScreenPlayConatiner({
                             />
                         {/* </div> */}
                         <Characters
-                            key={screenplayId}
                             characters={characters}
+                            charactersTemp={charactersTemp}
                             audioVersionNumber={audioVersionNumber}
                             onCharacterClick={(character) => {
                                 setSelectedCharacter(character)
@@ -242,7 +241,6 @@ export default function ScreenPlayConatiner({
                 screenPlayText !== undefined 
                 ?
                 <ScriptEditor
-                    key={screenplayId}
                     user={user}
                     className="script-text bg-white p-8 pt-0 pb-[70px] outline-none border-slate-400 overflow-scroll max-w-4xl font-courier"
                     scriptTokens={lines}
@@ -254,6 +252,7 @@ export default function ScreenPlayConatiner({
                     setCharacters={setCharacters}
                     screenplayId={screenplayId}
                     characters={characters}
+                    audioVersionNumber={audioVersionNumber}
                     currentTokenId={currentlyPlayingLineId}
                     highlightToken={isPlaying}
                     selectToken={setCurrentlyPlayingLineId}

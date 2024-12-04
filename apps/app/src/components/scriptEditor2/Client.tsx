@@ -22,6 +22,7 @@ import { Tokens } from './script-tokens'
 import { createClient } from "@v1/supabase/client";
 import { getId } from './utils'
 import { ScriptMeta } from './scriptMeta'
+import { useScriptMeta } from './scriptMetaContext'
 
 const supabase = createClient();
 
@@ -109,6 +110,7 @@ const Client: React.FC<ScriptEditorInput> = ({
   scriptTokens,
   className,
   audioScreenPlayVersion,
+  audioVersionNumber,
   user,
   audioScreenPlayVersionStatus,
   pdfText,
@@ -155,11 +157,11 @@ const Client: React.FC<ScriptEditorInput> = ({
       }]
     }
 
-  const [isClean, setIsClean] = useState(false);
+  const [isClean, setIsClean] = useState(true);
   const [value, setValue] = useState<Node[]>([]);
   const [newCharacters, setNewCharacters] = useState<Node[]>([]);
   const [isOnline, setOnlineState] = useState<boolean>(false);
-  const scriptMetaRef = useRef(null)
+  const scriptMeta = useScriptMeta()
 
   // Random color for cursor of the other collaborators
   const color = useMemo(
@@ -239,33 +241,39 @@ const Client: React.FC<ScriptEditorInput> = ({
       provider.awareness
     );
 
+    window.editor = editor
     return editor;
   }, [sharedType, provider]);
 
   // create scriptMeta
   useEffect(() => {
-    scriptMetaRef.current = new ScriptMeta(characters, slateTokens, {
+    scriptMeta.initData(characters, slateTokens, {
       onCharacterChange: (newcCharacters) => {
-        // setCharacters(newcCharacters)
+        console.log('on character change-----------')
+        setCharacters(newcCharacters)
         // console.log('newcCharacters', newcCharacters)
       }
     })
-
-    scriptMetaRef.current.addLines(slateTokens)
+    scriptMeta.addLines(slateTokens)
   }, [])
+ 
+  // This is separate because on save we want to update the characters in the scriptMeta
+  useEffect(() => {
+    scriptMeta.addCharacters(characters)
+    scriptMeta.updateCharacterNameMap()
+  }, [audioScreenPlayVersion])
 
 
   // Track changes of the editor in scriptMeta.
   // TODO move to a plugin
   useEffect(() => {
     const ogapply = editor.apply
-    const scriptmeta = scriptMetaRef.current
+    const scriptmeta = scriptMeta
     // TODO move to a plugin
     editor.apply = (op) => {
 
       ogapply(op)
       editor.operations.forEach(op => {
-        console.log("apply", op)
           try {
               switch (op.type) {
                   case 'split_node':
@@ -365,28 +373,26 @@ const Client: React.FC<ScriptEditorInput> = ({
   const save = useCallback((immediate = false, toastAlert = false) => {
       return debounce(async () => {
           setIsClean(true)
-          // if (!scriptMetaRef.current) return
+          // if (!scriptMeta.current) return
           // TODO get character ids from script meta
 
           // const changes = getChanges(scriptTokens, newTokens, screenplayId, newCharacters)
           // if (editor.history.redos.length) return
 
           const lines = editor.children.map((obj: AloudNodeSlate) => {
-            return scriptMetaRef.current?.getLine(obj.id)
+            return scriptMeta?.getLine(obj.id)
           })
-
-          console.log('lines outgoing', lines)
       
         const changes = {
           newLines: lines,
           screenplayId,
-          characters: scriptMetaRef.current.getNewCharacters(),
-          versionNumber: audioScreenPlayVersion,
+          characters: scriptMeta.getNewCharacters(),
+          versionNumber: audioVersionNumber,
         }
           console.log("save0-------------", changes)
-        //   const res = await saveLines(changes, toastAlert)
+          const res = await saveLines(changes, toastAlert)
           
-        //   console.log('res----', res)
+          console.log('res----', res)
           // setIsEditorDirty(false)
 
           // return res // only returned when immediate is true
@@ -403,6 +409,7 @@ const Client: React.FC<ScriptEditorInput> = ({
   // hacky way to allow parents to call the save button.
   useEffect(() => {
       setSaveFunc(() => save(true, true))
+      window.save = () => save(true, true)
   }, [scriptTokens, screenplayId, isClean, audioScreenPlayVersion])
 
   // Save loop
@@ -443,20 +450,20 @@ const Client: React.FC<ScriptEditorInput> = ({
         try {
             const selection = JSON.parse(savedSelection);
 
-            // Restore the selection
-            Transforms.select(editor, selection);
+            // // Restore the selection
+            // Transforms.select(editor, selection);
 
-            // Scroll to the restored selection
-            const domRange = ReactEditor.toDOMRange(editor, selection);
-            const domElement = domRange.startContainer.parentElement;
-            domElement.scrollIntoView({
-                behavior: 'smooth', // Smooth scrolling
-                // block: 'center',    // Scroll to center of the viewport
-                inline: 'nearest',  // Align horizontally
-            });
+            // // Scroll to the restored selection
+            // const domRange = ReactEditor.toDOMRange(editor, selection);
+            // const domElement = domRange.startContainer.parentElement;
+            // domElement.scrollIntoView({
+            //     behavior: 'smooth', // Smooth scrolling
+            //     // block: 'center',    // Scroll to center of the viewport
+            //     inline: 'nearest',  // Align horizontally
+            // });
 
-            // Focus the editor
-            ReactEditor.focus(editor);
+            // // Focus the editor
+            // ReactEditor.focus(editor);
 
         } catch (err) {
             console.error('Failed to restore and scroll to selection:', err);

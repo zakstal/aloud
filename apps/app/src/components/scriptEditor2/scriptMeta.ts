@@ -109,11 +109,25 @@ export class ScriptMeta {
     constructor(characters: Character[] | null, lines: Tokens[] | null, options: scriptMetaOptios) {
         if (instance) return instance
         instance = this
+
+        window.scriptMeta = this
+        this.initData(characters, lines, options)
+    }
+
+    initData(characters: Character[] | null, lines: Tokens[] | null, options: scriptMetaOptios) {
+        this.charactersNames = {}
+        this.linesById = {}
+        this.linesByType = {}
+        this.characters = []
+
         this.addCharacters(characters)
         this.addLines(lines)
         this.scriptMetaId = getId()
         this.options = options
-        window.scriptMeta = this
+    }
+
+    getSingleton() {
+        return instance
     }
 
     setClean() {
