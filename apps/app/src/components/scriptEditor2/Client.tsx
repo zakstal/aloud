@@ -113,7 +113,6 @@ const Client: React.FC<ScriptEditorInput> = ({
   audioVersionNumber,
   user,
   audioScreenPlayVersionStatus,
-  pdfText,
   saveLines,
   setCharacters,
   screenplayId,
@@ -179,7 +178,7 @@ const Client: React.FC<ScriptEditorInput> = ({
   const [sharedType, provider] = useMemo(() => {
     const doc = new Y.Doc();
     const sharedType = doc.getArray<SyncElement>("content");
-    console.log('sharedType.length', sharedType.length)
+
     if (sharedType.length === 0) {
       toSharedType(sharedType, slateTokens);
     }
@@ -249,9 +248,7 @@ const Client: React.FC<ScriptEditorInput> = ({
   useEffect(() => {
     scriptMeta.initData(characters, slateTokens, {
       onCharacterChange: (newcCharacters) => {
-        console.log('on character change-----------')
         setCharacters(newcCharacters)
-        // console.log('newcCharacters', newcCharacters)
       }
     })
     scriptMeta.addLines(slateTokens)
@@ -482,6 +479,8 @@ const Client: React.FC<ScriptEditorInput> = ({
         decorate={decorate}
         className={className}
         setIsClean={setIsClean}
+        currentTokenId={currentTokenId}
+        highlightToken={highlightToken}
         onChange={() => {
           saveSelection()
         }}

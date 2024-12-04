@@ -166,7 +166,7 @@ export default function ScreenPlayConatiner({
     <>
         <div className="flex flex-col h-full">
         <div className="flex flex-1 flex-row gap-4 overflow-auto text-lg script-parent items-streatch">
-            <aside className="script-characters flex-1 pt-16 max-w-72 h-full">
+            <aside className="script-characters flex-1 pt-16 max-w-64 h-full">
                 { screenPlayText !== undefined
                 ?
                 <>

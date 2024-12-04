@@ -21,6 +21,8 @@ export interface EditorFrame {
   setIsClean: (isClean: boolean) => void;
   decorate: any;
   className: string;
+  currentTokenId: string;
+  highlightToken: string;
 }
 
 type AloudNode = {
@@ -61,7 +63,13 @@ function createChangeType (type: string, editor: Editor) {
   }
 }
 
-const renderElement = (props: any) => <GetElement {...props} />;
+const renderElement = () => (props: any) =>
+  <div className="relative line-container">
+    <GetElement
+      {...props}
+    />
+    {/* <span contentEditable={false} className="absolute right-0 top-2/4 -translate-y-2/4 options transition-translate transition-opacity duration-150">info</span> */}
+  </div>
 
 const EditorFrame: React.FC<EditorFrame> = ({
   editor,
@@ -71,9 +79,18 @@ const EditorFrame: React.FC<EditorFrame> = ({
   decorate,
   className,
   setIsClean,
+  currentTokenId,
+  highlightToken,
 }) => {
-  const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [
+  const renderLeaf = useCallback((props: any) =>
+    <Leaf
+    {...props}
+    currentTokenId={currentTokenId}
+    highlightToken={highlightToken}
+    />, [
     decorate,
+    currentTokenId,
+    highlightToken,
   ]);
 
   const maybeChangeNodeTypeTo = useMemo(() => {
@@ -86,7 +103,7 @@ const EditorFrame: React.FC<EditorFrame> = ({
     <div className={className + ' script-editor'}>
       <Slate editor={editor} value={value} onChange={onChange} initialValue={initialValue}>
         <Editable
-          renderElement={renderElement}
+          renderElement={renderElement(currentTokenId, highlightToken)}
           renderLeaf={renderLeaf}
           decorate={decorate}
           onPaste={(event) => {
@@ -136,6 +153,7 @@ const EditorFrame: React.FC<EditorFrame> = ({
                 maybeChangeNodeTypeTo.character(node)
                 maybeChangeNodeTypeTo.scene_heading(node)
                 maybeChangeNodeTypeTo.transition(node)
+                maybeChangeNodeTypeTo.parenthetical(node)
                 return 
               }
               
@@ -165,7 +183,6 @@ const EditorFrame: React.FC<EditorFrame> = ({
 
 
                   const isParenthetical = isTokenType(tokenTypes.parenthetical, node.text as any)
-                  console.log('isParenthetical', isParenthetical)
                   const nextType = isParenthetical ? tokenTypes.parenthetical : tokenTypes.dialogue
                   Transforms.setNodes(
                     editor,
@@ -207,21 +224,16 @@ export default EditorFrame;
 
 
 
-const Leaf: React.FC<RenderLeafProps> = ({ attributes, children, leaf }) => {
-  if (leaf.bold) {
-    children = <strong>{children}</strong>;
+const Leaf: React.FC<RenderLeafProps> = ({ attributes, children, leaf, currentTokenId, highlightToken }) => {
+  let highlight = false
+
+  if (leaf.id === currentTokenId && highlightToken) {
+      highlight = true
   }
 
-  if (leaf.code) {
-    children = <code>{children}</code>;
-  }
-
-  if (leaf.italic) {
-    children = <em>{children}</em>;
-  }
-
-  if (leaf.underline) {
-    children = <u>{children}</u>;
+  if (highlight) {
+    children = <div className="highlight">{children}</div>;
+    
   }
 
   const data = leaf.data as any;

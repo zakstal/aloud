@@ -74,9 +74,9 @@
    
 }
 
-/* .script-editor > div > *.highlight {
+.highlight * {
     background: #ffffba;
-} */
+}
 
 .script-editor > div > * {
     background: transparent;

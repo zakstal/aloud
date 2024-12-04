@@ -97,9 +97,18 @@
    
 }
 
-/* .script-editor > div > *.highlight {
-    background: #ffffba;
-} */
+@keyframes highlight {
+    0% {
+        background-color: transparent;
+    }
+    100% {
+        background-color: #ffffba;
+    }
+}
+
+.highlight {
+    animation: highlight 200ms ease-in forwards;
+}
 
 /* .script-editor > div > * {
     background: transparent;
@@ -139,4 +148,12 @@ mark {
     font-size: 12px;
     transform: translate(-50%, -100%);
     margin-bottom: 5px;
+}
+
+.options {
+    opacity: 0;
+}
+
+.line-container:hover .options {
+    opacity: 1;
 }

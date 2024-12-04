@@ -125,7 +125,6 @@ async function assembleSource(audioUrls, mediaSrcIn, setSrc, urlToDurationStartn
     for (const idx in resultBuffers) {
         onUpdateIdx = idx
         const buffer = resultBuffers[idx]
-        console.log('buffer', buffer)
         bufferedChunks.push(buffer.slice(0))
         const duration = await appendBlob(buffer, sourceBuffer, mediaSource);
         durationByUrl[audioUrls[idx]] = duration
@@ -373,7 +372,6 @@ class AudioPlayer extends React.Component {
         nextState.disabled = disabled
 
         if (didUpdate) {
-            console.log('did update')
             nextState.isAudioVersions = true
             this.setState(nextState)
         }
@@ -384,12 +382,10 @@ class AudioPlayer extends React.Component {
     }
 
     handleToggle() {
-        console.log('handleToggle----------', this.state.playing)
         if (!this.state.playing) {
             this.player.play()
             this.props.setIsPlaying && this.props.setIsPlaying(true)
         } else {
-            console.log("pause")
             this.player.pause()
             this.props.setIsPlaying && this.props.setIsPlaying(false)
         }
@@ -462,8 +458,6 @@ class AudioPlayer extends React.Component {
     }
 
     handleStop() {
-        console.log("handle stop-------------------")
-
         this.player.pause()
         this.props.setIsPlaying && this.props.setIsPlaying(false)
         this.setState({
@@ -501,7 +495,6 @@ class AudioPlayer extends React.Component {
     }
 
     handleSeekingChange(e) {
-        console.log('seek change')
         const seekChange = parseFloat(e || 0)
      
         this.player.currentTime = seekChange || 0
@@ -513,7 +506,6 @@ class AudioPlayer extends React.Component {
     }
     
     handleSeekingChangeExternal(e) {
-        console.log('seek change')
         const seekChange = parseFloat(e || 0)
      
         this.player.currentTime = seekChange || 0
@@ -712,7 +704,6 @@ class AudioPlayer extends React.Component {
                         {this.state.objSrc && (
                             <button
                                 onClick={() =>{
-                                    console.log('bufferedChunks', bufferedChunks)
                                     const a = document.createElement('a')
                                     a.href = URL.createObjectURL(new Blob(this.bufferedChunks))
                                     a.download = `${this.props.title || 'aloud-audio'}.mp3`

@@ -62,7 +62,7 @@ export function Character ({
               </p>
             </div>
           )
-          : null
+          : <p>unassigned</p>
         }
       </div>
       

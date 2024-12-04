@@ -745,7 +745,6 @@ console.log("updateOrCreateLinesInDb----------", versionNumber)
       throw currentLinesError;
     }
 
-
     const { created, removed, updated } = getChanges(currentLines, newLines)
     console.log('created--------------------', created)
     console.log('removed--------------------', removed)

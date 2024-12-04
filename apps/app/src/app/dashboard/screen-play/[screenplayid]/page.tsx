@@ -58,6 +58,14 @@ function updateItemInArray(item, array) {
   }
 }
 
+function findReverse(array, callback) {
+  for (let i = array.length - 1; i >= 0; i--) {
+    const isTrue: boolean = callback(array[i])
+    if (isTrue) return array[i] 
+  }
+  return null
+}
+
 const statusToastMessage = {
   failed: 'There was an issue getting your audio and none of your audio was retrieved. This is likely a system problm.',
   partial: 'There was an issue getting some of your audio. Try again.',
@@ -210,7 +218,9 @@ export default function Page() {
           const audio_version = data?.lines
           .filter(line => line?.audio_version?.length)
           .filter(line => Boolean(line?.text))
-          .map(line => line.audio_version[line.audio_version.length - 1])
+          .map(line => findReverse(line.audio_version, (version) => Boolean(version.audio_file_url)))
+          .filter(Boolean)
+          // .map(line => line.audio_version[line.audio_version.length - 1])
           
           setAudioVersions(audio_version)
           setLines(data?.lines)
@@ -240,17 +250,14 @@ export default function Page() {
           screenplayId={params?.screenplayid}
           isLoading={isLoading}
           setCharacters={characters => {
-            console.log('set characters', characters)
             setCharactersTemp(characters)
           }}
           screenPlayText={data?.screen_play_text}
           startScreenPlay={async (obj = {}) => {
-            console.log("start screen play")
             try {
 
               const res = await startScreenPlay(obj)
               const id = res?.data?.data?.id
-              console.log("res", res)
               if (id) {
                 router.push(`/dashboard/screen-play/${id}`);
               }
@@ -367,7 +374,6 @@ export default function Page() {
               error = true
               data = await res.text()
             }
-            console.log("process audio res", data)
 
             if (error) {
               toast({
@@ -405,7 +411,6 @@ export default function Page() {
                 voice_name: voice.name,
               })
 
-              console.log("res", res)
               if (res?.data?.error) {
                 throw 'Error updating voice'
               }
