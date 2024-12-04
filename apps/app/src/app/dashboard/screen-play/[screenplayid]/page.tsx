@@ -350,7 +350,7 @@ export default function Page() {
 
             // we have the characters that come in from the server, but we may delete characers
             // befor saving. ScriptMeta holds the info on what are the correct characters to show.
-            const charactersToDisplay = characters.filter(character => activeCharacters.has(character.id))
+            const charactersToDisplay = characters?.filter(character => activeCharacters.has(character.id))
 
             if (charactersToDisplay.some(character => !Boolean(character?.audio_character_version?.voice_id))) {
               toast({
