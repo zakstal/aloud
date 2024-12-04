@@ -18,7 +18,7 @@ const capitalizeTypes = ['character', 'scene_heading', 'transition']
 const removeTokens = ['dialogue_end', 'dialogue_begin']
 
 const prepareTokensRender = (tokens: Tokens[]) => {
-    return tokens.filter((token: Tokens) => !removeTokens.includes(token.type))
+    return tokens?.filter((token: Tokens) => !removeTokens.includes(token.type))
 }
 
 const tokenize = (text: string, options: any) => {

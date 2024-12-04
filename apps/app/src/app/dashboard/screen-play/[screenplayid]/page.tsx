@@ -218,10 +218,10 @@ export default function Page() {
           console.log('data-----------------', data)
           
           const audio_version = data?.lines
-          .filter(line => line?.audio_version?.length)
-          .filter(line => Boolean(line?.text))
-          .map(line => findReverse(line.audio_version, (version) => Boolean(version.audio_file_url)))
-          .filter(Boolean)
+          ?.filter(line => line?.audio_version?.length)
+          ?.filter(line => Boolean(line?.text))
+          ?.map(line => findReverse(line.audio_version, (version) => Boolean(version.audio_file_url)))
+          ?.filter(Boolean)
           // .map(line => line.audio_version[line.audio_version.length - 1])
           
           setAudioVersions(audio_version)
