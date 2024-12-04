@@ -25,7 +25,7 @@ export function Characters({
 }: CharactersInput) {
 
   const scriptMeta = useScriptMeta()
-  const activeCharacters = new Set(scriptMeta.getCharacters()?.map(character => character.id))
+  const activeCharacters = new Set(scriptMeta?.getCharacters()?.map(character => character.id))
 
   // we have the characters that come in from the server, but we may delete characers
   // befor saving. ScriptMeta holds the info on what are the correct characters to show.
