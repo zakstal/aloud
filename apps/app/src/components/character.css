@@ -1,5 +1,6 @@
 .character {
     transform: translate all 0.2s;
+    margin-top: 3px;
 }
 
 .avatar-fallback {
@@ -9,4 +10,5 @@
     color: white;
     font-size: 11.2px;
     font-weight: bold;
+    margin-top: 3px;
 }

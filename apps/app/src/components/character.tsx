@@ -42,7 +42,7 @@ export function Character ({
         <Avatar className="h-9 w-9">
           <AvatarImage src={avatar} alt="Avatar" fallbackData={abbreveation}/>
         </Avatar>
-        <div className="ml-4 space-y-1">
+        <div className="ml-4 space-y-1 mt-1">
           <p className="text-sm font-medium leading-none break-words">{name}</p>
           <p className="text-xs text-muted-foreground italic">
             {gender}

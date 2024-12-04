@@ -12,6 +12,7 @@ import { createClient } from "@v1/supabase/client";
 import { updateOrCreateLines } from '@/actions/screenPlays/update-lines'
 import { useToast } from '@/components/ui/use-toast';
 import { useSession } from "@v1/supabase/supbaseSessionContext";
+import { useScriptMeta } from '@/components/scriptEditor2/scriptMetaContext'
 
 const supabase = createClient();
 type Character = { name: string, gender: string | null }
@@ -81,6 +82,7 @@ export default function Page() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const scriptMeta = useScriptMeta()
 
   const [isLoading, setIsLoading ] = useState(true)
   const [screenPlay, setScreenPlay ] = useState({})
@@ -344,8 +346,13 @@ export default function Page() {
           lines={lines}
           scriptTokens={data?.screen_play_fountain}
           processAudio={async (screenPlayVersionId) => {
+            const activeCharacters = new Set(scriptMeta.getCharacters()?.map(character => character.id))
 
-            if (characters.some(character => !Boolean(character?.audio_character_version?.voice_id))) {
+            // we have the characters that come in from the server, but we may delete characers
+            // befor saving. ScriptMeta holds the info on what are the correct characters to show.
+            const charactersToDisplay = characters.filter(character => activeCharacters.has(character.id))
+
+            if (charactersToDisplay.some(character => !Boolean(character?.audio_character_version?.voice_id))) {
               toast({
                   title: 'Characters need voices assigned',
                   description: 'Characters need voice actors assigned to them. Choose a voice for your character by clicking on a character.'
