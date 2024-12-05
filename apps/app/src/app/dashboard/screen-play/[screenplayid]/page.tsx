@@ -259,7 +259,8 @@ export default function Page() {
             try {
 
               const res = await startScreenPlay(obj)
-              const id = res?.data?.data?.id
+              console.log("res", res, res?.data?.id)
+              const id = res?.data?.id
               if (id) {
                 router.push(`/dashboard/screen-play/${id}`);
               }

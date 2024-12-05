@@ -123,7 +123,7 @@ const EditorFrame: React.FC<EditorFrame> = ({
                   const slateTokens = lines.map((obj: AloudNode) => {
                       return {
                           type: obj.type,
-                          id: obj.id,
+                          id: obj.id || getId(),
                           isDialog: Boolean(obj.isDialog),
                           character_id: obj.character_id || '',
                           order: obj.order,

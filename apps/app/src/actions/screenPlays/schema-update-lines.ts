@@ -3,7 +3,7 @@ import { z } from "zod";
 // Define the schema for a line object
 const lineSchema = z.object({
   id: z.string(), 
-  order: z.number(),
+  order: z.number().nullable().optional(),
   text: z.string().nullable().optional(),
   type: z.string(),
   isDialog: z.union([z.boolean().nullable().optional(), z.string().nullable().optional()]),
